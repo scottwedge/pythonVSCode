@@ -2298,7 +2298,7 @@
         "@types/request": "^2.47.0",
         "@types/semver": "^5.5.0",
         "@types/shortid": "^0.0.29",
-        "@types/sinon": "^4.3.3",
+        "@types/sinon": "^7.0.13",
         "@types/slickgrid": "^2.1.27",
         "@types/stack-trace": "0.0.29",
         "@types/strip-json-comments": "0.0.30",

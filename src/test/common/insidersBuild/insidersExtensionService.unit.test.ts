@@ -10,7 +10,7 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
 import * as TypeMoq from 'typemoq';
-import { EventEmitter, Uri } from 'vscode';
+import { EventEmitter } from 'vscode';
 import { ApplicationEnvironment } from '../../../client/common/application/applicationEnvironment';
 import { CommandManager } from '../../../client/common/application/commandManager';
 import { Channel, IApplicationEnvironment, ICommandManager } from '../../../client/common/application/types';
@@ -123,8 +123,7 @@ suite('Insiders Extension Service - Activation', () => {
         handleChannel = sinon.stub(InsidersExtensionService.prototype, 'handleChannel');
         handleChannel.callsFake(() => Promise.resolve());
         insidersExtensionService = new InsidersExtensionService(instance(extensionChannelService), instance(insidersPrompt), instance(appEnvironment), instance(cmdManager), instance(serviceContainer), instance(insidersInstaller), []);
-        insidersExtensionService.activatedOnce = true;
-        await insidersExtensionService.activate(Uri.parse('r'));
+        await insidersExtensionService.activate();
         assert.ok(registerCommandsAndHandlers.notCalled);
     });
 
@@ -134,10 +133,9 @@ suite('Insiders Extension Service - Activation', () => {
         insidersExtensionService = new InsidersExtensionService(instance(extensionChannelService), instance(insidersPrompt), instance(appEnvironment), instance(cmdManager), instance(serviceContainer), instance(insidersInstaller), []);
         when(extensionChannelService.getChannel()).thenReturn('daily');
 
-        await insidersExtensionService.activate(Uri.parse('r'));
+        await insidersExtensionService.activate();
 
         verify(extensionChannelService.getChannel()).once();
-        expect(insidersExtensionService.activatedOnce).to.equal(true, 'Variable should be set to true');
         assert.ok(registerCommandsAndHandlers.calledOnce);
         assert.ok(handleEdgeCases.calledOnce);
         assert.ok(handleChannel.calledOnce);
@@ -151,7 +149,7 @@ suite('Insiders Extension Service - Activation', () => {
         insidersExtensionService = new InsidersExtensionService(instance(extensionChannelService), instance(insidersPrompt), instance(appEnvironment), instance(cmdManager), instance(serviceContainer), instance(insidersInstaller), []);
         when(extensionChannelService.getChannel()).thenReturn('daily');
 
-        const promise = insidersExtensionService.activate(Uri.parse('r'));
+        const promise = insidersExtensionService.activate();
         const deferred = createDeferredFromPromise(promise);
         await sleep(1);
 
@@ -161,7 +159,6 @@ suite('Insiders Extension Service - Activation', () => {
         handleChannelsDeferred.resolve();
         await sleep(1);
 
-        expect(insidersExtensionService.activatedOnce).to.equal(true, 'Variable should be set to true');
         assert.ok(registerCommandsAndHandlers.calledOnce);
         assert.ok(handleEdgeCases.calledOnce);
         assert.ok(handleChannel.calledOnce);

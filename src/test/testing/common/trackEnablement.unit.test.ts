@@ -6,7 +6,6 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
-import { Uri } from 'vscode';
 import { IWorkspaceService } from '../../../client/common/application/types';
 import { WorkspaceService } from '../../../client/common/application/workspace';
 import { Product } from '../../../client/common/types';
@@ -38,16 +37,13 @@ suite('Unit Tests - Track Enablement', () => {
     function createEnablementTracker() {
         return new EnablementTracker(instance(workspaceService), [], instance(configService), testsHelper);
     }
-    test('Add handler for onDidChangeConfiguration (only once)', async () => {
+    test('Add handler for onDidChangeConfiguration', async () => {
         const stub = sinon.stub();
         when(workspaceService.onDidChangeConfiguration).thenReturn(stub);
 
         enablementTracker = createEnablementTracker();
 
-        await enablementTracker.activate(undefined);
-        await enablementTracker.activate(undefined);
-        await enablementTracker.activate(Uri.file(__dirname));
-        await enablementTracker.activate(Uri.file(__dirname));
+        await enablementTracker.activate();
 
         assert.ok(stub.calledOnce);
     });
@@ -56,7 +52,7 @@ suite('Unit Tests - Track Enablement', () => {
         when(workspaceService.onDidChangeConfiguration).thenReturn(stub);
 
         enablementTracker = createEnablementTracker();
-        await enablementTracker.activate(undefined);
+        await enablementTracker.activate();
 
         assert.equal(stub.args[0][0], enablementTracker.onDidChangeConfiguration);
         assert.equal(stub.args[0][1], enablementTracker);

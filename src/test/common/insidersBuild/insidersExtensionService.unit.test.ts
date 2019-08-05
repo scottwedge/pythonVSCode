@@ -119,14 +119,6 @@ suite('Insiders Extension Service - Activation', () => {
         sinon.restore();
     });
 
-    test('If service has been activated once, simply return', async () => {
-        handleChannel = sinon.stub(InsidersExtensionService.prototype, 'handleChannel');
-        handleChannel.callsFake(() => Promise.resolve());
-        insidersExtensionService = new InsidersExtensionService(instance(extensionChannelService), instance(insidersPrompt), instance(appEnvironment), instance(cmdManager), instance(serviceContainer), instance(insidersInstaller), []);
-        await insidersExtensionService.activate();
-        assert.ok(registerCommandsAndHandlers.notCalled);
-    });
-
     test('Execution goes as expected if there are no errors', async () => {
         handleChannel = sinon.stub(InsidersExtensionService.prototype, 'handleChannel');
         handleChannel.callsFake(() => Promise.resolve());

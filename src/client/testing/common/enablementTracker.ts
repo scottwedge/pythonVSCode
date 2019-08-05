@@ -5,7 +5,7 @@
 
 import { inject } from 'inversify';
 import { ConfigurationChangeEvent } from 'vscode';
-import { IExtensionActivationService } from '../../activation/types';
+import { IExtensionSingleActivationService } from '../../activation/types';
 import { IWorkspaceService } from '../../common/application/types';
 import { IDisposableRegistry, Resource } from '../../common/types';
 import { sendTelemetryEvent } from '../../telemetry';
@@ -13,19 +13,14 @@ import { EventName } from '../../telemetry/constants';
 import { ITestConfigSettingsService } from '../types';
 import { ITestsHelper, TestProvider } from './types';
 
-export class EnablementTracker implements IExtensionActivationService {
-    private activated = false;
+export class EnablementTracker implements IExtensionSingleActivationService {
     constructor(
         @inject(IWorkspaceService) private readonly workspaceService: IWorkspaceService,
         @inject(IDisposableRegistry) private readonly disposables: IDisposableRegistry,
         @inject(ITestConfigSettingsService) private readonly testConfig: ITestConfigSettingsService,
         @inject(ITestsHelper) private readonly testsHelper: ITestsHelper
     ) {}
-    public async activate(_: Resource): Promise<void> {
-        if (this.activated) {
-            return;
-        }
-        this.activated = true;
+    public async activate(): Promise<void> {
         this.disposables.push(this.workspaceService.onDidChangeConfiguration(this.onDidChangeConfiguration, this));
     }
     public onDidChangeConfiguration(args: ConfigurationChangeEvent) {

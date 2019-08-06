@@ -24,11 +24,11 @@ export class PythonExecutionService implements IPythonExecutionService {
     ) {
         this.fileSystem = serviceContainer.get<IFileSystem>(IFileSystem);
     }
-
     public async getInterpreterInformation(): Promise<InterpreterInfomation | undefined> {
         const file = path.join(EXTENSION_ROOT_DIR, 'pythonFiles', 'interpreterInfo.py');
         try {
-            const jsonValue = await this.procService.exec(this.pythonPath, [file], { mergeStdOutErr: true })
+            const executable = this.getExecutableInfo(this.pythonPath, [file]);
+            const jsonValue = await this.procService.exec(executable.command, executable.args, { mergeStdOutErr: true })
                 .then(output => output.stdout.trim());
 
             let json: { versionInfo: PythonVersionInfo; sysPrefix: string; sysVersion: string; is64Bit: boolean };
@@ -56,29 +56,35 @@ export class PythonExecutionService implements IPythonExecutionService {
         if (await this.fileSystem.fileExists(this.pythonPath)) {
             return this.pythonPath;
         }
-        return this.procService.exec(this.pythonPath, ['-c', 'import sys;print(sys.executable)'], { throwOnStdErr: true })
+        const executable = this.getExecutableInfo(this.pythonPath, ['-c', 'import sys;print(sys.executable)']);
+        return this.procService.exec(executable.command, executable.args, { throwOnStdErr: true })
             .then(output => output.stdout.trim());
     }
     public async isModuleInstalled(moduleName: string): Promise<boolean> {
-        return this.procService.exec(this.pythonPath, ['-c', `import ${moduleName}`], { throwOnStdErr: true })
+        const executable = this.getExecutableInfo(this.pythonPath, ['-c', `import ${moduleName}`]);
+        return this.procService.exec(executable.command, executable.args, { throwOnStdErr: true })
             .then(() => true).catch(() => false);
     }
 
     public execObservable(args: string[], options: SpawnOptions): ObservableExecutionResult<string> {
         const opts: SpawnOptions = { ...options };
-        return this.procService.execObservable(this.pythonPath, args, opts);
+        const executable = this.getExecutableInfo(this.pythonPath, args);
+        return this.procService.execObservable(executable.command, executable.args, opts);
     }
     public execModuleObservable(moduleName: string, args: string[], options: SpawnOptions): ObservableExecutionResult<string> {
         const opts: SpawnOptions = { ...options };
-        return this.procService.execObservable(this.pythonPath, ['-m', moduleName, ...args], opts);
+        const executable = this.getExecutableInfo(this.pythonPath, ['-m', moduleName, ...args]);
+        return this.procService.execObservable(executable.command, executable.args, opts);
     }
     public async exec(args: string[], options: SpawnOptions): Promise<ExecutionResult<string>> {
         const opts: SpawnOptions = { ...options };
-        return this.procService.exec(this.pythonPath, args, opts);
+        const executable = this.getExecutableInfo(this.pythonPath, args);
+        return this.procService.exec(executable.command, executable.args, opts);
     }
     public async execModule(moduleName: string, args: string[], options: SpawnOptions): Promise<ExecutionResult<string>> {
         const opts: SpawnOptions = { ...options };
-        const result = await this.procService.exec(this.pythonPath, ['-m', moduleName, ...args], opts);
+        const executable = this.getExecutableInfo(this.pythonPath, ['-m', moduleName, ...args]);
+        const result = await this.procService.exec(executable.command, executable.args, opts);
 
         // If a module is not installed we'll have something in stderr.
         if (moduleName && ErrorUtils.outputHasModuleNotInstalledError(moduleName!, result.stderr)) {
@@ -89,5 +95,8 @@ export class PythonExecutionService implements IPythonExecutionService {
         }
 
         return result;
+    }
+    protected getExecutableInfo(command: string, args: string[]): {command: string ; args: string[]}{
+        return { command, args };
     }
 }

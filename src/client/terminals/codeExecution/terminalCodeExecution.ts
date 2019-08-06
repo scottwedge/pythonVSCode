@@ -11,6 +11,8 @@ import '../../common/extensions';
 import { IPlatformService } from '../../common/platform/types';
 import { ITerminalService, ITerminalServiceFactory } from '../../common/terminal/types';
 import { IConfigurationService, IDisposableRegistry } from '../../common/types';
+import { IInterpreterService, InterpreterType } from '../../interpreter/contracts';
+import { InterpreterService } from '../../interpreter/interpreterService';
 import { ICodeExecutionService } from '../../terminals/types';
 
 @injectable()
@@ -18,22 +20,30 @@ export class TerminalCodeExecutionProvider implements ICodeExecutionService {
     protected terminalTitle!: string;
     private _terminalService!: ITerminalService;
     private replActive?: Promise<boolean>;
-    constructor(@inject(ITerminalServiceFactory) protected readonly terminalServiceFactory: ITerminalServiceFactory,
+    constructor(
+        @inject(ITerminalServiceFactory) protected readonly terminalServiceFactory: ITerminalServiceFactory,
         @inject(IConfigurationService) protected readonly configurationService: IConfigurationService,
         @inject(IWorkspaceService) protected readonly workspace: IWorkspaceService,
         @inject(IDisposableRegistry) protected readonly disposables: Disposable[],
-        @inject(IPlatformService) protected readonly platformService: IPlatformService) {
-
-    }
+        @inject(IInterpreterService) protected readonly interpreterService: InterpreterService,
+        @inject(IPlatformService) protected readonly platformService: IPlatformService
+    ) {}
     public async executeFile(file: Uri) {
         const pythonSettings = this.configurationService.getSettings(file);
 
         await this.setCwdForFileExecution(file);
+        const interpreter = await this.interpreterService.getActiveInterpreter(file);
+        if (interpreter && interpreter.type === InterpreterType.Conda) {
+            const launchArgs = pythonSettings.terminal.launchArgs;
 
-        const command = this.platformService.isWindows ? pythonSettings.pythonPath.replace(/\\/g, '/') : pythonSettings.pythonPath;
-        const launchArgs = pythonSettings.terminal.launchArgs;
+            await this.getTerminalService(file).sendCommand('conda', ['run', '-n', 'env373', 'python', ...launchArgs.concat(file.fsPath.fileToCommandArgument())]);
+            return;
+        } else {
+            const command = this.platformService.isWindows ? pythonSettings.pythonPath.replace(/\\/g, '/') : pythonSettings.pythonPath;
+            const launchArgs = pythonSettings.terminal.launchArgs;
 
-        await this.getTerminalService(file).sendCommand(command, launchArgs.concat(file.fsPath.fileToCommandArgument()));
+            await this.getTerminalService(file).sendCommand(command, launchArgs.concat(file.fsPath.fileToCommandArgument()));
+        }
     }
 
     public async execute(code: string, resource?: Uri): Promise<void> {
@@ -45,7 +55,7 @@ export class TerminalCodeExecutionProvider implements ICodeExecutionService {
         await this.getTerminalService(resource).sendText(code);
     }
     public async initializeRepl(resource?: Uri) {
-        if (this.replActive && await this.replActive!) {
+        if (this.replActive && (await this.replActive!)) {
             await this._terminalService!.show();
             return;
         }
@@ -68,9 +78,11 @@ export class TerminalCodeExecutionProvider implements ICodeExecutionService {
     private getTerminalService(resource?: Uri): ITerminalService {
         if (!this._terminalService) {
             this._terminalService = this.terminalServiceFactory.getTerminalService(resource, this.terminalTitle);
-            this.disposables.push(this._terminalService.onDidCloseTerminal(() => {
-                this.replActive = undefined;
-            }));
+            this.disposables.push(
+                this._terminalService.onDidCloseTerminal(() => {
+                    this.replActive = undefined;
+                })
+            );
         }
         return this._terminalService;
     }

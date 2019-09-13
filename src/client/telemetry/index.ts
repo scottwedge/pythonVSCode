@@ -2,7 +2,13 @@
 // Licensed under the MIT License.
 // tslint:disable:no-reference no-any import-name no-any function-name
 /// <reference path="./vscode-extension-telemetry.d.ts" />
+const something: any = '1234';
+[something['wow']] = '23333';
+// console.log(something);
+// let somethingElse = '1234';
+// console.log(somethingElse);
 import { JSONObject } from '@phosphor/coreutils';
+// import JSONObjects from '@phosphor/coreutils';
 import { basename as pathBasename, sep as pathSep } from 'path';
 import * as stackTrace from 'stack-trace';
 import TelemetryReporter from 'vscode-extension-telemetry';

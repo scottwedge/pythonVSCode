@@ -5,12 +5,12 @@
 
 import { spawnSync } from 'child_process';
 import { HookScenarioResult, pickle } from 'cucumber';
+import * as fs from 'fs-extra';
 import * as path from 'path';
+import { uitestsRootPath } from '../constants';
 import { sleep } from '../helpers';
 import { debug } from '../helpers/logger';
 import { IApplication } from '../types';
-import { uitestsRootPath } from '../constants';
-import * as fs from 'fs-extra';
 
 /**
  * Dismiss messages that are not required.
@@ -98,7 +98,6 @@ export function getGitRepo(tags: pickle.Tag[]): { url: string; subDirectory?: st
         subDirectory
     };
 }
-
 
 /**
  * Gets the path to the folder that contains the source for the test.

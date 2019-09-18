@@ -9,6 +9,8 @@ import * as path from 'path';
 import { sleep } from '../helpers';
 import { debug } from '../helpers/logger';
 import { IApplication } from '../types';
+import { uitestsRootPath } from '../constants';
+import * as fs from 'fs-extra';
 
 /**
  * Dismiss messages that are not required.
@@ -97,6 +99,21 @@ export function getGitRepo(tags: pickle.Tag[]): { url: string; subDirectory?: st
     };
 }
 
+
+/**
+ * Gets the path to the folder that contains the source for the test.
+ *
+ * @param {pickle.Tag[]} tags
+ * @returns {({ url: string; subDirectory?: string } | undefined)}
+ */
+export function getSourceFolder(tags: pickle.Tag[]): string | undefined {
+    const sourceFolder = tags.find(tag => tag.name.toLowerCase().startsWith('@code:'));
+    if (!sourceFolder) {
+        return;
+    }
+    return path.join(uitestsRootPath, sourceFolder.name.substring('@code:'.length));
+}
+
 /**
  * Clones the git repo into the provided directory.
  * @param {{ url: string; subDirectory?: string }} repo
@@ -121,6 +138,14 @@ async function cloneGitRepo({ url }: { url: string }, cwd: string): Promise<void
  * @returns {(Promise<string | undefined>)}
  */
 export async function initializeWorkspace(scenario: HookScenarioResult, workspaceFolder: string): Promise<string | undefined> {
+    const sourceFolder = getSourceFolder(scenario.pickle.tags);
+    if (sourceFolder) {
+        debug(`initializeWorkspace for ${sourceFolder}`);
+        // Copy files from source folder into workspace folder.
+        await fs.copy(sourceFolder, workspaceFolder);
+        return;
+    }
+
     const repo = getGitRepo(scenario.pickle.tags);
     if (!repo) {
         debug('initializeWorkspace without a repo');

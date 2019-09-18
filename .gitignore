@@ -29,6 +29,7 @@ languageServer/**
 languageServer.*/**
 !uitests/features/languageServer/**
 !uitests/src/languageServer/**
+!uitests/code/**/languageServer/**
 bin/**
 obj/**
 .pytest_cache

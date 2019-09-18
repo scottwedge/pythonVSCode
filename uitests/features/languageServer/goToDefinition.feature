@@ -1,5 +1,5 @@
 @ls
-@https://github.com/DonJayamanne/pvscSmokeLS.git
+@code:code/languageServer/basic
 Feature: Language Server
     Scenario Outline: When <reload_or_start_vs_for_first_time> with Jedi <jedi_enable>d then output contains <text_in_output_panel>
         When <reload_or_start_vs_for_first_time>

@@ -1,5 +1,5 @@
 @ls
-@https://github.com/DonJayamanne/pvscSmokeLS.git
+@code:code/languageServer/basic
 Feature: Language Server
     Scenario Outline: Check output of 'Python' output panel when starting VS Code with Jedi <jedi_enable>d
         When I <jedi_enable> the workspace setting "python.jediEnabled"

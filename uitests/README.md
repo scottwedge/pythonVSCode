@@ -79,6 +79,7 @@ Here are the steps involved in running the tests:
 * `~/src/uitest/bootstrap` Contains just the bootstrap extension code.
 * `~/src/uitests/features` [Feature files](https://cucumber.io/docs/gherkin/reference/#feature) used to drive the [BDD](https://en.wikipedia.org/wiki/Behavior-driven_development) tests are stored here.
 * `~/src/uitests/src` Source code for smoke Tests (features, nodejs code, etc).
+* `~/code/` Folder containing workspaces (python files) used for testing purposes.
 
 ## CI Integration
 

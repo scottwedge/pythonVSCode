@@ -18,7 +18,7 @@ jobs:
   pool:
     vmImage: "macos-latest"
   steps:
-    - template: initialization.yml
+    - template: ../steps/initialization.yml
       parameters:
         PythonVersion: $(PythonVersion)
         workingDirectory: $(Build.SourcesDirectory)
@@ -33,7 +33,7 @@ jobs:
   pool:
     vmImage: "macos-latest"
   steps:
-    - template: initialization.yml
+    - template: ../steps/initialization.yml
       parameters:
         workingDirectory: $(Build.SourcesDirectory)/uitests
         compile: 'true'
@@ -44,7 +44,7 @@ jobs:
   pool:
     vmImage: "macos-latest"
   steps:
-    - template: initialization.yml
+    - template: ../steps/initialization.yml
       parameters:
         workingDirectory: $(Build.SourcesDirectory)/uitests
         compile: 'false'

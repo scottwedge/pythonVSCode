@@ -13,9 +13,13 @@
         * Now, the contents of the workspace is the `tests` directory in the above repo.
     * This allows us to have a single repo with files/tests for more than just one feature/scenario.
     * Else we'd need to have multiple repos for each feature/scenario.
-* @preserve.workspace
-    * Ensures the previous workspace state is used for testing.
-    * I.e. state setup in previous state is not reset (makes it easier to re-use state from preivous scenarios).
+* @code:<path relative to uitests folder>
+    * Can only be used at a feature level.
+    * The conents of the above folder will be used as the contents of the workspace folder.
+    * Note: assume the tag is `@code:some folder/pythonFiles`
+        * The contents of the above folder is copied recursively into the workspace.
+    * This allows us to have a single repo with files/tests for more than just one feature/scenario.
+    * Else we'd need to have multiple repos for each feature/scenario.
 * @mac, @win, @linux
     * Used to ensure a particular feature/scenario runs only in mac, win or linux respectively.
 * @python2, @python3, @python3.5, @python3.6, @python3.7
@@ -23,7 +27,7 @@
 * @insider
     * Used to ensure a particular feature/scenario runs only in VS Code Insiders.
 * @stable
-    * Used to ensure a particular feature/scenario runs only in VS Code Stableccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.
+    * Used to ensure a particular feature/scenario runs only in VS Code Stable.
 * @smoke
     * All smoke test related functionality.
 * @test

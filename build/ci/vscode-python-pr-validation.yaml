@@ -23,6 +23,7 @@ stages:
   - template: templates/jobs/build_compile.yml
 
 - stage: Build_UITests
+  dependsOn: []
   jobs:
   - template: templates/jobs/build_uitests.yml
 

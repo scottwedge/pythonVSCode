@@ -22,9 +22,14 @@ stages:
   jobs:
   - template: templates/jobs/build_compile.yml
 
+- stage: Build_UITests
+  jobs:
+  - template: templates/jobs/build_uitests.yml
+
 - stage: Smoke
   dependsOn:
   - Build
+  - Build_UITests
   jobs:
   - template: templates/jobs/smoke.yml
 

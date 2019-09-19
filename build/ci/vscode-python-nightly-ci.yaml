@@ -32,13 +32,6 @@ stages:
   jobs:
   - template: templates/jobs/build_uitests.yml
 
-- stage: Smoke
-  dependsOn:
-  - Build
-  - Build_UITests
-  jobs:
-  - template: templates/jobs/smoke.yml
-
 - stage: Tests
   dependsOn:
   - Build
@@ -444,6 +437,13 @@ stages:
 
     steps:
       - template: templates/test_phases.yml
+
+- stage: Smoke
+  dependsOn:
+  - Build
+  - Build_UITests
+  jobs:
+  - template: templates/jobs/smoke.yml
 
 - stage: Reports
   dependsOn:

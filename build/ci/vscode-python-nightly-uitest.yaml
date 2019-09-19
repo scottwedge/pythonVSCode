@@ -53,3 +53,10 @@ stages:
         # This is faster/cheaper, and these are external packages.
         # We expect them to work (or 3rd party packages to test against all PY versions).
         ignorePythonVersions: "3.6,3.5"
+
+- stage: Reports
+  dependsOn:
+  - Tests
+  condition: always()
+  jobs:
+  - template: templates/jobs/merge_upload_uitest_report.yml

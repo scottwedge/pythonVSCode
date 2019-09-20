@@ -18,11 +18,17 @@ variables:
 stages:
 - stage: Build
   jobs:
+  - template: templates/jobs/build_compile.yml
+
+- stage: Build_UITests
+  dependsOn: []
+  jobs:
   - template: templates/jobs/build_uitests.yml
 
 - stage: Tests
   dependsOn:
   - Build
+  - Build_UITests
   jobs:
   - template: templates/jobs/uitest.yml
     parameters:

@@ -25,7 +25,7 @@ stages:
   jobs:
   - template: templates/jobs/build_uitests.yml
 
-- stage: Tests
+- stage: UITests
   dependsOn:
   - Build
   - Build_UITests
@@ -62,7 +62,7 @@ stages:
 
 - stage: Reports
   dependsOn:
-  - Tests
+  - UITests
   condition: always()
   jobs:
   - template: templates/jobs/merge_upload_uitest_report.yml

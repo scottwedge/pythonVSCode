@@ -193,9 +193,6 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
         'python.pythonPath': opts.pythonPath,
         // We dont need these(avoid VSC from displaying prompts).
         'telemetry.enableTelemetry': false,
-        // We don't want insiders getting installed (at all).
-        // That'll break everything.
-        'python.insidersChannel': 'off',
         // We don't want extensions getting updated/installed automatically.
         'extensions.autoUpdate': false,
         'telemetry.enableCrashReporter': false,
@@ -213,6 +210,13 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
         'editor.autoClosingBrackets': 'never',
         ...additionalSettings
     };
+
+    // See logic in here https://github.com/Microsoft/vscode-python/blob/master/src/client/common/insidersBuild/insidersExtensionService.ts
+    if (opts.channel === 'insider') {
+        // We don't want insiders getting installed (at all).
+        // That'll break everything.
+        settingsToAdd['python.insidersChannel'] = 'off'
+    }
 
     // Maximize the window and reduce font size only on CI.
     if (isCI) {

@@ -216,10 +216,10 @@ const selectors: Record<Selector, { stable: string } & { insider?: string }> = {
         stable: '.quick-input-widget .quick-input-title'
     },
     [Selector.MaximizePanel]: {
-        stable: '.part.panel.bottom a.icon.maximize-panel-action'
+        stable: '.part.panel.bottom a.action-label[title="Maximize Panel Size"]'
     },
     [Selector.MinimizePanel]: {
-        stable: '.part.panel.bottom a.icon.minimize-panel-action'
+        stable: '.part.panel.bottom a.action-label[title="Restore Panel Size"]'
     },
     [Selector.IndividualLinesInOutputPanel]: {
         stable: '.part.panel.bottom .view-lines .view-line span span'

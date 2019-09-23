@@ -215,7 +215,7 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
     if (opts.channel === 'insider') {
         // We don't want insiders getting installed (at all).
         // That'll break everything.
-        settingsToAdd['python.insidersChannel'] = 'off'
+        settingsToAdd['python.insidersChannel'] = 'off';
     }
 
     // Maximize the window and reduce font size only on CI.

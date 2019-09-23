@@ -80,8 +80,8 @@ export class InsidersExtensionService implements IExtensionSingleActivationServi
     private async promptToEnrollBackToInsidersIfApplicable(installChannel: ExtensionChannels): Promise<boolean> {
         if (installChannel === 'off' && !this.extensionChannelService.isChannelUsingDefaultConfiguration) {
             // If install channel is explicitly set to off, it means that user has used the insiders program before
-            await this.insidersPrompt.promptToEnrollBackToInsiders();
-            return true;
+            // await this.insidersPrompt.promptToEnrollBackToInsiders();
+            return false;
         }
         return false;
     }
@@ -92,8 +92,8 @@ export class InsidersExtensionService implements IExtensionSingleActivationServi
      */
     private async promptToInstallInsidersIfApplicable(): Promise<boolean> {
         if (this.appEnvironment.channel === 'insiders' && !this.insidersPrompt.hasUserBeenNotified.value && this.extensionChannelService.isChannelUsingDefaultConfiguration) {
-            await this.insidersPrompt.promptToInstallInsiders();
-            return true;
+            // await this.insidersPrompt.promptToInstallInsiders();
+            return false;
         }
         return false;
     }
@@ -105,8 +105,8 @@ export class InsidersExtensionService implements IExtensionSingleActivationServi
     private async setInsidersChannelToOffIfApplicable(installChannel: ExtensionChannels): Promise<boolean> {
         if (installChannel !== 'off' && this.appEnvironment.extensionChannel === 'stable') {
             // Install channel is set to "weekly" or "daily" but stable version of extension is installed. Switch channel to "off" to use the installed version
-            await this.extensionChannelService.updateChannel('off');
-            return true;
+            // await this.extensionChannelService.updateChannel('off');
+            return false;
         }
         return false;
     }

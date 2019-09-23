@@ -139,9 +139,9 @@ steps:
     # Always dump to a text file (easier than scrolling and downloading the logs seprately).
     # This way all logs are part of the artificat for each test.
     # Passing CI_PYTHON_PATH on windows sucks, as `\` needs to be escaped. Just use env variable.
-    # npm run test -- --verbose --channel=$(VSCodeChannel) --pythonPath=$(CI_PYTHON_PATH) -- --tags='$(Tags) and not @skip' --exit | tee './.vscode test/reports/log.log'
+    # node ./out/index.js test --verbose=true --channel=$(VSCodeChannel) --pythonPath=$(CI_PYTHON_PATH) -- --tags='$(Tags) and not @skip' --exit | tee './.vscode test/reports/log.log'
     # Don't use `npm run test` (we need the exit code to propagage all the way up).
-    - bash: node ./out/index.js test --verbose --channel=$(VSCodeChannel) -- --tags='$(Tags) and not @skip'
+    - bash: node ./out/index.js test --verbose=true --channel=$(VSCodeChannel) -- --tags='$(Tags) and not @skip'
       workingDirectory: $(Build.SourcesDirectory)/uitests
       env:
           DISPLAY: :10

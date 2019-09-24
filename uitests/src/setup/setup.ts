@@ -203,6 +203,9 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
         'python.enableProcessLogging': false,
         // Minimal logging in output channel (cuz we look for specific text in output channel).
         'python.analysis.logLevel': 'Error',
+        // Disable experiments, we don't want unexpected behaviors.
+        // Experiments result in dynamic (chance) runtime behaviors.
+        'python.experiments.enabled': false,
         'debug.showInStatusBar': 'never', // Save some more room in statusbar.
         // We don't want VSC to complete the brackets.
         // When sending text to editors, such as json files, VSC will automatically complete brackets.

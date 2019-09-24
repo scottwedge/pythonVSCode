@@ -90,13 +90,12 @@ function activate(context) {
     vscode.commands.registerCommand('smoketest.viewLanguageServerOutput', async () => {
         // Keep trying until command can be executed without any errors.
         // If there are errors, this means the command hasn't (yet) been registered by the extension.
-        for (let i = 0; i < 100_000; i += 1) {
+        for (let i = 0; i < 100000; i += 1) {
             sleep(10);
-            const success = await new Promise((resolve, reject) => vscode.commands.executeCommand('python.viewLanguageServerOutput')
-                .then(resolve, reject))
+            const success = await new Promise((resolve, reject) => vscode.commands.executeCommand('python.viewLanguageServerOutput').then(resolve, reject))
                 .then(() => true)
                 .catch(() => false);
-            if (!success){
+            if (!success) {
                 continue;
             }
         }
@@ -132,8 +131,8 @@ function activate(context) {
                 setting.type === 'user'
                     ? vscode.ConfigurationTarget.Global
                     : setting.type === 'workspace'
-                        ? vscode.ConfigurationTarget.Workspace
-                        : vscode.ConfigurationTarget.WorkspaceFolder;
+                    ? vscode.ConfigurationTarget.Workspace
+                    : vscode.ConfigurationTarget.WorkspaceFolder;
 
             if (configTarget === vscode.ConfigurationTarget.WorkspaceFolder && !setting.workspaceFolder) {
                 vscode.window.showErrorMessage('Workspace Folder not defined for udpate/remove of settings');

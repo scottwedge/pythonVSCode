@@ -17,6 +17,7 @@ function activate(context) {
     const statusBarItemActivated = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     const lineColumnStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
+    // const lsOutputDisplayed = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     statusBarItem.command = 'workbench.action.quickOpen';
     statusBarItem.text = '1';
     statusBarItem.tooltip = 'Py';
@@ -25,6 +26,10 @@ function activate(context) {
     lineColumnStatusBarItem.text = '';
     lineColumnStatusBarItem.tooltip = 'PyLine';
     lineColumnStatusBarItem.show();
+    // lsOutputDisplayed.command = 'workbench.action.quickOpen';
+    // lsOutputDisplayed.text = '';
+    // lsOutputDisplayed.tooltip = 'PyLSOutputPanel';
+    // lsOutputDisplayed.show();
 
     context.subscriptions.push(statusBarItem);
     context.subscriptions.push(lineColumnStatusBarItem);
@@ -62,6 +67,7 @@ function activate(context) {
         if (activated) {
             return;
         }
+        // lsOutputDisplayed.text = '';
         const ext = vscode.extensions.getExtension('ms-python.python');
         if (!ext.isActive) {
             await ext.activate();
@@ -80,6 +86,22 @@ function activate(context) {
 
         activated = true;
         context.subscriptions.push(statusBarItemActivated);
+    });
+    vscode.commands.registerCommand('smoketest.viewLanguageServerOutput', async () => {
+        // Keep trying until command can be executed without any errors.
+        // If there are errors, this means the command hasn't (yet) been registered by the extension.
+        for (let i = 0; i < 100_000; i += 1) {
+            sleep(10);
+            const success = await new Promise((resolve, reject) => vscode.commands.executeCommand('python.viewLanguageServerOutput')
+                .then(resolve, reject))
+                .then(() => true)
+                .catch(() => false);
+            if (!success){
+                continue;
+            }
+        }
+        // lsOutputDisplayed.text = '2'
+        // lsOutputDisplayed.show();
     });
     vscode.commands.registerCommand('smoketest.runInTerminal', async () => {
         const filePath = path.join(__dirname, '..', 'commands.txt');
@@ -110,8 +132,8 @@ function activate(context) {
                 setting.type === 'user'
                     ? vscode.ConfigurationTarget.Global
                     : setting.type === 'workspace'
-                    ? vscode.ConfigurationTarget.Workspace
-                    : vscode.ConfigurationTarget.WorkspaceFolder;
+                        ? vscode.ConfigurationTarget.Workspace
+                        : vscode.ConfigurationTarget.WorkspaceFolder;
 
             if (configTarget === vscode.ConfigurationTarget.WorkspaceFolder && !setting.workspaceFolder) {
                 vscode.window.showErrorMessage('Workspace Folder not defined for udpate/remove of settings');

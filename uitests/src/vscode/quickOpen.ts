@@ -10,6 +10,13 @@ import { debug, warn } from '../helpers/logger';
 import { Selector } from '../selectors';
 import { IApplication, IQuickOpen } from '../types';
 
+// Sometimes invoking the actual command isn't exactly what we need.
+// E.g. `Show Language Server Output` in extension may not be registered, so we have a wrapper
+// in the bootstrap extension to wait until it is registered (until then it keeps invoking the command).
+const commandReplacements: Record<string, string> = {
+    'Python: Show Language Server Output': 'Smoke: Show Language Server Output Panel'
+};
+
 export class QuickOpen extends EventEmitter implements IQuickOpen {
     constructor(private readonly app: IApplication) {
         super();
@@ -66,6 +73,8 @@ export class QuickOpen extends EventEmitter implements IQuickOpen {
     }
     @retry(RetryMax30Seconds)
     private async _runCommand(command: string): Promise<void> {
+        // Use a replacement command.
+        command = commandReplacements[command] || command;
         debug(`Run command ${command}`);
         debug(' - display quick open');
         await this.open();

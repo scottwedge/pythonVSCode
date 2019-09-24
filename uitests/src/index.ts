@@ -115,9 +115,9 @@ const parsedArgs = yargs
             const pythonPath =
                 argv.pythonPath === 'python'
                     ? cp
-                        .execSync('python -c "import sys;print(sys.executable)"')
-                        .toString()
-                        .trim()
+                          .execSync('python -c "import sys;print(sys.executable)"')
+                          .toString()
+                          .trim()
                     : argv.pythonPath;
             await start(argv.channel, path.resolve(argv.destination), argv.verbose, pythonPath, cucumberArgs).catch(ex => {
                 console.error('UI Tests Failed', ex);

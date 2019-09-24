@@ -396,6 +396,7 @@ export interface IApplication {
     readonly testExplorer: ITestExplorer;
     readonly panels: IPanels;
     readonly localization: ILocalization;
+    readonly shideBar: ISideBar;
     /**
      * Starts VS Code.
      *
@@ -456,6 +457,17 @@ export interface IApplication {
 
 export interface IDisposable {
     dispose(): void;
+}
+/**
+ * Manages the Sidebar
+ *
+ * @export
+ * @interface ISidebar
+ */
+export interface ISideBar {
+    isVisible(): Promise<boolean>;
+    show(): Promise<void>;
+    hide(): Promise<void>;
 }
 /**
  * Quick Input dropdown UI.
@@ -527,6 +539,7 @@ export interface IDocuments {
     waitUntilFileOpened(fileName: string): Promise<void>;
     isExplorerViewOpen(): Promise<boolean>;
     waitUntilExplorerViewOpened(): Promise<void>;
+    waitUntilExplorerViewHidden(): Promise<void>;
     refreshExplorer(): Promise<void>;
     gotToPosition(options: { line: number } | { column?: number } | { line: number; column: number }): Promise<void>;
     waitForPosition(options: { line: number }): Promise<void>;

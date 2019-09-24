@@ -41,6 +41,11 @@ export class Documents implements IDocuments {
     public async waitUntilExplorerViewOpened(): Promise<void> {
         await this.app.driver.$(this.app.getCSSSelector(Selector.ExplorerActivityBar));
     }
+    @retry(RetryMax5Seconds)
+    public async waitUntilExplorerViewHidden(): Promise<void> {
+        const isVisible = await this.isExplorerViewOpen();
+        assert.ok(!isVisible);
+    }
     public async refreshExplorer(): Promise<void> {
         // Check what explorer is currently visible
         let commandToRunAfterRefreshingExplorer: string | undefined;

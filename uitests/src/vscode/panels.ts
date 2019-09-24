@@ -31,6 +31,10 @@ export class Panels implements IPanels {
     }
     public async waitUtilContent(text: string, timeoutSeconds: number = 10) {
         await this.maximize();
+        // Hide the side bar to enure contents in output panels do not wrap.
+        // If they wrap, the contents could scroll, meaning they aren't visible (not rendered in HTML).
+        // We want them visible so we can use the dom queries to check the contents.
+        await this.app.shideBar.hide();
         const selector = this.app.getCSSSelector(Selector.IndividualLinesInOutputPanel);
         debug(`Look for the content '${text} in the panel ${selector}`);
         try {
@@ -55,6 +59,8 @@ export class Panels implements IPanels {
             };
             await retryWrapper({ timeout: timeoutSeconds * 1000 }, checkOutput);
         } finally {
+            // Restore.
+            await this.app.shideBar.show();
             await this.minimize();
         }
     }

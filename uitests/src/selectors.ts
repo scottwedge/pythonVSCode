@@ -133,6 +133,10 @@ export enum Selector {
      */
     'TestExplorerToolbarcon',
     /**
+     * Selector for Side bar.
+     */
+    'SideBar',
+    /**
      * Selector for a node in the test explorer.
      */
     'TestExplorerNode',
@@ -280,6 +284,9 @@ const selectors: Record<Selector, { stable: string } & { insider?: string }> = {
     },
     [Selector.TestExplorerToolbarcon]: {
         stable: "div[id='workbench.parts.sidebar'] .action-item a[title='{0}']"
+    },
+    [Selector.SideBar]: {
+        stable: "div[id='workbench.parts.sidebar']"
     },
     [Selector.NthTestExplorerNodeLabel]: {
         stable: 'div[id="workbench.view.extension.test"] div.monaco-tree-row:nth-child({0}) a.label-name'

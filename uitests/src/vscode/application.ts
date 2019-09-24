@@ -23,6 +23,7 @@ import {
     IQuickInput,
     IQuickOpen,
     ISettings,
+    ISideBar,
     IStatusBar,
     ITerminal,
     ITestExplorer,
@@ -38,6 +39,7 @@ import { Problems } from './problems';
 import { QuickInput } from './quickInput';
 import { QuickOpen } from './quickOpen';
 import { Settings } from './settings';
+import { SideBar } from './sideBar';
 import { StatusBar } from './statusbar';
 import { TestExplorer } from './testExplorer';
 
@@ -55,6 +57,7 @@ export class Application extends EventEmitter implements IApplication {
     public readonly testExplorer!: ITestExplorer;
     public readonly panels!: IPanels;
     public readonly localization!: ILocalization;
+    public readonly shideBar!: ISideBar;
     get isAlive(): boolean {
         return this._driver.isAlive;
     }
@@ -93,6 +96,7 @@ export class Application extends EventEmitter implements IApplication {
         this.panels = new Panels(this);
         this.problems = new Problems(this);
         this.localization = new Localization(this);
+        this.shideBar = new SideBar(this);
         this.registerPostCommandHandlers();
     }
     public async start(emulateFirstTimeLoad: boolean = false): Promise<void> {

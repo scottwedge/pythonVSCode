@@ -8,10 +8,12 @@
 import * as fs from 'fs-extra';
 import ProgressBar from 'progress';
 import * as request from 'request';
+import { debug } from './logger';
 const progress = require('request-progress');
 const progressBar = require('progress') as typeof ProgressBar;
 
 export async function downloadFile(url: string, targetFile: string, downloadMessage = 'Downloading') {
+    debug(`Downloading ${url} as ${targetFile}`);
     return new Promise<void>((resolve, reject) => {
         const bar = new progressBar(`${downloadMessage} [:bar]`, {
             complete: '=',

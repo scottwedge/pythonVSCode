@@ -1,6 +1,7 @@
 @ls
 @code:code/languageServer/basic
 Feature: Language Server
+    @smoke
     Scenario Outline: When <reload_or_start_vs_for_first_time> with Jedi <jedi_enable>d then output contains <text_in_output_panel>
         When <reload_or_start_vs_for_first_time>
         And I <jedi_enable> the workspace setting "python.jediEnabled"
@@ -16,7 +17,7 @@ Feature: Language Server
             | disable     | I open VS Code for the first time | 120              | Downloading                      | Python: Show Language Server Output |
             | disable     | I reload VS Code                  | 120              | Microsoft Python language server | Python: Show Output                 |
 
-    @autoretry
+    @autoretry @smoke
     Scenario Outline: When <reload_or_start_vs_for_first_time> with Jedi <jedi_enable>d then navigate to definition of a variable
         When <reload_or_start_vs_for_first_time>
         And I <jedi_enable> the workspace setting "python.jediEnabled"
@@ -40,7 +41,7 @@ Feature: Language Server
             | disable     | I open VS Code for the first time | 120              | Downloading                      | Python: Show Language Server Output |
             | disable     | I reload VS Code                  | 120              | Microsoft Python language server | Python: Show Output                 |
 
-    @autoretry
+    @autoretry  @smoke
     Scenario Outline: When I open VS Code for the first time with Jedi <jedi_enable>d, open a file then navigate to definition of a variable
         When I open VS Code for the first time
         And I <jedi_enable> the workspace setting "python.jediEnabled"

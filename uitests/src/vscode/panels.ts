@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { noop, retryWrapper, sleep } from '../helpers';
+import { retryWrapper, sleep } from '../helpers';
 import '../helpers/extensions';
 import { debug } from '../helpers/logger';
 import { Selector } from '../selectors';
@@ -13,21 +13,27 @@ export class Panels implements IPanels {
     constructor(private readonly app: IApplication) {}
     public async maximize(): Promise<void> {
         debug('Maximize panels');
-        await this.app.driver
-            .click(this.app.getCSSSelector(Selector.MaximizePanel))
-            // Wait for some time for click to take affect.
-            .then(() => sleep(500))
-            // Ignore Errors.
-            .catch(noop);
+        await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
+        // Wait for some time for click to take affect.
+        await sleep(500);
+        // await this.app.driver
+        //     .click(this.app.getCSSSelector(Selector.MaximizePanel))
+        //     // Wait for some time for click to take affect.
+        //     .then(() => sleep(500))
+        //     // Ignore Errors.
+        //     .catch(noop);
     }
     public async minimize(): Promise<void> {
         debug('Minimize panels');
-        await this.app.driver
-            .click(this.app.getCSSSelector(Selector.MinimizePanel))
-            // Wait for some time for click to take affect.
-            .then(() => sleep(500))
-            // Ignore Errors.
-            .catch(noop);
+        await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
+        // Wait for some time for click to take affect.
+        await sleep(500);
+        // await this.app.driver
+        //     .click(this.app.getCSSSelector(Selector.MinimizePanel))
+        //     // Wait for some time for click to take affect.
+        //     .then(() => sleep(500))
+        //     // Ignore Errors.
+        //     .catch(noop);
     }
     public async waitUtilContent(text: string, timeoutSeconds: number = 10) {
         await this.app.captureScreenshot('Step1');

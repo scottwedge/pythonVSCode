@@ -16,7 +16,6 @@ export class Panels implements IPanels {
             return;
         }
         debug('Maximize panels');
-        // Simpler more effective way.
         if (this.app.channel === 'insider') {
             await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
         } else {

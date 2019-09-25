@@ -211,6 +211,13 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
         // When sending text to editors, such as json files, VSC will automatically complete brackets.
         //And that messes up with the text thats being sent to the editor.
         'editor.autoClosingBrackets': 'never',
+        'editor.autoClosingOvertype': 'never',
+        'editor.autoClosingQuotes': 'never',
+        // We need more realestate.
+        'editor.minimap.enabled': false,
+        // We don't want any surprises.
+        'extensions.autoCheckUpdates': false,
+        'update.mode': 'none',
         ...additionalSettings
     };
 

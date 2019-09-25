@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { retryWrapper, sleep } from '../helpers';
+import { noop, retryWrapper, sleep } from '../helpers';
 import '../helpers/extensions';
 import { debug } from '../helpers/logger';
 import { Selector } from '../selectors';
@@ -16,18 +16,33 @@ export class Panels implements IPanels {
             return;
         }
         debug('Maximize panels');
-        await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
-        // Wait for some time for click to take affect.
-        await sleep(500);
+        // Simpler more effective way.
+        if (this.app.channel === 'insider') {
+            await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
+        } else {
+            await this.app.driver
+                .click(this.app.getCSSSelector(Selector.MaximizePanel))
+                // Wait for some time for click to take affect.
+                .then(() => sleep(500))
+                // Ignore Errors.
+                .catch(noop);
+        }
     }
     public async minimize(): Promise<void> {
         if (!(await this.isMaximized())) {
             return;
         }
         debug('Minimize panels');
-        await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
-        // Wait for some time for click to take affect.
-        await sleep(500);
+        if (this.app.channel === 'insider') {
+            await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
+        } else {
+            await this.app.driver
+                .click(this.app.getCSSSelector(Selector.MinimizePanel))
+                // Wait for some time for click to take affect.
+                .then(() => sleep(500))
+                // Ignore Errors.
+                .catch(noop);
+        }
     }
     public async waitUtilContent(text: string, timeoutSeconds: number = 10) {
         await this.app.captureScreenshot('Step1');

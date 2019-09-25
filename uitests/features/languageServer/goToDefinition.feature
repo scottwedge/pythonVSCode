@@ -7,6 +7,7 @@ Feature: Language Server
         And I <jedi_enable> the workspace setting "python.jediEnabled"
         And I wait for the Python extension to activate
         And I select the command "<output_panel_command>"
+        Then take a screenshot
         Then the text "<text_in_output_panel>" will be displayed in the output panel within <time_to_activate> seconds
 
         Examples:
@@ -23,6 +24,7 @@ Feature: Language Server
         And I <jedi_enable> the workspace setting "python.jediEnabled"
         And I wait for the Python extension to activate
         And I select the command "<output_panel_command>"
+        Then take a screenshot
         Then the text "<text_in_output_panel>" will be displayed in the output panel within <time_to_activate> seconds
         # Because LS is slow.
         And wait for <time_to_activate> seconds

@@ -12,28 +12,22 @@ import { IApplication, IPanels } from '../types';
 export class Panels implements IPanels {
     constructor(private readonly app: IApplication) {}
     public async maximize(): Promise<void> {
+        if (await this.isMaximized()) {
+            return;
+        }
         debug('Maximize panels');
         await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
         // Wait for some time for click to take affect.
         await sleep(500);
-        // await this.app.driver
-        //     .click(this.app.getCSSSelector(Selector.MaximizePanel))
-        //     // Wait for some time for click to take affect.
-        //     .then(() => sleep(500))
-        //     // Ignore Errors.
-        //     .catch(noop);
     }
     public async minimize(): Promise<void> {
+        if (!(await this.isMaximized())) {
+            return;
+        }
         debug('Minimize panels');
         await this.app.quickopen.runCommand('View: Toggle Maximized Panel');
         // Wait for some time for click to take affect.
         await sleep(500);
-        // await this.app.driver
-        //     .click(this.app.getCSSSelector(Selector.MinimizePanel))
-        //     // Wait for some time for click to take affect.
-        //     .then(() => sleep(500))
-        //     // Ignore Errors.
-        //     .catch(noop);
     }
     public async waitUtilContent(text: string, timeoutSeconds: number = 10) {
         await this.app.captureScreenshot('Step1');
@@ -73,5 +67,11 @@ export class Panels implements IPanels {
             await this.minimize();
             await this.app.captureScreenshot('Step8');
         }
+    }
+    private isMaximized(): Promise<boolean> {
+        return this.app.driver
+            .$(this.app.getCSSSelector(Selector.MaximizePanel))
+            .then(() => false)
+            .catch(() => true);
     }
 }

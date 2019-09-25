@@ -11,7 +11,6 @@ Feature: Statusbar
     Scenario: Interpreter is displayed in the statusbar when the extension is activated
         When the Python extension has activated
         Then the python the status bar contains the text "Python"
-        And take a screenshot
 
     @python2
     Scenario: Can select a Python 2.7 interpreter and the statusbar will be updated accordingly
@@ -19,7 +18,6 @@ Feature: Statusbar
         When I select the Python Interpreter containing the text "2.7"
         Then the python the status bar contains the text "2.7"
         And the python the status bar does not contain the text "3."
-        And take a screenshot
 
     @python3
     Scenario: Can select a Python 3. interpreter and the statusbar will be updated accordingly
@@ -27,7 +25,6 @@ Feature: Statusbar
         When I select the Python Interpreter containing the text "3."
         Then the python the status bar contains the text "3."
         And the python the status bar does not contain the text "2.7"
-        And take a screenshot
 
     @python2 @python3
     Scenario: Can switch between 2.7 and 3.* interpreters and the statusbar will be updated accordingly
@@ -38,4 +35,3 @@ Feature: Statusbar
         When I select the Python Interpreter containing the text "3."
         Then the python the status bar contains the text "3."
         And the python the status bar does not contain the text "2.7"
-        And take a screenshot

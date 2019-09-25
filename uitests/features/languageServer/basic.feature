@@ -12,7 +12,7 @@ Feature: Language Server
             | jedi_enable | time_to_activate | first_text_in_ooutput_panel      |
             | enable      | 10               | Jedi Python language engine      |
             | disable     | 120              | Microsoft Python language server |
-     @smoke
+
     Scenario Outline: Language Server is downloaded with http.proxyStrictSSL setting <enabled_disabled>
         When I open VS Code for the first time
         And I disable the workspace setting "python.jediEnabled"
@@ -29,7 +29,7 @@ Feature: Language Server
             | enabled          | https://             |
             | disabled         | http://              |
 
-    @autoretry @smoke
+    @autoretry
     Scenario Outline: Navigate to definition of a variable when extension has already been activated with Jedi <jedi_enable>d
         When I reload VS Code
         And I <jedi_enable> the workspace setting "python.jediEnabled"

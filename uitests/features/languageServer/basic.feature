@@ -1,6 +1,7 @@
 @ls
 @code:code/languageServer/basic
 Feature: Language Server
+    @smoke
     Scenario Outline: Check output of 'Python' output panel when starting VS Code with Jedi <jedi_enable>d
         When I <jedi_enable> the workspace setting "python.jediEnabled"
         And I wait for the Python extension to activate
@@ -11,7 +12,7 @@ Feature: Language Server
             | jedi_enable | time_to_activate | first_text_in_ooutput_panel      |
             | enable      | 10               | Jedi Python language engine      |
             | disable     | 120              | Microsoft Python language server |
-
+     @smoke
     Scenario Outline: Language Server is downloaded with http.proxyStrictSSL setting <enabled_disabled>
         When I open VS Code for the first time
         And I disable the workspace setting "python.jediEnabled"

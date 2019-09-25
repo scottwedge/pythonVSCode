@@ -50,6 +50,7 @@ Feature: Language Server
         And I select the command "Python: Show Output"
         And I wait for the Python extension to activate
         And I open the file "my_sample.py"
+        And I select the command "<output_panel_command>"
         Then the text "<text_in_output_panel>" will be displayed in the output panel within <time_to_activate> seconds
         # Because LS is slow.
         And wait for <time_to_activate> seconds

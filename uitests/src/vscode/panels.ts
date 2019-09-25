@@ -30,11 +30,14 @@ export class Panels implements IPanels {
             .catch(noop);
     }
     public async waitUtilContent(text: string, timeoutSeconds: number = 10) {
+        await this.app.captureScreenshot('Step1');
         await this.maximize();
+        await this.app.captureScreenshot('Step2');
         // Hide the side bar to enure contents in output panels do not wrap.
         // If they wrap, the contents could scroll, meaning they aren't visible (not rendered in HTML).
         // We want them visible so we can use the dom queries to check the contents.
         await this.app.shideBar.hide();
+        await this.app.captureScreenshot('Step3');
         const selector = this.app.getCSSSelector(Selector.IndividualLinesInOutputPanel);
         debug(`Look for the content '${text} in the panel ${selector}`);
         try {
@@ -51,17 +54,22 @@ export class Panels implements IPanels {
                         .toLowerCase()
                         .includes(text.toLowerCase())
                 ) {
+                    await this.app.captureScreenshot('Step4');
                     return Promise.resolve();
                 }
 
                 debug('Content not found');
+                await this.app.captureScreenshot('Step5');
                 return Promise.reject(new Error(`Message '${text}' not found in Output Panel: [${output}]`));
             };
             await retryWrapper({ timeout: timeoutSeconds * 1000 }, checkOutput);
         } finally {
+            await this.app.captureScreenshot('Step6');
             // Restore.
             await this.app.shideBar.show();
+            await this.app.captureScreenshot('Step7');
             await this.minimize();
+            await this.app.captureScreenshot('Step8');
         }
     }
 }

@@ -17,7 +17,6 @@ function activate(context) {
     const statusBarItemActivated = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     const lineColumnStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
-    // const lsOutputDisplayed = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10000000);
     statusBarItem.command = 'workbench.action.quickOpen';
     statusBarItem.text = '1';
     statusBarItem.tooltip = 'Py';
@@ -26,10 +25,6 @@ function activate(context) {
     lineColumnStatusBarItem.text = '';
     lineColumnStatusBarItem.tooltip = 'PyLine';
     lineColumnStatusBarItem.show();
-    // lsOutputDisplayed.command = 'workbench.action.quickOpen';
-    // lsOutputDisplayed.text = '';
-    // lsOutputDisplayed.tooltip = 'PyLSOutputPanel';
-    // lsOutputDisplayed.show();
 
     context.subscriptions.push(statusBarItem);
     context.subscriptions.push(lineColumnStatusBarItem);
@@ -46,9 +41,6 @@ function activate(context) {
     let interval = undefined;
     function monitorEditor() {
         clearInterval(interval);
-        // if (!vscode.window.activeTextEditor) {
-        //     return;
-        // }
         interval = setInterval(() => {
             if (vscode.window.activeTextEditor) {
                 try {
@@ -99,8 +91,6 @@ function activate(context) {
                 continue;
             }
         }
-        // lsOutputDisplayed.text = '2'
-        // lsOutputDisplayed.show();
     });
     vscode.commands.registerCommand('smoketest.runInTerminal', async () => {
         const filePath = path.join(__dirname, '..', 'commands.txt');

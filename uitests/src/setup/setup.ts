@@ -64,7 +64,7 @@ export class TestOptions implements ITestOptions {
         this._workspacePathOrFolder = path.join(this.tempPath, 'workspace folder');
     }
     /**
-     * Initialize paths for the tests.
+     * Initialize environment for the tests.
      *
      * @memberof TestOptions
      */
@@ -88,6 +88,8 @@ export class TestOptions implements ITestOptions {
         // Ensure PTVSD logs are in the reports directory,
         // This way they are available for analyzing.
         process.env.PTVSD_LOG_DIR = this.logsPath;
+        // Disable Insiders in UI Tests for now.
+        process.env.UITEST_DISABLE_INSIDERS = 'true';
     }
     /**
      * Update the options for the tests based on the provided scenario.
@@ -102,16 +104,6 @@ export class TestOptions implements ITestOptions {
         const location = scenario.pickle.locations[0].line;
         this._reportsPath = path.join(this.rootReportsPath, `${scenario.pickle.name}:${location}:_${TestOptions.workspaceCounter}`.replace(/[^a-z0-9\-]/gi, '_'));
         this._workspacePathOrFolder = path.join(this.tempPath, `workspace folder${(TestOptions.workspaceCounter += 1)}`);
-        // await Promise.all([
-        //     fs.ensureDir(scenarioLogsPath),
-        //     fs.emptyDir(this.tempPath).catch(warn.bind(warn, 'Failed to empty temp dir in updateForScenario')),
-        //     fs.emptyDir(this._workspacePathOrFolder).catch(noop)
-        // ]);
-        // await fs.ensureDir(this._workspacePathOrFolder);
-        // process.env.VSC_PYTHON_LOG_FILE = path.join(scenarioLogsPath, 'pvsc.log');
-        // // Ensure PTVSD logs are in the reports directory,
-        // // This way they are available for analyzing.
-        // process.env.PTVSD_LOG_DIR = scenarioLogsPath;
         await this.initilize();
     }
     public udpateWorkspaceFolder(workspaceFolder: string) {

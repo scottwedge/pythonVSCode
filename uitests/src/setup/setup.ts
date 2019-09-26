@@ -88,6 +88,9 @@ export class TestOptions implements ITestOptions {
         // Ensure PTVSD logs are in the reports directory,
         // This way they are available for analyzing.
         process.env.PTVSD_LOG_DIR = this.logsPath;
+        // Disable process logging (src/client/common/process/logger.ts).
+        // Minimal logging in output channel (cuz we look for specific text in output channel).
+        process.env.UITEST_DISABLE_PROCESS_LOGGING = 'true';
         // Disable Insiders in UI Tests for now.
         process.env.UITEST_DISABLE_INSIDERS = 'true';
     }
@@ -190,9 +193,6 @@ async function initializeDefaultUserSettings(opts: ITestOptions, additionalSetti
         'telemetry.enableCrashReporter': false,
         // Download latest (upon first load), do not update while tests are running.
         'python.autoUpdateLanguageServer': false,
-        // Disable process logging (src/client/common/process/logger.ts).
-        // Minimal logging in output channel (cuz we look for specific text in output channel).
-        'python.enableProcessLogging': false,
         // Minimal logging in output channel (cuz we look for specific text in output channel).
         'python.analysis.logLevel': 'Error',
         // Disable experiments, we don't want unexpected behaviors.

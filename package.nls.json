@@ -368,5 +368,6 @@
     "DataScience.untitledNotebookYes": "Save",
     "DataScience.untitledNotebookNo": "Cancel",
     "DataScience.noInterpreter" : "No python selected",
-    "DataScience.notebookNotFound" : "python -m jupyter notebook --version is not running"
+    "DataScience.notebookNotFound" : "python -m jupyter notebook --version is not running",
+    "DataScience.findJupyterCommandProgress" : "Active interpreter does not support {0}. Searching for the best available interpreter."
 }

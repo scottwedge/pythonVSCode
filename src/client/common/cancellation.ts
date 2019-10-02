@@ -42,6 +42,7 @@ export function createPromiseFromCancellation<T>(options: { defaultValue: T; tok
         options.token.onCancellationRequested(complete);
     });
 }
+
 /**
  * Create a single unified cancellation token that wraps multiple cancellation tokens.
  *

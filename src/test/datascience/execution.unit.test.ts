@@ -95,7 +95,7 @@ class MockJupyterNotebook implements INotebook {
     public waitForIdle(): Promise<void> {
         throw new Error('Method not implemented');
     }
-    public setInitialDirectory(_directory: string): Promise<void> {
+    public setLaunchingFile(_file: string): Promise<void> {
         throw new Error('Method not implemented');
     }
 

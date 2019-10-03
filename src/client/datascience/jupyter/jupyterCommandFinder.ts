@@ -199,7 +199,7 @@ export class JupyterCommandFinder {
         }
 
         // Display a progress message when searching, as this could take a while.
-        if (found.status === ModuleExistsStatus.NotFound && (this.supportsSearchingForCommands() || this.supportsSearchingForCommands())) {
+        if (found.status === ModuleExistsStatus.NotFound && this.supportsSearchingForCommands()) {
             // Display a progress message and allow user to cancel searching.
             // If searching has been called from a calling code, then dismiss the progress message by resolving the search.
             const options: ProgressOptions = {
@@ -219,7 +219,7 @@ export class JupyterCommandFinder {
                 }
 
                 // If still not found, try looking on the path using jupyter
-                if (found.status === ModuleExistsStatus.NotFound && this.supportsSearchingForCommands()) {
+                if (found.status === ModuleExistsStatus.NotFound) {
                     progress.report({ message: localize.DataScience.findJupyterCommandProgressSearchCurrentPath() });
                     found = await this.findPathCommand(command, cancelToken);
                 }

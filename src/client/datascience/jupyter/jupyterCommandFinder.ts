@@ -210,9 +210,7 @@ export class JupyterCommandFinder {
             found = await this.appShell.withProgress<IFindCommandResult>(options, async (progress, token) => {
                 cancelToken = wrapCancellationTokens(cancelToken, token);
 
-                if (this.supportsSearchingForCommands()) {
-                    found = await this.searchOtherInterpretersForCommand(command, progress, current, cancelToken);
-                }
+                found = await this.searchOtherInterpretersForCommand(command, progress, current, cancelToken);
 
                 if (isCommandFinderCancelled(command, cancelToken)) {
                     return cancelledResult;

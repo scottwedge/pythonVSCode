@@ -4,7 +4,7 @@
 'use strict';
 
 import * as path from 'path';
-import { CancellationToken, ProgressLocation, ProgressOptions } from 'vscode';
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions } from 'vscode';
 import { IApplicationShell, IWorkspaceService } from '../../common/application/types';
 import { Cancellation, createPromiseFromCancellation, wrapCancellationTokens } from '../../common/cancellation';
 import { traceInfo, traceWarning } from '../../common/logger';
@@ -45,6 +45,9 @@ function isCommandFinderCancelled(command: JupyterCommands, token?: Cancellation
     }
     return false;
 }
+
+type ProgressNotification = Progress<{ message?: string | undefined; increment?: number | undefined }>;
+
 export class JupyterCommandFinder {
     private readonly processServicePromise: Promise<IProcessService>;
     private jupyterPath?: string;
@@ -194,13 +197,35 @@ export class JupyterCommandFinder {
             // Save our error information. This should propagate out as the error information for the command
             firstError = found.error;
         }
-        if (found.status === ModuleExistsStatus.NotFound && this.supportsSearchingForCommands()) {
-            found = await this.searchOtherInterpretersForCommand(command, current, cancelToken);
-        }
 
-        // If still not found, try looking on the path using jupyter
-        if (found.status === ModuleExistsStatus.NotFound && this.supportsSearchingForCommands()) {
-            found = await this.findPathCommand(command, cancelToken);
+        // Display a progress message when searching, as this could take a while.
+        if (found.status === ModuleExistsStatus.NotFound && (this.supportsSearchingForCommands() || this.supportsSearchingForCommands())) {
+            // Display a progress message and allow user to cancel searching.
+            // If searching has been called from a calling code, then dismiss the progress message by resolving the search.
+            const options: ProgressOptions = {
+                cancellable: true,
+                location: ProgressLocation.Notification,
+                title: localize.DataScience.findJupyterCommandProgress().format(command)
+            };
+            found = await this.appShell.withProgress<IFindCommandResult>(options, async (progress, token) => {
+                cancelToken = wrapCancellationTokens(cancelToken, token);
+
+                if (this.supportsSearchingForCommands()) {
+                    found = await this.searchOtherInterpretersForCommand(command, progress, current, cancelToken);
+                }
+
+                if (isCommandFinderCancelled(command, cancelToken)) {
+                    return cancelledResult;
+                }
+
+                // If still not found, try looking on the path using jupyter
+                if (found.status === ModuleExistsStatus.NotFound && this.supportsSearchingForCommands()) {
+                    progress.report({ message: localize.DataScience.findJupyterCommandProgressSearchCurrentPath() });
+                    found = await this.findPathCommand(command, cancelToken);
+                }
+
+                return found;
+            });
         }
 
         // Set the original error so we
@@ -212,81 +237,75 @@ export class JupyterCommandFinder {
         return found;
     }
 
-    private async searchOtherInterpretersForCommand(command: JupyterCommands, current?: PythonInterpreter, cancelToken?: CancellationToken): Promise<IFindCommandResult> {
-        // Display a progress message and allow user to cancel searching.
-        // If searching has been called from a calling code, then dismiss the progress message by resolving the search.
-        const options: ProgressOptions = {
-            cancellable: true,
-            location: ProgressLocation.Notification,
-            title: localize.DataScience.findJupyterCommandProgress().format(command)
+    private async searchOtherInterpretersForCommand(
+        command: JupyterCommands,
+        progress: ProgressNotification,
+        current?: PythonInterpreter,
+        cancelToken?: CancellationToken
+    ): Promise<IFindCommandResult> {
+        let found: IFindCommandResult = {
+            status: ModuleExistsStatus.NotFound
         };
-        return this.appShell.withProgress<IFindCommandResult>(options, async (progress, token) => {
-            cancelToken = wrapCancellationTokens(cancelToken, token);
 
-            let found: IFindCommandResult = {
-                status: ModuleExistsStatus.NotFound
-            };
+        // Look through all of our interpreters (minus the active one at the same time)
+        const cancelGetInterpreters = createPromiseFromCancellation<PythonInterpreter[]>({ defaultValue: [], cancelAction: 'resolve', token: cancelToken });
+        const all = await Promise.race([this.interpreterService.getInterpreters(), cancelGetInterpreters]);
 
-            // Look through all of our interpreters (minus the active one at the same time)
-            const cancelGetInterpreters = createPromiseFromCancellation<PythonInterpreter[]>({ defaultValue: [], cancelAction: 'resolve', token: cancelToken });
-            const all = await Promise.race([this.interpreterService.getInterpreters(), cancelGetInterpreters]);
+        if (isCommandFinderCancelled(command, cancelToken)) {
+            return cancelledResult;
+        }
 
-            if (isCommandFinderCancelled(command, cancelToken)) {
-                return cancelledResult;
-            }
+        if (!all || all.length === 0) {
+            traceWarning('No interpreters found. Jupyter cannot run.');
+        }
 
-            if (!all || all.length === 0) {
-                traceWarning('No interpreters found. Jupyter cannot run.');
-            }
+        const cancelFind = createPromiseFromCancellation<IFindCommandResult[]>({ defaultValue: [], cancelAction: 'resolve', token: cancelToken });
+        const promises = all.filter(i => i !== current).map(i => this.findInterpreterCommand(command, i, cancelToken));
+        const foundList = await Promise.race([Promise.all(promises), cancelFind]);
 
-            const cancelFind = createPromiseFromCancellation<IFindCommandResult[]>({ defaultValue: [], cancelAction: 'resolve', token: cancelToken });
-            const promises = all.filter(i => i !== current).map(i => this.findInterpreterCommand(command, i, cancelToken));
-            const foundList = await Promise.race([Promise.all(promises), cancelFind]);
+        if (isCommandFinderCancelled(command, cancelToken)) {
+            return cancelledResult;
+        }
 
-            if (isCommandFinderCancelled(command, cancelToken)) {
-                return cancelledResult;
-            }
-
-            // Then go through all of the found ones and pick the closest python match
-            if (current && current.version) {
-                let bestScore = -1;
-                for (const entry of foundList) {
-                    let currentScore = 0;
-                    if (!entry || !entry.command) {
-                        continue;
-                    }
-                    const interpreter = await entry.command.interpreter();
-                    if (isCommandFinderCancelled(command, cancelToken)) {
-                        return cancelledResult;
-                    }
-                    // Keep the progress message ticking with list of interpreters that are searched.
-                    if (interpreter && interpreter.displayName) {
-                        progress.report({ message: `Checking ${interpreter.displayName}` });
-                    }
-                    const version = interpreter ? interpreter.version : undefined;
-                    if (version) {
-                        if (version.major === current.version.major) {
-                            currentScore += 4;
-                            if (version.minor === current.version.minor) {
-                                currentScore += 2;
-                                if (version.patch === current.version.patch) {
-                                    currentScore += 1;
-                                }
+        // Then go through all of the found ones and pick the closest python match
+        if (current && current.version) {
+            let bestScore = -1;
+            for (const entry of foundList) {
+                let currentScore = 0;
+                if (!entry || !entry.command) {
+                    continue;
+                }
+                const interpreter = await entry.command.interpreter();
+                if (isCommandFinderCancelled(command, cancelToken)) {
+                    return cancelledResult;
+                }
+                // Keep the progress message ticking with list of interpreters that are searched.
+                if (interpreter && interpreter.displayName) {
+                    progress.report({ message: localize.DataScience.findJupyterCommandProgressCheckInterpreter().format(interpreter.displayName) });
+                }
+                const version = interpreter ? interpreter.version : undefined;
+                if (version) {
+                    if (version.major === current.version.major) {
+                        currentScore += 4;
+                        if (version.minor === current.version.minor) {
+                            currentScore += 2;
+                            if (version.patch === current.version.patch) {
+                                currentScore += 1;
                             }
                         }
                     }
-                    if (currentScore > bestScore) {
-                        found = entry;
-                        bestScore = currentScore;
-                    }
                 }
-            } else {
-                // Just pick the first one
-                found = foundList.find(f => f.status !== ModuleExistsStatus.NotFound) || found;
+                if (currentScore > bestScore) {
+                    found = entry;
+                    bestScore = currentScore;
+                }
             }
+        } else {
+            // Just pick the first one
+            found = foundList.find(f => f.status !== ModuleExistsStatus.NotFound) || found;
+        }
 
-            return found;
-        });
+        return found;
     }
     private async doesModuleExist(moduleName: string, interpreter: PythonInterpreter, cancelToken?: CancellationToken): Promise<IModuleExistsResult> {
         const result: IModuleExistsResult = {

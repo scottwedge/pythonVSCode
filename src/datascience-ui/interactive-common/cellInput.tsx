@@ -16,7 +16,7 @@ import { ICellViewModel, IFont } from './mainState';
 import { Markdown } from './markdown';
 
 // tslint:disable-next-line: no-require-importss
-interface ICellInputProps {
+export interface ICellInputProps {
     cellVM: ICellViewModel;
     codeTheme: string;
     testMode?: boolean;
@@ -63,8 +63,11 @@ export class CellInput extends React.Component<ICellInputProps> {
 
     public giveFocus() {
         // This depends upon what type of cell we are.
+        console.log('give focus in cellInput');
         if (this.props.cellVM.cell.data.cell_type === 'code') {
+            console.log('give focus in cellInput for code');
             if (this.codeRef.current) {
+                console.log('give focus in cellInput for code working');
                 this.codeRef.current.giveFocus();
             }
         } else {

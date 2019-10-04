@@ -48,7 +48,7 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
 
     constructor(props: INativeEditorProps) {
         super(props);
-
+        // console.log(`Ctir ${JSON.stringify(props)}`);
         // Create our state controller. It manages updating our state.
         this.stateController = new NativeEditorStateController({
             skipDefault: this.props.skipDefault,
@@ -362,6 +362,7 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
     // }
 
     private renderCell = (cellVM: ICellViewModel, index: number): JSX.Element | null => {
+        console.log(`Rendering a cell ${cellVM.cell.id}`);
         const cellRef : React.RefObject<NativeCell> = React.createRef<NativeCell>();
         const containerRef = React.createRef<HTMLDivElement>();
         this.cellRefs.set(cellVM.cell.id, cellRef);

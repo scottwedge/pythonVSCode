@@ -58,7 +58,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
 
     public render() {
         if (this.props.cellVM.cell.data.cell_type === 'messages') {
-            return <InformationMessages messages={this.props.cellVM.cell.data.messages} type={this.props.cellVM.cell.type}/>;
+            return <InformationMessages messages={this.props.cellVM.cell.data.messages} type={this.props.cellVM.cell.type} />;
         } else {
             return this.renderNormalCell();
         }
@@ -76,15 +76,18 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
     public giveFocus(giveCodeFocus: boolean) {
         // Start out with ourselves
         if (this.wrapperRef && this.wrapperRef.current) {
+            console.log('focuse4d');
             this.wrapperRef.current.focus();
         }
         // Then attempt to move into the object
         if (giveCodeFocus) {
             if (this.inputRef && this.inputRef.current) {
+                console.log('giveFocus');
                 this.inputRef.current.giveFocus();
             }
             if (this.isMarkdownCell()) {
-                this.setState({showingMarkdownEditor: true});
+                console.log('setState');
+                this.setState({ showingMarkdownEditor: true });
             }
         }
     }
@@ -147,38 +150,47 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         if (this.isFocused()) {
             cellWrapperClass += ' cell-wrapper-focused';
         }
-
+        console.log(`cellWrapperClass for ${this.cellId} = ${cellWrapperClass}`);
         // Content changes based on if a markdown cell or not.
-        const content = this.isMarkdownCell() && !this.state.showingMarkdownEditor ?
-            <div className='cell-result-container'>
-                <div className='cell-row-container'>
-                    {this.renderCollapseBar(false)}
-                    {this.renderOutput()}
-                    {this.renderMiddleToolbar()}
+        const content =
+            this.isMarkdownCell() && !this.state.showingMarkdownEditor ? (
+                <div className='cell-result-container'>
+                    <div className='cell-row-container'>
+                        {this.renderCollapseBar(false)}
+                        {this.renderOutput()}
+                        {this.renderMiddleToolbar()}
+                    </div>
+                    {this.renderAddDivider(false)}
                 </div>
-                {this.renderAddDivider(false)}
-            </div> :
-            <div className='cell-result-container'>
-                <div className='cell-row-container'>
-                    {this.renderCollapseBar(true)}
-                    {this.renderControls()}
-                    {this.renderInput()}
-                    {this.renderMiddleToolbar()}
+            ) : (
+                <div className='cell-result-container'>
+                    <div className='cell-row-container'>
+                        {this.renderCollapseBar(true)}
+                        {this.renderControls()}
+                        {this.renderInput()}
+                        {this.renderMiddleToolbar()}
+                    </div>
+                    {this.renderAddDivider(true)}
+                    <div className='cell-row-container'>
+                        {this.renderCollapseBar(false)}
+                        {this.renderOutput()}
+                    </div>
                 </div>
-                {this.renderAddDivider(true)}
-                <div className='cell-row-container'>
-                    {this.renderCollapseBar(false)}
-                    {this.renderOutput()}
-                </div>
-            </div>;
+            );
 
         return (
-            <div className={cellWrapperClass} role={this.props.role} ref={this.wrapperRef} tabIndex={0} onKeyDown={this.onOuterKeyDown} onClick={this.onMouseClick} onDoubleClick={this.onMouseDoubleClick}>
+            <div
+                className={cellWrapperClass}
+                role={this.props.role}
+                ref={this.wrapperRef}
+                tabIndex={0}
+                onKeyDown={this.onOuterKeyDown}
+                onClick={this.onMouseClick}
+                onDoubleClick={this.onMouseDoubleClick}
+            >
                 <div className={cellOuterClass}>
                     {this.renderNavbar()}
-                    <div className='content-div'>
-                        {content}
-                    </div>
+                    <div className='content-div'>{content}</div>
                 </div>
             </div>
         );
@@ -198,16 +210,16 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         this.props.focusCell(this.cellId, true);
     }
 
-    private shouldRenderCodeEditor = () : boolean => {
-        return (this.isCodeCell() && (this.props.cellVM.inputBlockShow || this.props.cellVM.editable));
+    private shouldRenderCodeEditor = (): boolean => {
+        return this.isCodeCell() && (this.props.cellVM.inputBlockShow || this.props.cellVM.editable);
     }
 
-    private shouldRenderMarkdownEditor = () : boolean => {
-        return (this.isMarkdownCell() && (this.state.showingMarkdownEditor || this.props.cellVM.cell.id === Identifiers.EditCellId));
+    private shouldRenderMarkdownEditor = (): boolean => {
+        return this.isMarkdownCell() && (this.state.showingMarkdownEditor || this.props.cellVM.cell.id === Identifiers.EditCellId);
     }
 
     private shouldRenderInput(): boolean {
-       return this.shouldRenderCodeEditor() || this.shouldRenderMarkdownEditor();
+        return this.shouldRenderCodeEditor() || this.shouldRenderMarkdownEditor();
     }
 
     private hasOutput = () => {
@@ -230,6 +242,9 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
 
     // tslint:disable-next-line: cyclomatic-complexity max-func-body-length
     private keyDownInput = (cellId: string, e: IKeyboardEvent) => {
+        console.log(`key down ${e}`);
+        console.log(`key code ${e.code}`);
+        console.log(`key editorInfo ${JSON.stringify(e.editorInfo)}`);
         const isFocusedWhenNotSuggesting = this.isFocused() && e.editorInfo && !e.editorInfo.isSuggesting;
         switch (e.code) {
             case 'ArrowUp':
@@ -277,7 +292,8 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                     this.props.stateController.sendCommand(NativeCommandType.ToggleOutput, 'keyboard');
                 }
                 break;
-            case 'Enter':
+            case 'Enter': {
+                console.log('Hit enter');
                 if (e.shiftKey) {
                     this.shiftEnterCell(e);
                 } else if (e.ctrlKey) {
@@ -288,8 +304,9 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                     this.enterCell(e);
                 }
                 break;
+            }
             case 'd':
-                if (this.lastKeyPressed === 'd' && !this.isFocused()  && this.isSelected()) {
+                if (this.lastKeyPressed === 'd' && !this.isFocused() && this.isSelected()) {
                     e.stopPropagation();
                     this.lastKeyPressed = undefined; // Reset it so we don't keep deleting
                     const cellToSelect = this.getPrevCellId() || this.getNextCellId();
@@ -336,7 +353,10 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
     }
 
     private getNonMessageCells(): ICell[] {
-        return this.props.stateController.getState().cellVMs.map(cvm => cvm.cell).filter(c => c.data.cell_type !== 'messages');
+        return this.props.stateController
+            .getState()
+            .cellVMs.map(cvm => cvm.cell)
+            .filter(c => c.data.cell_type !== 'messages');
     }
 
     private getPrevCellId(): string | undefined {
@@ -395,7 +415,12 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
 
     private enterCell = (e: IKeyboardEvent) => {
         // If focused, then ignore this call. It should go to the focused cell instead.
+        console.log('Eenter into cell1');
+        console.log(`this.isFocused() = ${this.isFocused()}`);
+        console.log(`this.wrapperRef = ${this.wrapperRef}`);
+        console.log(`this.isSelected() = ${this.isSelected()}`);
         if (!this.isFocused() && !e.editorInfo && this.wrapperRef && this.wrapperRef && this.isSelected()) {
+            console.log('Eenter into cell');
             e.stopPropagation();
             e.preventDefault();
             this.props.focusCell(this.cellId, true);
@@ -467,7 +492,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
     }
 
     private submitCell = (possibleContents?: string) => {
-        let content: string | undefined ;
+        let content: string | undefined;
 
         // If inside editor, submit this code
         if (possibleContents) {
@@ -504,12 +529,14 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         };
         const canMoveUp = this.props.stateController.canMoveUp(cellId);
         const canMoveDown = this.props.stateController.canMoveDown(cellId);
-        const addButtonRender = this.getNextCellId() !== undefined ?
-            <div className='navbar-add-button'>
-                <ImageButton baseTheme={this.props.baseTheme} onClick={this.addNewCell} tooltip={getLocString('DataScience.insertBelow', 'Insert cell below')}>
-                    <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.InsertBelow} />
-                </ImageButton>
-            </div> : null;
+        const addButtonRender =
+            this.getNextCellId() !== undefined ? (
+                <div className='navbar-add-button'>
+                    <ImageButton baseTheme={this.props.baseTheme} onClick={this.addNewCell} tooltip={getLocString('DataScience.insertBelow', 'Insert cell below')}>
+                        <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.InsertBelow} />
+                    </ImageButton>
+                </div>
+            ) : null;
 
         return (
             <div className='navbar-div'>
@@ -533,9 +560,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         if (!this.isLastCell()) {
             // Divider should only show if no output
             if (!checkOutput || !this.shouldRenderOutput()) {
-                return (
-                    <AddCellLine className='add-divider' baseTheme={this.props.baseTheme} includePlus={false} click={this.addNewCell} />
-                );
+                return <AddCellLine className='add-divider' baseTheme={this.props.baseTheme} includePlus={false} click={this.addNewCell} />;
             }
         }
 
@@ -564,8 +589,10 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         };
         const canRunAbove = this.props.stateController.canRunAbove(cellId);
         const canRunBelow = this.props.cellVM.cell.state === CellState.finished || this.props.cellVM.cell.state === CellState.error;
-        const switchTooltip = this.props.cellVM.cell.data.cell_type === 'code' ? getLocString('DataScience.switchToMarkdown', 'Change to markdown') :
-            getLocString('DataScience.switchToCode', 'Change to code');
+        const switchTooltip =
+            this.props.cellVM.cell.data.cell_type === 'code'
+                ? getLocString('DataScience.switchToMarkdown', 'Change to markdown')
+                : getLocString('DataScience.switchToCode', 'Change to code');
         const switchToMarkdown = () => {
             this.props.stateController.changeCellType(cellId, 'markdown');
             this.props.stateController.sendCommand(NativeCommandType.ChangeToMarkdown, 'mouse');
@@ -588,13 +615,16 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                 handler();
             }
         };
-        const switchButton = this.props.cellVM.cell.data.cell_type === 'code' ?
-            <ImageButton baseTheme={this.props.baseTheme} onClick={switchToMarkdown} tooltip={switchTooltip}>
-                <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.SwitchToMarkdown} />
-            </ImageButton> :
-            <ImageButton baseTheme={this.props.baseTheme} onMouseDown={switchToCode} tooltip={switchTooltip}>
-                <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.SwitchToCode} />
-            </ImageButton>;
+        const switchButton =
+            this.props.cellVM.cell.data.cell_type === 'code' ? (
+                <ImageButton baseTheme={this.props.baseTheme} onClick={switchToMarkdown} tooltip={switchTooltip}>
+                    <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.SwitchToMarkdown} />
+                </ImageButton>
+            ) : (
+                <ImageButton baseTheme={this.props.baseTheme} onMouseDown={switchToCode} tooltip={switchTooltip}>
+                    <Image baseTheme={this.props.baseTheme} class='image-button-image' image={ImageName.SwitchToCode} />
+                </ImageButton>
+            );
 
         return (
             <div className='native-editor-celltoolbar-middle'>
@@ -615,8 +645,10 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
     private renderControls = () => {
         const cellId = this.props.cellVM.cell.id;
         const busy = this.props.cellVM.cell.state === CellState.init || this.props.cellVM.cell.state === CellState.executing;
-        const executionCount = this.props.cellVM && this.props.cellVM.cell && this.props.cellVM.cell.data && this.props.cellVM.cell.data.execution_count ?
-            this.props.cellVM.cell.data.execution_count.toString() : '-';
+        const executionCount =
+            this.props.cellVM && this.props.cellVM.cell && this.props.cellVM.cell.data && this.props.cellVM.cell.data.execution_count
+                ? this.props.cellVM.cell.data.execution_count.toString()
+                : '-';
         const runCell = () => {
             this.props.stateController.updateCellSource(cellId);
             this.runAndMove(concatMultilineString(this.props.cellVM.cell.data.source));
@@ -690,7 +722,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
         // Indicate not showing the editor anymore. The equivalent of this
         // is not when we receive focus but when we GIVE focus to the markdown editor
         // otherwise we wouldn't be able to display it.
-        this.setState({showingMarkdownEditor: false});
+        this.setState({ showingMarkdownEditor: false });
     }
 
     private renderOutput = (): JSX.Element | null => {
@@ -701,7 +733,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                     baseTheme={this.props.baseTheme}
                     expandImage={this.props.stateController.showPlot}
                     openLink={this.props.stateController.openLink}
-                 />
+                />
             );
         }
         return null;
@@ -710,18 +742,16 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
     private onOuterKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         // Handle keydown events for the entire cell
         if (event.key !== 'Tab') {
-            this.keyDownInput(
-                this.props.cellVM.cell.id,
-                {
-                    code: event.key,
-                    shiftKey: event.shiftKey,
-                    ctrlKey: event.ctrlKey,
-                    metaKey: event.metaKey,
-                    altKey: event.altKey,
-                    target: event.target as HTMLDivElement,
-                    stopPropagation: () => event.stopPropagation(),
-                    preventDefault: () => event.preventDefault()
-                });
+            this.keyDownInput(this.props.cellVM.cell.id, {
+                code: event.key,
+                shiftKey: event.shiftKey,
+                ctrlKey: event.ctrlKey,
+                metaKey: event.metaKey,
+                altKey: event.altKey,
+                target: event.target as HTMLDivElement,
+                stopPropagation: () => event.stopPropagation(),
+                preventDefault: () => event.preventDefault()
+            });
         }
     }
 

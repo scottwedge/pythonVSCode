@@ -10,12 +10,12 @@ import { noop } from '../../client/common/utils/misc';
 // tslint:disable:no-var-requires no-require-imports no-any no-function-expression
 const Module = require('module');
 
-(function () {
+(function() {
     const origRequire = Module.prototype.require;
     const _require = (context: any, filepath: any) => {
         return origRequire.call(context, filepath);
     };
-    Module.prototype.require = function (filepath: string) {
+    Module.prototype.require = function(filepath: string) {
         if (filepath === 'canvas') {
             try {
                 // Make sure we aren't inside of vscode. The nodejs version of Canvas won't match. At least sometimes.
@@ -56,6 +56,7 @@ if (ssExports && ssExports.createStylesheet) {
 
 import { DOMWindow, JSDOM } from 'jsdom';
 import * as React from 'react';
+import { IKeyboardEvent } from '../../datascience-ui/react-common/event';
 
 class MockCanvas implements CanvasRenderingContext2D {
     public canvas!: HTMLCanvasElement;
@@ -212,7 +213,16 @@ class MockCanvas implements CanvasRenderingContext2D {
     public closePath(): void {
         throw new Error('Method not implemented.');
     }
-    public ellipse(_x: number, _y: number, _radiusX: number, _radiusY: number, _rotation: number, _startAngle: number, _endAngle: number, _anticlockwise?: boolean | undefined): void {
+    public ellipse(
+        _x: number,
+        _y: number,
+        _radiusX: number,
+        _radiusY: number,
+        _rotation: number,
+        _startAngle: number,
+        _endAngle: number,
+        _anticlockwise?: boolean | undefined
+    ): void {
         throw new Error('Method not implemented.');
     }
     public lineTo(_x: number, _y: number): void {
@@ -253,7 +263,7 @@ export function setUpDomEnvironment() {
     }
 
     // tslint:disable-next-line: no-function-expression
-    window.HTMLCanvasElement.prototype.toDataURL = function () {
+    window.HTMLCanvasElement.prototype.toDataURL = function() {
         return '';
     };
 
@@ -281,7 +291,7 @@ export function setUpDomEnvironment() {
     copyProps(window, global);
 
     // Special case. Monaco needs queryCommandSupported
-    (global as any)['document'].queryCommandSupported = () => (false);
+    (global as any)['document'].queryCommandSupported = () => false;
 
     // Special case. Transform needs createRange
     (global as any)['document'].createRange = () => ({
@@ -373,7 +383,7 @@ export function setUpDomEnvironment() {
     const configurationRegex = /.*(\\|\/)node_modules(\\|\/)monaco-editor(\\|\/)esm(\\|\/)vs(\\|\/)editor(\\|\/)browser(\\|\/)config(\\|\/)configuration\.js/g;
     const _oldLoader = require.extensions['.js'];
     // tslint:disable-next-line:no-function-expression
-    require.extensions['.js'] = function (mod: any, filename) {
+    require.extensions['.js'] = function(mod: any, filename) {
         if (configurationRegex.test(filename)) {
             let content = require('fs').readFileSync(filename, 'utf8');
             content += 'export function getCSSBasedConfiguration() { return CSSBasedConfiguration.INSTANCE; };\n';
@@ -396,8 +406,7 @@ export function setupTranspile() {
 }
 
 function copyProps(src: any, target: any) {
-    const props = Object.getOwnPropertyNames(src)
-        .filter(prop => typeof target[prop] === undefined);
+    const props = Object.getOwnPropertyNames(src).filter(prop => typeof target[prop] === undefined);
     props.forEach((p: string) => {
         target[p] = src[p];
     });
@@ -441,7 +450,7 @@ export function waitForRender<P, S, C>(component: React.Component<P, S, C>, numb
             let renderCount = 0;
             component.render = () => {
                 let result: React.ReactNode = null;
-
+                console.log('render');
                 // When the render occurs, call the original function and resolve our promise
                 if (originalRenderFunc) {
                     result = originalRenderFunc();
@@ -450,7 +459,7 @@ export function waitForRender<P, S, C>(component: React.Component<P, S, C>, numb
 
                 if (renderCount === numberOfRenders) {
                     // Reset our render function
-                    component.render = originalRenderFunc;
+                    // component.render = originalRenderFunc;
                     resolve();
                 }
 
@@ -487,32 +496,32 @@ export async function waitForUpdate<P, S, C>(wrapper: ReactWrapper<P, S, C>, mai
 // There doesn't seem to be an official way to do this (according to stack overflow)
 // so just hardcoding it here.
 const keyMap: { [key: string]: { code: number; shift: boolean } } = {
-    'A': { code: 65, shift: false },
-    'B': { code: 66, shift: false },
-    'C': { code: 67, shift: false },
-    'D': { code: 68, shift: false },
-    'E': { code: 69, shift: false },
-    'F': { code: 70, shift: false },
-    'G': { code: 71, shift: false },
-    'H': { code: 72, shift: false },
-    'I': { code: 73, shift: false },
-    'J': { code: 74, shift: false },
-    'K': { code: 75, shift: false },
-    'L': { code: 76, shift: false },
-    'M': { code: 77, shift: false },
-    'N': { code: 78, shift: false },
-    'O': { code: 79, shift: false },
-    'P': { code: 80, shift: false },
-    'Q': { code: 81, shift: false },
-    'R': { code: 82, shift: false },
-    'S': { code: 83, shift: false },
-    'T': { code: 84, shift: false },
-    'U': { code: 85, shift: false },
-    'V': { code: 86, shift: false },
-    'W': { code: 87, shift: false },
-    'X': { code: 88, shift: false },
-    'Y': { code: 89, shift: false },
-    'Z': { code: 90, shift: false },
+    A: { code: 65, shift: false },
+    B: { code: 66, shift: false },
+    C: { code: 67, shift: false },
+    D: { code: 68, shift: false },
+    E: { code: 69, shift: false },
+    F: { code: 70, shift: false },
+    G: { code: 71, shift: false },
+    H: { code: 72, shift: false },
+    I: { code: 73, shift: false },
+    J: { code: 74, shift: false },
+    K: { code: 75, shift: false },
+    L: { code: 76, shift: false },
+    M: { code: 77, shift: false },
+    N: { code: 78, shift: false },
+    O: { code: 79, shift: false },
+    P: { code: 80, shift: false },
+    Q: { code: 81, shift: false },
+    R: { code: 82, shift: false },
+    S: { code: 83, shift: false },
+    T: { code: 84, shift: false },
+    U: { code: 85, shift: false },
+    V: { code: 86, shift: false },
+    W: { code: 87, shift: false },
+    X: { code: 88, shift: false },
+    Y: { code: 89, shift: false },
+    Z: { code: 90, shift: false },
     '0': { code: 48, shift: false },
     '1': { code: 49, shift: false },
     '2': { code: 50, shift: false },
@@ -527,7 +536,7 @@ const keyMap: { [key: string]: { code: number; shift: boolean } } = {
     '!': { code: 49, shift: true },
     '@': { code: 50, shift: true },
     '#': { code: 51, shift: true },
-    '$': { code: 52, shift: true },
+    $: { code: 52, shift: true },
     '%': { code: 53, shift: true },
     '^': { code: 54, shift: true },
     '&': { code: 55, shift: true },
@@ -576,9 +585,45 @@ export function createKeyboardEvent(type: string, options: KeyboardEventInit): K
 
     // JSDOM doesn't support typescript so well. The options are supposed to be flexible to support just about anything, but
     // the type KeyboardEventInit only supports the minimum. Stick in extras with some typecasting hacks
-    return new domWindow.KeyboardEvent(type, (({ ...options, keyCode, shiftKey: shift } as any) as KeyboardEventInit));
+    return new domWindow.KeyboardEvent(type, ({ ...options, keyCode, shiftKey: shift } as any) as KeyboardEventInit);
 }
+/**
+ * Creates a keyboard event for a cells.
+ *
+ * @export
+ * @param {(Partial<IKeyboardEvent> & { code: string })} event
+ * @returns
+ */
+export function createKeyboarEventForCell(event: Partial<IKeyboardEvent> & { code: string }) {
+    const defaultKeyboardEvent: IKeyboardEvent = {
+        altKey: false,
+        code: '',
+        ctrlKey: false,
+        editorInfo: {
+            contents: '',
+            isDirty: false,
+            isFirstLine: false,
+            isLastLine: false,
+            isSuggesting: false
+        },
+        metaKey: false,
+        preventDefault: noop,
+        shiftKey: false,
+        stopPropagation: noop,
+        target: {} as any
+    };
 
+    const defaultEditorInfo = defaultKeyboardEvent.editorInfo!;
+    const providedEditorInfo = event.editorInfo || {};
+    return {
+        ...defaultKeyboardEvent,
+        ...event,
+        editorInfo: {
+            ...defaultEditorInfo,
+            ...providedEditorInfo
+        }
+    };
+}
 export function createInputEvent(): Event {
     const domWindow = (window as any) as DOMWindow;
     return new domWindow.Event('input', { bubbles: true, cancelable: false });

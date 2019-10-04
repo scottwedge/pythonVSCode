@@ -34,7 +34,7 @@ export interface IEditorProps {
     unfocused?(): void;
 }
 
-interface IEditorState {
+export interface IEditorState {
     editor: monacoEditor.editor.IStandaloneCodeEditor | undefined;
     model: monacoEditor.editor.ITextModel | null;
     visibleLineCount: number;
@@ -66,7 +66,10 @@ export class Editor extends React.Component<IEditorProps, IEditorState> {
     }
 
     public giveFocus() {
+        console.log('give focus to editor in editor.tsc');
         const readOnly = this.props.testMode || this.props.readOnly;
+        console.log(`give focus to editor in editor.tsc is readonly = ${readOnly}`);
+        console.log(`this.state.editor = ${this.state.editor}`);
         if (this.state.editor && !readOnly) {
             this.state.editor.focus();
         }
@@ -154,6 +157,7 @@ export class Editor extends React.Component<IEditorProps, IEditorState> {
 
     private editorDidMount = (editor: monacoEditor.editor.IStandaloneCodeEditor) => {
         // Update our state
+        console.log('Editor mounted');
         const model = editor.getModel();
         this.setState({ editor, model: editor.getModel() });
 
@@ -186,6 +190,7 @@ export class Editor extends React.Component<IEditorProps, IEditorState> {
     }
 
     private onKeyDown = (e: monacoEditor.IKeyboardEvent) => {
+        console.log('Key down in editor');
         if (this.state.editor && this.state.model && this.monacoRef && this.monacoRef.current) {
             const isSuggesting = this.monacoRef.current.isSuggesting();
             const cursor = this.state.editor.getPosition();

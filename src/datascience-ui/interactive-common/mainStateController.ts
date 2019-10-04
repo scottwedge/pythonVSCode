@@ -502,6 +502,7 @@ export class MainStateController implements IMessageHandler {
     }
 
     public submitInput = (code: string, inputCell: ICellViewModel) => {
+        console.log('Submit cell');
         // noop if the submitted code is just a cell marker
         const matcher = new CellMatcher(getSettings());
         if (matcher.stripFirstMarker(code).length === 0) {

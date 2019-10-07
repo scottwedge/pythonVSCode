@@ -91,6 +91,13 @@ suite('DataScience Native Editor', () => {
         //      asyncDump();
         // });
 
+        function createFileCell(cell: any, data: any): ICell {
+            const newCell = { type: 'preview', id: 'FakeID', file: Identifiers.EmptyFileName, line: 0, state: 2, ...cell};
+            newCell.data = { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: '', ...data };
+
+            return newCell;
+        }
+
         runMountedTest('Simple text', async (wrapper) => {
             // Create an editor so something is listening to messages
             await createNewEditor(ioc);

@@ -44,11 +44,11 @@ suite('DataScience Native Editor', () => {
 
         return newCell;
     }
-    setup(() => {
+    suite('Editor tests', () => {
         const disposables: Disposable[] = [];
         let ioc: DataScienceIocContainer;
 
-        suite('Editor tests', () => {
+        setup(() => {
             ioc = new DataScienceIocContainer();
             ioc.registerDataScienceTypes();
         });

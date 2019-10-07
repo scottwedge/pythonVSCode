@@ -63,6 +63,13 @@ export function runMountedTest(name: string, testFunc: (wrapper: ReactWrapper<an
 export function mountNativeWebView(ioc: DataScienceIocContainer): ReactWrapper<any, Readonly<{}>, React.Component> {
     return mountWebView(ioc, <NativeEditor baseTheme='vscode-light' codeTheme='light_vs' testMode={true} skipDefault={true} />);
 }
+export async function setupWebview(ioc: DataScienceIocContainer) {
+    const jupyterExecution = ioc.get<IJupyterExecution>(IJupyterExecution);
+    if (await jupyterExecution.isNotebookSupported()) {
+        addMockData(ioc, 'a=1\na', 1);
+        return mountNativeWebView(ioc);
+    }
+}
 
 // tslint:disable-next-line: no-any
 export async function addCell(wrapper: ReactWrapper<any, Readonly<{}>, React.Component>, code: string, submit: boolean = true, expectedSubmitRenderCount: number = 5): Promise<void> {

@@ -177,7 +177,12 @@ export function isCellFocused(wrapper: ReactWrapper<any, Readonly<{}>, React.Com
     }
 }
 
-export function verifyCell(wrapper: ReactWrapper<any, Readonly<{}>, React.Component>, cellType: string, options: {selector: string; shouldNotExist?: boolean}, cellIndex: number | CellPosition) {
+export function verifyCell(
+    wrapper: ReactWrapper<any, Readonly<{}>, React.Component>,
+    cellType: string,
+    options: { selector: string; shouldNotExist?: boolean },
+    cellIndex: number | CellPosition
+) {
     const foundResult = wrapper.find(cellType);
     assert.ok(foundResult.length >= 1, 'Didn\'t find any cells being rendered');
 
@@ -442,4 +447,13 @@ export function escapePath(p: string) {
 
 export function srcDirectory() {
     return path.join(EXTENSION_ROOT_DIR, 'src', 'test', 'datascience');
+}
+
+export function verifyCellIndex(wrapper: ReactWrapper<any, Readonly<{}>, React.Component>, cellId: string, expectedCellIndex: number) {
+    const nativeCell = wrapper
+        .find(cellId)
+        .first()
+        .find('NativeCell');
+    const secondCell = wrapper.find('NativeCell').at(expectedCellIndex);
+    assert.equal(nativeCell.html(), secondCell.html());
 }

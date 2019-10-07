@@ -22,7 +22,7 @@ import { getLocString } from '../react-common/locReactSide';
 import { AddCellLine } from './addCellLine';
 import { NativeEditorStateController } from './nativeEditorStateController';
 
-interface INativeCellProps {
+export interface INativeCellProps {
     role?: string;
     cellVM: ICellViewModel;
     baseTheme: string;
@@ -41,7 +41,7 @@ interface INativeCellProps {
     selectCell(cellId: string): void;
 }
 
-interface INativeCellState {
+export interface INativeCellState {
     showingMarkdownEditor: boolean;
 }
 // tslint:disable: react-this-binding-issue
@@ -254,11 +254,14 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                 }
                 break;
             case 'ArrowDown':
-            case 'j':
+            case 'j':{
+                console.error('Move Down1');
                 if ((isFocusedWhenNotSuggesting && e.editorInfo!.isLastLine) || !this.isFocused()) {
+                    console.error('Move Down2');
                     this.arrowDownFromCell(e);
                 }
                 break;
+            }
             case 'Escape':
                 if (isFocusedWhenNotSuggesting) {
                     this.escapeCell(e);
@@ -293,7 +296,6 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
                 }
                 break;
             case 'Enter': {
-                console.log('Hit enter');
                 if (e.shiftKey) {
                     this.shiftEnterCell(e);
                 } else if (e.ctrlKey) {
@@ -407,6 +409,7 @@ export class NativeCell extends React.Component<INativeCellProps, INativeCellSta
 
         if (nextCellId) {
             e.stopPropagation();
+            console.error(`Move selection ${nextCellId}`)
             this.moveSelection(nextCellId);
         }
 

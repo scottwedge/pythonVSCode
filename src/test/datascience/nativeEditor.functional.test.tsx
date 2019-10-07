@@ -3,6 +3,7 @@
 'use strict';
 import * as assert from 'assert';
 import { ReactWrapper } from 'enzyme';
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as path from 'path';
 import * as TypeMoq from 'typemoq';
 import { Disposable, TextDocument, TextEditor, Uri } from 'vscode';
@@ -19,6 +20,7 @@ import { NativeCell } from '../../datascience-ui/native-editor/nativeCell';
 import { NativeEditor } from '../../datascience-ui/native-editor/nativeEditor';
 import { IKeyboardEvent } from '../../datascience-ui/react-common/event';
 import { ImageButton } from '../../datascience-ui/react-common/imageButton';
+import { MonacoEditor } from '../../datascience-ui/react-common/monacoEditor';
 import { DataScienceIocContainer } from './dataScienceIocContainer';
 import {
     addCell,
@@ -574,30 +576,28 @@ suite('DataScience Native Editor', () => {
         });
 
         test('Toggle visibility of output', async () => {
-            // First execute contents of last cell.
-            let update = waitForUpdate(wrapper, NativeEditor, 7);
-            clickCell(2);
-            simulateKeyPressOnCell(2, { code: 'Enter', ctrlKey: true, editorInfo: undefined });
-            await update;
+            const monacoEditorComponent = wrapper.find(MonacoEditor).first();
+            const editor = monacoEditorComponent.state().editor as monacoEditor.editor.IStandaloneCodeEditor;
+            const oldUpdateOptions = editor.updateOptions;
 
-            // Ensure cell was executed.
-            verifyHtmlOnCell(wrapper, 'NativeCell', '<span>3</span>', 2);
+            // Hook into updates to monacoda editor object.
+            let lineNumberSetting : any = '';
+            editor.updateOptions = (options: monacoEditor.editor.IEditorConstructionOptions) => {
+                lineNumberSetting = options.lineNumbers;
+                return oldUpdateOptions.bind(editor)(options);
+            };
 
-            // Hide the output
-            update = waitForUpdate(wrapper, NativeEditor, 1);
-            simulateKeyPressOnCell(2, { code: 'o' });
-            await update;
+            clickCell(0);
+            simulateKeyPressOnCell(0, { code: 'l' });
 
-            // Ensure cell output is hidden (looking for cell results will throw an exception).
-            assert.throws(() => verifyHtmlOnCell(wrapper, 'NativeCell', '<span>3</span>', 2));
+            // Confirm first cell has line numbers displayed.
+            assert.equal(lineNumberSetting, 'on');
 
-            // Display the output
-            update = waitForUpdate(wrapper, NativeEditor, 1);
-            simulateKeyPressOnCell(2, { code: 'o' });
-            await update;
+            // Next hide the line numbers
+            simulateKeyPressOnCell(0, { code: 'l' });
 
-            // Ensure cell output is visible again.
-            verifyHtmlOnCell(wrapper, 'NativeCell', '<span>3</span>', 2);
+            // Confirm first cell does not have any line numbers.
+            assert.equal(lineNumberSetting, 'off');
         });
     });
 });

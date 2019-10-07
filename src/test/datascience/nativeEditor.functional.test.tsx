@@ -463,37 +463,37 @@ suite('DataScience Native Editor', () => {
             assert.ok(isCellFocused(wrapper, 'NativeCell', 1));
         });
 
-        test('Pressing \'Escape\' on a focused cell results in the cell being selected', async () => {
-            // First focus the cell.
-            const update = waitForUpdate(wrapper, NativeEditor, 1);
-            clickCell(1);
-            simulateKeyPressOnCell(1, { code: 'Enter', editorInfo: undefined });
-            await update;
+        // test('Pressing \'Escape\' on a focused cell results in the cell being selected', async () => {
+        //     // First focus the cell.
+        //     const update = waitForUpdate(wrapper, NativeEditor, 1);
+        //     clickCell(1);
+        //     simulateKeyPressOnCell(1, { code: 'Enter', editorInfo: undefined });
+        //     await update;
 
-            // The second cell should be selected.
-            assert.ok(isCellSelected(wrapper, 'NativeCell', 1));
-            assert.ok(isCellFocused(wrapper, 'NativeCell', 1) === false);
+        //     // The second cell should be selected.
+        //     assert.ok(isCellSelected(wrapper, 'NativeCell', 1));
+        //     assert.ok(isCellFocused(wrapper, 'NativeCell', 1) === false);
 
-            // Now hit escape.
-            simulateKeyPressOnCell(1, { code: 'Escape', editorInfo: undefined });
+        //     // Now hit escape.
+        //     simulateKeyPressOnCell(1, { code: 'Escape', editorInfo: undefined });
 
-            // Confirm it is no longer focused, and it is selected.
-            assert.ok(isCellSelected(wrapper, 'NativeCell', 1));
-            assert.ok(isCellFocused(wrapper, 'NativeCell', 1) === false);
-        });
+        //     // Confirm it is no longer focused, and it is selected.
+        //     assert.ok(isCellSelected(wrapper, 'NativeCell', 1));
+        //     assert.ok(isCellFocused(wrapper, 'NativeCell', 1) === false);
+        // });
 
-        test('Pressing \'Shift+Enter\' on a selected cell executes the cell and advances to the next cell', async () => {
-            const update = waitForUpdate(wrapper, NativeEditor, 7);
-            clickCell(1);
-            simulateKeyPressOnCell(1, { code: 'Enter', shiftKey: true, editorInfo: undefined });
-            await update;
+        // test('Pressing \'Shift+Enter\' on a selected cell executes the cell and advances to the next cell', async () => {
+        //     const update = waitForUpdate(wrapper, NativeEditor, 7);
+        //     clickCell(1);
+        //     simulateKeyPressOnCell(1, { code: 'Enter', shiftKey: true, editorInfo: undefined });
+        //     await update;
 
-            // Ensure cell was executed.
-            verifyHtmlOnCell(wrapper, 'NativeCell', '<span>2</span>', 1);
+        //     // Ensure cell was executed.
+        //     verifyHtmlOnCell(wrapper, 'NativeCell', '<span>2</span>', 1);
 
-            // The third cell should be selected.
-            assert.ok(isCellSelected(wrapper, 'NativeCell', 2));
-        });
+        //     // The third cell should be selected.
+        //     assert.ok(isCellSelected(wrapper, 'NativeCell', 2));
+        // });
 
         test('Pressing \'Ctrl+Enter\' on a selected cell executes the cell and cell selection is not changed', async () => {
             const update = waitForUpdate(wrapper, NativeEditor, 7);

@@ -1096,9 +1096,6 @@ plt.show()`,
                 await jupyterExecution.connectToNotebookServer({ usingDarkTheme: false, useDefaultConfig: true, workingDir: testDir, purpose: '1' });
             } catch (e) {
                 threw = true;
-                console.error(e);
-                console.error(e.message);
-                console.error('Not what was expected');
                 assert.ok(e.message.includes('Not supported'), 'Wrong error thrown when notebook is created');
             }
 

@@ -48,10 +48,8 @@ export function getNativeCellResults(wrapper: ReactWrapper<any, Readonly<{}>, Re
 export function runMountedTest(name: string, testFunc: (wrapper: ReactWrapper<any, Readonly<{}>, React.Component>) => Promise<void>, getIOC: () => DataScienceIocContainer) {
     test(name, async () => {
         const ioc = getIOC();
-        const jupyterExecution = ioc.get<IJupyterExecution>(IJupyterExecution);
-        if (await jupyterExecution.isNotebookSupported()) {
-            addMockData(ioc, 'a=1\na', 1);
-            const wrapper = mountNativeWebView(ioc);
+        const wrapper = await setupWebview(ioc);
+        if (wrapper) {
             await testFunc(wrapper);
         } else {
             // tslint:disable-next-line:no-console

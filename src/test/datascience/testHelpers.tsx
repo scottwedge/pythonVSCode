@@ -170,7 +170,7 @@ export function verifyHtmlOnCell(wrapper: ReactWrapper<any, Readonly<{}>, React.
  * @param {(Partial<IKeyboardEvent> & { code: string })} event
  * @returns
  */
-export function createKeyboarEventForCell(event: Partial<IKeyboardEvent> & { code: string }) {
+export function createKeyboardEventForCell(event: Partial<IKeyboardEvent> & { code: string }) {
     const defaultKeyboardEvent: IKeyboardEvent = {
         altKey: false,
         code: '',

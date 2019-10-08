@@ -36,7 +36,7 @@ import {
     addContinuousMockData,
     addMockData,
     CellPosition,
-    createKeyboarEventForCell,
+    createKeyboardEventForCell,
     escapePath,
     findButton,
     getLastOutputCell,
@@ -309,7 +309,7 @@ suite('DataScience Native Editor', () => {
             wrapper.update();
         }
         function simulateKeyPressOnCell(cellIndex: number, keyboardEvent: Partial<IKeyboardEvent> & { code: string }) {
-            const event = { ...createKeyboarEventForCell(keyboardEvent), ...keyboardEvent };
+            const event = { ...createKeyboardEventForCell(keyboardEvent), ...keyboardEvent };
             wrapper
                 .find(NativeCell)
                 .at(cellIndex)
@@ -318,7 +318,7 @@ suite('DataScience Native Editor', () => {
             wrapper.update();
         }
 
-        test('None of the cells are not selected by default', async () => {
+        test('None of the cells are selected by default', async () => {
             assert.ok(!isCellSelected(wrapper, 'NativeCell', 0));
             assert.ok(!isCellSelected(wrapper, 'NativeCell', 1));
             assert.ok(!isCellSelected(wrapper, 'NativeCell', 2));

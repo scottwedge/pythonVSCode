@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 // export * from './position';
 // export * from './selection';
 export * from './extHostedTypes';
+export * from './uri';
 
 export namespace vscMock {
     export class Disposable {

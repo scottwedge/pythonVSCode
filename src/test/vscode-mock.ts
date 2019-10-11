@@ -7,7 +7,6 @@
 
 import * as TypeMoq from 'typemoq';
 import * as vscode from 'vscode';
-import { URI } from 'vscode-uri';
 import * as vscodeMocks from './mocks/vsc';
 import { vscMockTelemetryReporter } from './mocks/vsc/telemetryReporter';
 const Module = require('module');
@@ -56,7 +55,7 @@ mockedVSCode.CancellationTokenSource = vscodeMocks.vscMock.CancellationTokenSour
 mockedVSCode.CompletionItemKind = vscodeMocks.vscMock.CompletionItemKind;
 mockedVSCode.SymbolKind = vscodeMocks.vscMock.SymbolKind;
 mockedVSCode.IndentAction = vscodeMocks.vscMock.IndentAction;
-mockedVSCode.Uri = URI as any;
+mockedVSCode.Uri = vscodeMocks.vscUri.URI as any;
 mockedVSCode.Range = vscodeMocks.vscMockExtHostedTypes.Range;
 mockedVSCode.Position = vscodeMocks.vscMockExtHostedTypes.Position;
 mockedVSCode.Selection = vscodeMocks.vscMockExtHostedTypes.Selection;

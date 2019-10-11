@@ -26,7 +26,7 @@ import { IServiceContainer } from '../../../client/ioc/types';
 import { sleep } from '../../core';
 
 // tslint:disable: max-func-body-length
-suite('wow Data Science - Native Editor Provider', () => {
+suite('Data Science - Native Editor Provider', () => {
     let workspace: IWorkspaceService;
     let configService: IConfigurationService;
     let fileSystem: IFileSystem;

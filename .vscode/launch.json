@@ -149,13 +149,14 @@
                 "--ui=tdd",
                 "--recursive",
                 "--colors",
-                "--grep", "wow",
+                 //"--grep", "<suite name>",
                 "--timeout=300000"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ],
-            // "skipFiles": ["<node_internals>/**"]
+            "preLaunchTask": "Compile",
+            "skipFiles": ["<node_internals>/**"]
         },
         {
             "name": "Functional Tests (without VS Code, *.functional.test.ts)",

@@ -7,7 +7,6 @@ import cloneDeep = require('lodash/cloneDeep');
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as path from 'path';
 
-import { Uri } from 'vscode';
 import { IDataScienceSettings } from '../../client/common/types';
 import { CellMatcher } from '../../client/datascience/cellMatcher';
 import { concatMultilineString, splitMultilineString } from '../../client/datascience/common';
@@ -212,6 +211,8 @@ export function generateCells(filePath: string, repetitions: number): ICell[] {
     for (let i = 0; i < repetitions; i += 1) {
         cellData = [...cellData, ...generateCellData()];
     }
+    // tslint:disable-next-line: no-require-imports
+    const Uri = require('vscode').Uri;
     return cellData.map((data: nbformat.ICodeCell | nbformat.IMarkdownCell | nbformat.IRawCell | IMessageCell, key: number) => {
         return {
             id: key.toString(),

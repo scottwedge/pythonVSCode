@@ -7,8 +7,8 @@
 
 import * as TypeMoq from 'typemoq';
 import * as vscode from 'vscode';
-import * as vscodeMocks from './mocks/vsc';
 import { URI } from 'vscode-uri';
+import * as vscodeMocks from './mocks/vsc';
 import { vscMockTelemetryReporter } from './mocks/vsc/telemetryReporter';
 const Module = require('module');
 

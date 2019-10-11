@@ -110,10 +110,6 @@ export class MockJupyterManager implements IJupyterSessionManager {
         this.addCell('import sys\r\nsys.version', '1.1.1.1');
         this.addCell('import sys\r\nsys.executable', 'python');
         this.addCell('import notebook\r\nnotebook.version_info', '1.1.1.1');
-        // this.addCell(`__file__ = 'foo.py'`);
-        // this.addCell(`__file__ = 'bar.py'`);
-        // this.addCell(`__file__ = 'foo'`);
-        // this.addCell(`__file__ = 'test.py'`);
         this.addCell(`__file__ = '${Uri.file('foo.py').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('bar.py').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('foo').fsPath}'`);

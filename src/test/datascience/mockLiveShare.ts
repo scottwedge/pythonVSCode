@@ -325,8 +325,7 @@ class MockLiveShare implements vsls.LiveShare, vsls.Session, vsls.Peer, IDisposa
             throw new Error(`Not a workspace file URI: ${localUri}`);
         }
 
-        const file = localUri.fsPath.includes('/') ? path.basename(localUri.fsPath) : localUri.fsPath;
-        return Uri.parse(`vsls:${file}`);
+        return Uri.parse(`vsls:${localUri.fsPath}`);
     }
     public convertSharedUriToLocal(sharedUri: Uri): Uri {
         checkArg(sharedUri, 'sharedUri', 'uri');

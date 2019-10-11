@@ -16,8 +16,8 @@ import { OSType } from '../../../../../client/common/utils/platform';
 import { AttachConfigurationResolver } from '../../../../../client/debugger/extension/configuration/resolvers/attach';
 import { AttachRequestArguments, DebugOptions } from '../../../../../client/debugger/types';
 import { IServiceContainer } from '../../../../../client/ioc/types';
-import { getInfoPerOS, setUpOSMocks } from './common';
 import { getOSType } from '../../../../common';
+import { getInfoPerOS, setUpOSMocks } from './common';
 
 getInfoPerOS().forEach(([osName, osType, path]) => {
     if (osType === OSType.Unknown) {

@@ -6,7 +6,7 @@
 // tslint:disable: no-any
 
 import { expect } from 'chai';
-import { anything, capture, instance, mock, verify, when } from 'ts-mockito';
+import { instance, mock, when } from 'ts-mockito';
 import * as typemoq from 'typemoq';
 import { EventEmitter, TextDocument, Uri } from 'vscode';
 import { CommandManager } from '../../../client/common/application/commandManager';
@@ -17,14 +17,13 @@ import { AsyncDisposableRegistry } from '../../../client/common/asyncDisposableR
 import { ConfigurationService } from '../../../client/common/configuration/service';
 import { FileSystem } from '../../../client/common/platform/fileSystem';
 import { IFileSystem } from '../../../client/common/platform/types';
-import { IConfigurationService, IPythonSettings } from '../../../client/common/types';
+import { IConfigurationService } from '../../../client/common/types';
 import { DataScienceErrorHandler } from '../../../client/datascience/errorHandler/errorHandler';
-import { NativeEditor } from '../../../client/datascience/interactive-ipynb/nativeEditor';
 import { NativeEditorProvider } from '../../../client/datascience/interactive-ipynb/nativeEditorProvider';
 import { IDataScienceErrorHandler, INotebookEditor } from '../../../client/datascience/types';
 import { ServiceContainer } from '../../../client/ioc/container';
 import { IServiceContainer } from '../../../client/ioc/types';
-import { noop, sleep } from '../../core';
+import { sleep } from '../../core';
 
 // tslint:disable: max-func-body-length
 suite('wow Data Science - Native Editor Provider', () => {
@@ -66,60 +65,6 @@ suite('wow Data Science - Native Editor Provider', () => {
         textDocument.setup(t => t.getText()).returns(() => content);
         return textDocument.object;
     }
-    // class MockNativeEditor implements INotebookEditor {
-    //     closed: Event<INotebookEditor>;
-    //     executed: Event<INotebookEditor>;
-    //     modified: Event<INotebookEditor>;
-    //     saved: Event<INotebookEditor>;
-    //     isDirty: boolean;
-    //     file: Uri;
-    //     visible: boolean;
-    //     active: boolean;
-    //     onExecutedCode: Event<string>;
-    //     public load(_contents: string, _file: Uri): Promise<void> {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadrunAllCells(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadrunSelectedCell(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadaddCellBelow(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadshow(): Promise<void> {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadstartProgress(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadstopProgress(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadundoCells(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadredoCells(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadremoveAllCells(): void {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadinterruptKernel(): Promise<void> {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loadrestartKernel(): Promise<void> {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public loaddispose() {
-    //         throw new Error('Method not implemented.');
-    //     }
-    //     public load(contents: string, file: Uri): Promise<void>{}
-    //     runAllCells(): void;
-    //     runSelectedCell(): void;
-    //     addCellBelow(): void;
-    // }
     async function testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(uri: Uri, shouldOpenNotebookEditor: boolean) {
         const eventEmitter = new EventEmitter<TextDocument>();
         const editor = typemoq.Mock.ofType<INotebookEditor>();
@@ -161,7 +106,10 @@ suite('wow Data Science - Native Editor Provider', () => {
     test('Do not open the notebook editor when a txt file is opened', async () => {
         await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.file('some text file.txt'), false);
     });
-    test('Do not open the notebook editor when an ipynb file is opened with a non-save', async () => {
-        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.file('some text file.txt'), false);
+    test('Open the notebook editor when an ipynb file is opened with a file scheme', async () => {
+        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.file('fil:///some file.ipynb'), true);
+    });
+    test('Do not open the notebook editor when an ipynb file is opened with a non-file scheme', async () => {
+        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.parse('git://some//text file.txt'), false);
     });
 });

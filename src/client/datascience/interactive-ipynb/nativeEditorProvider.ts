@@ -34,26 +34,19 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         @inject(IDataScienceErrorHandler) private dataScienceErrorHandler: IDataScienceErrorHandler
 
     ) {
-        console.log(1);
         asyncRegistry.push(this);
-        console.log(2);
 
         // No live share sync required as open document from vscode will give us our contents.
 
         // Look through the file system for ipynb files to see how many we have in the workspace. Don't wait
         // on this though.
-        console.log(3);
         const findFilesPromise = this.workspace.findFiles('**/*.ipynb');
-        console.log(4);
         if (findFilesPromise && findFilesPromise.then) {
-            console.log(5);
             findFilesPromise.then(r => this.notebookCount += r.length);
         }
 
         // Listen to document open commands. We use this to launch an ipynb editor
-        console.log(1);
         const disposable = this.documentManager.onDidOpenTextDocument(this.onOpenedDocument);
-        console.log(1);
         this.disposables.push(disposable);
 
         // Since we may have activated after a document was opened, also run open document for all documents.
@@ -186,31 +179,21 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     }
 
     private onOpenedDocument = async (document: TextDocument) => {
-        console.log('opened');
         // See if this is an ipynb file
         if (this.isNotebook(document) && this.configuration.getSettings().datascience.useNotebookEditor) {
-            console.log('2');
             try {
                 const contents = document.getText();
                 const uri = document.uri;
 
                 // Open our own editor.
-                console.log('a');
                 await this.open(uri, contents);
-                console.log('b');
 
                 // Then switch back to the ipynb and close it.
                 // If we don't do it in this order, the close will switch to the wrong item
-                console.log('c');
                 await this.documentManager.showTextDocument(document);
-                console.log('d');
                 const command = 'workbench.action.closeActiveEditor';
-                console.log('e');
                 await this.cmdManager.executeCommand(command);
-                console.log('f');
             } catch (e) {
-                console.log('Error')
-                console.error(e);
                 return this.dataScienceErrorHandler.handleError(e);
             }
         }

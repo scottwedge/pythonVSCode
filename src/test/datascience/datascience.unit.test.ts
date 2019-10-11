@@ -48,7 +48,7 @@ suite('Data Science Tests', () => {
         assert.equal(expandWorkingDir('${relativeFileDirname}', 'test/xyz/bip/foo.baz', inst), relativeFileDir);
         assert.equal(expandWorkingDir('${cwd}', 'test/xyz/bip/foo.baz', inst), Uri.file('test/bar').fsPath);
         assert.equal(expandWorkingDir('${workspaceFolder}', 'test/xyz/bip/foo.baz', inst), Uri.file('test/bar').fsPath);
-        assert.equal(expandWorkingDir('${cwd}-${file}', 'bar/bip/foo.baz', inst), `${Uri.file('test/bar')}-${Uri.file('bar/bip/foo.baz').fsPath}`);
+        assert.equal(expandWorkingDir('${cwd}-${file}', 'bar/bip/foo.baz', inst), `${Uri.file('test/bar').fsPath}-${Uri.file('bar/bip/foo.baz').fsPath}`);
     });
 
     test('input history', async () => {

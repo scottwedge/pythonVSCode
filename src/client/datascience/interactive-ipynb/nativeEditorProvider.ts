@@ -34,19 +34,26 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         @inject(IDataScienceErrorHandler) private dataScienceErrorHandler: IDataScienceErrorHandler
 
     ) {
+        console.log(1);
         asyncRegistry.push(this);
+        console.log(2);
 
         // No live share sync required as open document from vscode will give us our contents.
 
         // Look through the file system for ipynb files to see how many we have in the workspace. Don't wait
         // on this though.
+        console.log(3);
         const findFilesPromise = this.workspace.findFiles('**/*.ipynb');
+        console.log(4);
         if (findFilesPromise && findFilesPromise.then) {
+            console.log(5);
             findFilesPromise.then(r => this.notebookCount += r.length);
         }
 
         // Listen to document open commands. We use this to launch an ipynb editor
+        console.log(1);
         const disposable = this.documentManager.onDidOpenTextDocument(this.onOpenedDocument);
+        console.log(1);
         this.disposables.push(disposable);
 
         // Since we may have activated after a document was opened, also run open document for all documents.
@@ -136,8 +143,8 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     private async create(file: Uri, contents: string): Promise<INotebookEditor> {
         const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
         await editor.load(contents, file);
-        this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
-        this.disposables.push(editor.executed(this.onExecutedEditor.bind(this)));
+        // this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
+        // this.disposables.push(editor.executed(this.onExecutedEditor.bind(this)));
         await editor.show();
         return editor;
     }
@@ -179,27 +186,40 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     }
 
     private onOpenedDocument = async (document: TextDocument) => {
+        console.log('opened');
         // See if this is an ipynb file
         if (this.isNotebook(document) && this.configuration.getSettings().datascience.useNotebookEditor) {
+            console.log('2');
             try {
                 const contents = document.getText();
                 const uri = document.uri;
 
                 // Open our own editor.
+                console.log('a');
                 await this.open(uri, contents);
+                console.log('b');
 
                 // Then switch back to the ipynb and close it.
                 // If we don't do it in this order, the close will switch to the wrong item
+                console.log('c');
                 await this.documentManager.showTextDocument(document);
+                console.log('d');
                 const command = 'workbench.action.closeActiveEditor';
+                console.log('e');
                 await this.cmdManager.executeCommand(command);
+                console.log('f');
             } catch (e) {
+                console.log('Error')
+                console.error(e);
                 return this.dataScienceErrorHandler.handleError(e);
             }
         }
     }
 
     private isNotebook(document: TextDocument) {
-        return document.languageId === JUPYTER_LANGUAGE || path.extname(document.fileName).toLocaleLowerCase() === '.ipynb';
+        // Only support file uris (we don't want to automatically open any other ipynb file from another resource as a notebook).
+        // E.g. when opening a document for comparison, the scheme is `git`, in live share the scheme is `vsls`.
+        const validUriScheme = document.uri.scheme === 'file';
+        return validUriScheme && (document.languageId === JUPYTER_LANGUAGE || path.extname(document.fileName).toLocaleLowerCase() === '.ipynb');
     }
 }

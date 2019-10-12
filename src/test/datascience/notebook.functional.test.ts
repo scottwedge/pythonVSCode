@@ -480,7 +480,7 @@ suite('DataScience notebook tests', () => {
         // Translate this into a notebook
         const exporter = ioc.serviceManager.get<INotebookExporter>(INotebookExporter);
         const newFolderPath = path.join(EXTENSION_ROOT_DIR, 'src', 'test', 'datascience', 'WorkspaceDir', 'WorkspaceSubDir', 'foo.ipynb');
-        const notebook = await exporter.translateToNotebook(cells, newFolderPath);
+        const notebook = await exporter.export('notebook', cells, {directoryChange: newFolderPath});
         assert.ok(notebook, 'Translate to notebook is failing');
 
         // Make sure we added in our chdir

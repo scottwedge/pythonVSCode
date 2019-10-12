@@ -246,7 +246,7 @@ suite('DataScience Native Editor', () => {
             const runAllCells =  baseFile.map(cell => {
                 return createFileCell(cell, cell.data);
             });
-            const notebook = await ioc.get<INotebookExporter>(INotebookExporter).translateToNotebook(runAllCells, undefined);
+            const notebook = await ioc.get<INotebookExporter>(INotebookExporter).export('notebook', runAllCells, {});
             await openEditor(ioc, JSON.stringify(notebook));
 
             // Export should cause exportCalled to change to true
@@ -270,7 +270,7 @@ suite('DataScience Native Editor', () => {
             const runAllCells =  baseFile.map(cell => {
                 return createFileCell(cell, cell.data);
             });
-            const notebook = await ioc.get<INotebookExporter>(INotebookExporter).translateToNotebook(runAllCells, undefined);
+            const notebook = await ioc.get<INotebookExporter>(INotebookExporter).export('notebook', runAllCells, {});
             let editor = await openEditor(ioc, JSON.stringify(notebook));
 
             // Run everything
@@ -349,7 +349,7 @@ suite('DataScience Native Editor', () => {
                 // Use a real file so we can save notebook to a file.
                 // This is used in some tests (saving).
                 notebookFile = await createTemporaryFile('.ipynb');
-                const notebook = await ioc.get<INotebookExporter>(INotebookExporter).translateToNotebook(runAllCells, undefined);
+                const notebook = await ioc.get<INotebookExporter>(INotebookExporter).export('notebook', runAllCells, {});
                 await Promise.all([waitForUpdate(wrapper, NativeEditor, 1), openEditor(ioc, JSON.stringify(notebook), notebookFile.filePath)]);
             } else {
                 // tslint:disable-next-line: no-invalid-this

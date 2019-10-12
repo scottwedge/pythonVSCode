@@ -222,7 +222,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 setupWorkspaces([defaultWorkspace]);
 
                 const localRoot = `Debug_PythonPath_${new Date().toString()}`;
-                const debugPathMappings = [ { localRoot: Uri.file(path.join('${workspaceFolder}', localRoot)).fsPath, remoteRoot: '/app/' }];
+                const debugPathMappings = [ { localRoot: path.join('${workspaceFolder}', localRoot), remoteRoot: '/app/' }];
                 const debugConfig = await debugProvider.resolveDebugConfiguration!(workspaceFolder, { localRoot, pathMappings: debugPathMappings, host, request: 'attach' } as any as DebugConfiguration);
                 const pathMappings = (debugConfig as AttachRequestArguments).pathMappings;
 

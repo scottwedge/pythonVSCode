@@ -168,8 +168,7 @@ export class InteractiveWindowCommandListener implements IDataScienceCommandList
                                 directoryChange = uri.fsPath;
                             }
 
-                            const notebook = await this.jupyterExporter.translateToNotebook(cells, directoryChange);
-                            await this.fileSystem.writeFile(uri.fsPath, JSON.stringify(notebook));
+                            await this.jupyterExporter.save('notebook', cells, {filePath: uri.fsPath, directoryChange});
                         }
                     }, localize.DataScience.exportingFormat(), file);
 
@@ -263,9 +262,7 @@ export class InteractiveWindowCommandListener implements IDataScienceCommandList
                 directoryChange = file;
             }
 
-            const notebookJson = await this.jupyterExporter.translateToNotebook(cells, directoryChange);
-            await this.fileSystem.writeFile(file, JSON.stringify(notebookJson));
-
+            await this.jupyterExporter.save('notebook', cells, {directoryChange, filePath: file});
         } finally {
             if (server) {
                 await server.dispose();

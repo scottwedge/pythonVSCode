@@ -23,8 +23,8 @@ import {
     InteractiveWindowCommandListener
 } from '../../client/datascience/interactive-window/interactiveWindowCommandListener';
 import { InteractiveWindowProvider } from '../../client/datascience/interactive-window/interactiveWindowProvider';
+import { JupyterExporter } from '../../client/datascience/jupyter/export/jupyterExporter';
 import { JupyterExecutionFactory } from '../../client/datascience/jupyter/jupyterExecutionFactory';
-import { JupyterExporter } from '../../client/datascience/jupyter/jupyterExporter';
 import { JupyterImporter } from '../../client/datascience/jupyter/jupyterImporter';
 import {
     IInteractiveBase,
@@ -195,7 +195,7 @@ suite('Interactive window command listener', async () => {
             pygments_lexer: `ipython${3}`,
             version: 3
         };
-        when(notebookExporter.translateToNotebook(anything())).thenResolve(
+        when(notebookExporter.export(anything(), anything(), anything())).thenResolve(
             {
                 cells: [],
                 nbformat: 4,

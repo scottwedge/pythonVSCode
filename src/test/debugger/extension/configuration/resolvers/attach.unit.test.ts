@@ -189,7 +189,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 const debugConfig = await debugProvider.resolveDebugConfiguration!(workspaceFolder, { localRoot, host, request: 'attach' } as any as DebugConfiguration);
                 const pathMappings = (debugConfig as AttachRequestArguments).pathMappings;
 
-                const expected = path.join('c:', 'Debug', 'Python_Path');
+                const expected = Uri.file(path.join('c:', 'Debug', 'Python_Path')).fsPath;
                 expect(pathMappings![0].localRoot).to.be.equal(expected);
                 expect(pathMappings![0].remoteRoot).to.be.equal(workspaceFolder.uri.fsPath);
             });
@@ -226,9 +226,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 const debugConfig = await debugProvider.resolveDebugConfiguration!(workspaceFolder, { localRoot, pathMappings: debugPathMappings, host, request: 'attach' } as any as DebugConfiguration);
                 const pathMappings = (debugConfig as AttachRequestArguments).pathMappings;
 
-                const expected = osType === OSType.Windows
-                    ? path.join('c:', 'Debug', 'Python_Path', localRoot)
-                    : path.join('C:', 'Debug', 'Python_Path', localRoot);
+                const expected = Uri.file(path.join('c:', 'Debug', 'Python_Path', localRoot)).fsPath;
                 expect(pathMappings![0].localRoot).to.be.equal(expected);
                 expect(pathMappings![0].remoteRoot).to.be.equal('/app/');
             });

@@ -389,14 +389,14 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
             setupActiveEditor('spam.py', PYTHON_LANGUAGE);
             const defaultWorkspace = path.join('usr', 'desktop');
             setupWorkspaces([defaultWorkspace]);
-            const localRoot = path.join(workspaceFolder.uri.fsPath, 'app');
+            const localRoot = Uri.file(path.join(workspaceFolder.uri.fsPath, 'app')).fsPath;
 
             const debugConfig = await debugProvider.resolveDebugConfiguration!(
                 workspaceFolder,
                 {
                     request: 'launch',
                     pathMappings: [{
-                        localRoot: localRoot,
+                        localRoot,
                         remoteRoot: '/app/'
                     }]
                 } as any as DebugConfiguration
@@ -418,23 +418,22 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
             setupActiveEditor('spam.py', PYTHON_LANGUAGE);
             const defaultWorkspace = path.join('usr', 'desktop');
             setupWorkspaces([defaultWorkspace]);
-            const localRoot = path.join(workspaceFolder.uri.fsPath, 'app');
+            const localRoot = Uri.file(path.join(workspaceFolder.uri.fsPath, 'app')).fsPath;
 
             const debugConfig = await debugProvider.resolveDebugConfiguration!(
                 workspaceFolder,
                 {
                     request: 'launch',
                     pathMappings: [{
-                        localRoot: localRoot,
+                        localRoot,
                         remoteRoot: '/app/'
                     }]
                 } as any as DebugConfiguration
             );
 
             const pathMappings = (debugConfig as LaunchRequestArguments).pathMappings;
-            const expected = Uri.file(path.join('USR', 'Debug', 'Python_Path')).fsPath;
             expect(pathMappings).to.deep.equal([{
-                localRoot: expected,
+                localRoot,
                 remoteRoot: '/app/'
             }]);
         });

@@ -110,10 +110,16 @@ export class MockJupyterManager implements IJupyterSessionManager {
         this.addCell('import sys\r\nsys.version', '1.1.1.1');
         this.addCell('import sys\r\nsys.executable', 'python');
         this.addCell('import notebook\r\nnotebook.version_info', '1.1.1.1');
+
         this.addCell(`__file__ = '${Uri.file('foo.py').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('bar.py').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('foo').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('test.py').fsPath}'`);
+
+        this.addCell(`__file__ = '${Uri.file('foo.py').fsPath.replace(/\\/g, '\\\\')}'`);
+        this.addCell(`__file__ = '${Uri.file('bar.py').fsPath.replace(/\\/g, '\\\\')}'`);
+        this.addCell(`__file__ = '${Uri.file('foo').fsPath.replace(/\\/g, '\\\\')}'`);
+        this.addCell(`__file__ = '${Uri.file('test.py').fsPath.replace(/\\/g, '\\\\')}'`);
     }
 
     public getConnInfo(): IConnection {

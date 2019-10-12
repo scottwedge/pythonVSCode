@@ -190,9 +190,43 @@ export interface INotebookImporter extends Disposable {
     importCells(json: string): Promise<ICell[]>;
 }
 
+export type NotebookExportOptions = {
+    directoryChange?: string;
+};
+
 export const INotebookExporter = Symbol('INotebookExporter');
 export interface INotebookExporter extends Disposable {
-    translateToNotebook(cells: ICell[], directoryChange?: string): Promise<JSONObject | undefined>;
+    /**
+     * Export the cells into the notebook format (JSON)
+     *
+     * @param {'notebook'} format
+     * @param {ICell[]} cells
+     * @param {string} [directoryChange]
+     * @returns {Promise<JSONObject>}
+     * @memberof INotebookExporter
+     */
+    export(format: 'notebook', cells: ICell[], options: NotebookExportOptions): Promise<JSONObject>;
+    /**
+     * Export the cells into python code.
+     *
+     * @param {'notebook'} format
+     * @param {ICell[]} cells
+     * @param {string} [directoryChange]
+     * @returns {Promise<JSONObject>}
+     * @memberof INotebookExporter
+     */
+    export(format: 'python', cells: ICell[], options: NotebookExportOptions): Promise<string>;
+    /**
+     * Save the cells into a notebook or python file.
+     *
+     * @param {'notebook' | 'python'} format
+     * @param {ICell[]} cells
+     * @param {string} filePath
+     * @param {string} [directoryChange]
+     * @returns {Promise<void>}
+     * @memberof INotebookExporter
+     */
+    save(format: 'notebook' | 'python', cells: ICell[], options: NotebookExportOptions & {filePath: string}): Promise<void>;
 }
 
 export const IInteractiveWindowProvider = Symbol('IInteractiveWindowProvider');

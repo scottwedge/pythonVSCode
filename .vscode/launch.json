@@ -171,9 +171,12 @@
                 "--ui=tdd",
                 "--recursive",
                 "--colors",
-                //"--grep", "<suite name>",
+                "--grep", "DataScience LiveShare tests",
                 "--timeout=300000"
             ],
+            "env": {
+                "CI_PYTHON_PATH": "/Users/donjayamanne/miniconda3/envs/env373/bin/python"
+            },
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ],

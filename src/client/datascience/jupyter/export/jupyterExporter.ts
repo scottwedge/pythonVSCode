@@ -38,12 +38,12 @@ export class JupyterExporter implements INotebookExporter {
         switch (format) {
             case 'python': {
                 const code = await this.exportToPython(cells, options);
-                return this.fileSystem.writeFile(options.filePath, code, { encoding: 'utf8' });
+                return this.fileSystem.writeFile(options.filePath, code, { encoding: 'utf-8' });
             }
             case 'notebook': {
                 const data = await this.notebookConverter.convert(cells, options.directoryChange);
                 const notebook = JSON.stringify(data, undefined, 2);
-                return this.fileSystem.writeFile(options.filePath, notebook, { encoding: 'utf8' });
+                return this.fileSystem.writeFile(options.filePath, notebook, { encoding: 'utf-8' });
             }
             default:
                 throw new Error(`Exporting cells to '${format}' format not supported!`);

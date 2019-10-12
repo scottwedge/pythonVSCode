@@ -116,6 +116,9 @@ export class MockJupyterManager implements IJupyterSessionManager {
         this.addCell(`__file__ = '${Uri.file('foo').fsPath}'`);
         this.addCell(`__file__ = '${Uri.file('test.py').fsPath}'`);
 
+        // When we have windows file names, we replace `\` with `\\`.
+        // Code is as follows `await this.notebook.execute(`__file__ = '${file.replace(/\\/g, '\\\\')}'`, file, line, uuid(), undefined, true);
+        // Found in src\client\datascience\interactive-common\interactiveBase.ts.
         this.addCell(`__file__ = '${Uri.file('foo.py').fsPath.replace(/\\/g, '\\\\')}'`);
         this.addCell(`__file__ = '${Uri.file('bar.py').fsPath.replace(/\\/g, '\\\\')}'`);
         this.addCell(`__file__ = '${Uri.file('foo').fsPath.replace(/\\/g, '\\\\')}'`);

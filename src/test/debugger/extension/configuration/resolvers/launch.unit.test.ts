@@ -20,8 +20,8 @@ import { IDebugEnvironmentVariablesService } from '../../../../../client/debugge
 import { LaunchConfigurationResolver } from '../../../../../client/debugger/extension/configuration/resolvers/launch';
 import { DebugOptions, LaunchRequestArguments } from '../../../../../client/debugger/types';
 import { IInterpreterHelper } from '../../../../../client/interpreter/contracts';
-import { getInfoPerOS, setUpOSMocks } from './common';
 import { getOSType } from '../../../../common';
+import { getInfoPerOS, setUpOSMocks } from './common';
 
 getInfoPerOS().forEach(([osName, osType, path]) => {
     if (osType === OSType.Unknown) {

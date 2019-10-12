@@ -126,7 +126,7 @@ suite('Unit Tests - PyTest - Discovery', () => {
 
         const filteredArgs = options.args;
         const expectedArgs = [
-            '--rootdir', Uri.file(__dirname).fsPath,,
+            '--rootdir', Uri.file(__dirname).fsPath,
             '-s',
             ...filteredArgs
         ];

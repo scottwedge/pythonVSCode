@@ -211,8 +211,10 @@ export function generateCells(filePath: string, repetitions: number): ICell[] {
     for (let i = 0; i < repetitions; i += 1) {
         cellData = [...cellData, ...generateCellData()];
     }
-    // tslint:disable-next-line: no-require-imports
-    const Uri = require('vscode').Uri;
+    // Dynamically require vscode, this is testing code.
+    // Obfuscate the import to prevent webpack from picking this up.
+    // tslint:disable-next-line: no-eval (webpack is smart enough to look for `require` and `eval`).
+    const Uri = eval('req' + 'uire')('vscode').Uri;
     return cellData.map((data: nbformat.ICodeCell | nbformat.IMarkdownCell | nbformat.IRawCell | IMessageCell, key: number) => {
         return {
             id: key.toString(),

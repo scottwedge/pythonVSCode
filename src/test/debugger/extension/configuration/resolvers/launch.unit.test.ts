@@ -381,7 +381,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
             }]);
         });
         test('Ensure drive letter is lower cased for local path mappings on Windows when with existing path mappings', async function () {
-            if (getOSType() !== OSType.Windows){
+            if (getOSType() !== OSType.Windows || osType !== OSType.Windows){
                 // tslint:disable-next-line: no-invalid-this
                 return this.skip();
             }
@@ -410,7 +410,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
             }]);
         });
         test('Ensure drive letter is not lower cased for local path mappings on non-Windows when with existing path mappings', async function () {
-            if (getOSType() === OSType.Windows){
+            if (getOSType() === OSType.Windows || osType === OSType.Windows){
                 // tslint:disable-next-line: no-invalid-this
                 return this.skip();
             }

@@ -176,7 +176,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 expect(pathMappings![0].remoteRoot).to.be.equal(workspaceFolder.uri.fsPath);
             });
             test(`Ensure drive letter is lower cased for local path mappings on Windows when host is '${host}'`, async function () {
-                if (getOSType() !== OSType.Windows){
+                if (getOSType() !== OSType.Windows || osType !== OSType.Windows){
                     return this.skip();
                 }
                 const activeFile = 'xyz.py';
@@ -194,7 +194,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 expect(pathMappings![0].remoteRoot).to.be.equal(workspaceFolder.uri.fsPath);
             });
             test(`Ensure drive letter is not lower cased for local path mappings on non-Windows when host is '${host}'`, async function () {
-                if (getOSType() === OSType.Windows){
+                if (getOSType() === OSType.Windows || osType === OSType.Windows){
                     return this.skip();
                 }
                 const activeFile = 'xyz.py';
@@ -212,7 +212,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 expect(pathMappings![0].remoteRoot).to.be.equal(workspaceFolder.uri.fsPath);
             });
             test(`Ensure drive letter is lower cased for local path mappings on Windows when host is '${host}' and with existing path mappings`, async function () {
-                if (getOSType() !== OSType.Windows){
+                if (getOSType() !== OSType.Windows || osType !== OSType.Windows){
                     return this.skip();
                 }
                 const activeFile = 'xyz.py';
@@ -231,7 +231,7 @@ getInfoPerOS().forEach(([osName, osType, path]) => {
                 expect(pathMappings![0].remoteRoot).to.be.equal('/app/');
             });
             test(`Ensure drive letter is not lower cased for local path mappings on non-Windows when host is '${host}' and with existing path mappings`, async function () {
-                if (getOSType() === OSType.Windows){
+                if (getOSType() === OSType.Windows || osType === OSType.Windows){
                     return this.skip();
                 }
                 const activeFile = 'xyz.py';

@@ -59,6 +59,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
     private watchingMargin: boolean = false;
     private throttledUpdateWidgetPosition = throttle(this.updateWidgetPosition.bind(this), 100);
     private monacoContainer : HTMLDivElement | undefined;
+    private parameterWidget?: Element;
 
     constructor(props: IMonacoEditorProps) {
         super(props);
@@ -155,6 +156,15 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
                         contextMenuElement.style.left = `${Math.max(0, Math.floor(posX))}px`;
                     }
                 }
+            }));
+
+            this.subscriptions.push(editor.onDidBlurEditorWidget(() => {
+                console.log('Blurred');
+                console.log('Blurred');
+                console.log('Blurred');
+                console.log('Blurred');
+                console.log('Blurred');
+                this.hideParameterHints();
             }));
 
             // Track focus changes to make sure we update our widget parent and widget position
@@ -434,7 +444,80 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         if (this.state.editor && !this.enteredHover) {
             // If we haven't already entered hover, then act like it shuts down
             this.onHoverLeave();
+            // Possible user is viewing the parameter hints, wait before user moves the mouse.
+            // Waiting for 1s is too long to move the mouse and hide the hints (100ms seems like a good fit).
+            setTimeout(() => this.hideParameterHints(), 100);
         }
+    }
+    private hideParameterHints(){
+        if (!this.state.editor || !this.state.editor.getDomNode() || !this.widgetParent){
+            return;
+        }
+        const editorDom = this.state.editor.getDomNode()!;
+        const elements = document.querySelectorAll(':hover');
+        const visibleParameterHintsWidgets = this.widgetParent.querySelectorAll('.parameter-hints-widget.visible');
+        if (elements.length === 0 && visibleParameterHintsWidgets.length === 0){
+            return;
+        }
+        if (elements.length === 0 && visibleParameterHintsWidgets.length > 0){
+            return;
+        }
+        const knownParameterHintsWidgets = this.widgetParent.querySelectorAll('.parameter-hints-widget');
+
+        let isHoveringOverParameterWidget = false;
+        // Lets not assume we'll have the exact same DOM for parameter widgets.
+        // So, just remove the event handler.
+        if (this.parameterWidget){
+            this.parameterWidget.removeEventListener('mouseleave', this.outermostParentLeave);
+        }
+        const parameterWidgetClasses = ['editor-widget', 'parameter-hints-widget', 'visible'];
+
+        elements.forEach(item => {
+            if (!item || !item.className) {
+                return;
+            }
+            const classes = item.className.split(' ');
+            if (!parameterWidgetClasses.every(cls => classes.indexOf(cls) >= 0)){
+                // Not all classes required in a parameter hint widget are in this element.
+                return;
+            }
+            // Check if the parameter hints widget currently displayed belongs to this monaco editor.
+            let widgetBelongsToThisEditor = false;
+            knownParameterHintsWidgets.forEach(widget => {
+                if (widget === item){
+                    widgetBelongsToThisEditor = true;
+                }
+            });
+            if (!widgetBelongsToThisEditor){
+                return;
+            }
+            this.parameterWidget = item;
+            isHoveringOverParameterWidget = true;
+        });
+        if (isHoveringOverParameterWidget && this.parameterWidget){
+            this.parameterWidget.addEventListener('mouseleave', this.outermostParentLeave);
+            // Check if the user has move away from this cell
+            // In which case we'll need to hide the parameter hints.
+            setTimeout(() => this.hideParameterHints(), 1000);
+            return;
+        }
+        if (!isHoveringOverParameterWidget && visibleParameterHintsWidgets.length === 0){
+            return;
+        }
+
+        // Hitting escape on the monaco editor when it doesn't have focus doesn't seem to work.
+        // Hence we need to hide it manually (as well).
+        knownParameterHintsWidgets.forEach(widget => {
+            widget.setAttribute('class', widget.className.split(' ').filter(cls => cls !== 'visible').join(' '));
+            // tslint:disable-next-line: no-any
+            const ele = widget as any;
+            if (ele.hasOwnProperty('style') && ele.style.hasOwnProperty('visibility')) {
+                ele.style.visibility = 'hidden';
+            }
+        });
+        // tslint:disable-next-line: no-any
+        const eventOptions = {key: 'Escape', code: 27, keyCode: 27, bubbles: true, cancelable: true } as any;
+        editorDom.dispatchEvent(new KeyboardEvent('keydown', eventOptions));
     }
 
     private updateMargin(editor: monacoEditor.editor.IStandaloneCodeEditor) {

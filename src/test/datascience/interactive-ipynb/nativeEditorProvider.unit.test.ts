@@ -107,9 +107,12 @@ suite('Data Science - Native Editor Provider', () => {
         await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.file('some text file.txt'), false);
     });
     test('Open the notebook editor when an ipynb file is opened with a file scheme', async () => {
-        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.file('fil:///some file.ipynb'), true);
+        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.parse('file:///some file.ipynb'), true);
     });
-    test('Do not open the notebook editor when an ipynb file is opened with a non-file scheme', async () => {
+    test('Open the notebook editor when an ipynb file is opened with a vsls scheme (live share)', async () => {
+        await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.parse('vsls:///some file.ipynb'), true);
+    });
+    test('Do not open the notebook editor when an ipynb file is opened with a git scheme (comparing staged/modified files)', async () => {
         await testAutomaticallyOpeningNotebookEditorWhenOpeningFiles(Uri.parse('git://some//text file.txt'), false);
     });
 });

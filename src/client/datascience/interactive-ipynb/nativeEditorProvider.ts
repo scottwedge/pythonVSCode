@@ -202,7 +202,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     private isNotebook(document: TextDocument) {
         // Only support file uris (we don't want to automatically open any other ipynb file from another resource as a notebook).
         // E.g. when opening a document for comparison, the scheme is `git`, in live share the scheme is `vsls`.
-        const validUriScheme = document.uri.scheme === 'file';
+        const validUriScheme = document.uri.scheme === 'file' || document.uri.scheme === 'vsls';
         return validUriScheme && (document.languageId === JUPYTER_LANGUAGE || path.extname(document.fileName).toLocaleLowerCase() === '.ipynb');
     }
 }

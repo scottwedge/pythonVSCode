@@ -1117,6 +1117,8 @@ export class MainStateController implements IMessageHandler {
             // if (concatMultilineString(this.pendingState.cellVMs[index].cell.data.source) !== concatMultilineString(cell.data.source)) {
 
             // If cell state changes, then update just the state and the cell data (excluding source).
+            // Prevent updates to the source, as its possible we have recieved a response for a cell execution
+            // and the user has updated the cell text since then.
             if (this.pendingState.cellVMs[index].cell.state !== cell.state) {
                 newVMs[index] = {
                                     ...newVMs[index],

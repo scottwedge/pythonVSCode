@@ -475,6 +475,8 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         // Find all parameter widgets related to this monaco editor that are currently displayed.
         const visibleParameterHintsWidgets: Element[] = Array.prototype.slice.call(this.widgetParent.querySelectorAll('.parameter-hints-widget.visible'));
         if (hoverElements.length === 0 && visibleParameterHintsWidgets.length === 0){
+            // If user is not hovering over anything and there are no visible parameter widgets,
+            // then, we have nothing to do but get out of here.
             return;
         }
 
@@ -536,13 +538,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         // However some of the parameter widgets associated with this monaco editor are visible.
         // We need to hide them.
 
-        // Solution 1: Send the `Escape` key stroke to monaco, this will hide the parameters widget.
-        // tslint:disable-next-line: no-any
-        const eventOptions = {key: 'Escape', code: 27, keyCode: 27, bubbles: true, cancelable: true } as any;
-        const editorDom = this.state.editor.getDomNode()!;
-        editorDom.dispatchEvent(new KeyboardEvent('keydown', eventOptions));
-
-        // Solution 2: Hitting escape on the monaco editor when it doesn't have focus doesn't work.
+        // Solution: Hitting escape on the monaco editor when it doesn't have focus doesn't work.
         // Hence we need to hide it manually (as well).
         knownParameterHintsWidgets.forEach(widget => {
             widget.setAttribute('class', widget.className.split(' ').filter(cls => cls !== 'visible').join(' '));

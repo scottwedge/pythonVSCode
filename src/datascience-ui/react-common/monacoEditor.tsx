@@ -461,6 +461,8 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
      * This will hide the parameter widget if the user is not hovering over
      * the parameter widget for this monaco editor.
      *
+     * Notes: See issue https://github.com/microsoft/vscode-python/issues/7851 for further info.
+     *
      * @private
      * @returns
      * @memberof MonacoEditor

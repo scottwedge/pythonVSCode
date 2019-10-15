@@ -540,8 +540,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         // However some of the parameter widgets associated with this monaco editor are visible.
         // We need to hide them.
 
-        // Solution: Hitting escape on the monaco editor when it doesn't have focus doesn't work.
-        // Hence we need to hide it manually (as well).
+        // Solution: Hide the widgets manually.
         knownParameterHintsWidgets.forEach(widget => {
             widget.setAttribute('class', widget.className.split(' ').filter(cls => cls !== 'visible').join(' '));
             if (widget.style.visibility !== 'hidden') {

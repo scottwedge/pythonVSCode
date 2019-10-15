@@ -462,6 +462,10 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
      * the parameter widget for this monaco editor.
      *
      * Notes: See issue https://github.com/microsoft/vscode-python/issues/7851 for further info.
+     * Hide the parameter widget if all of the following conditions have been met:
+     * - ditor doesn't have focus
+     * - Mouse is not over the editor
+     * - Mouse is not over (hovering) the parameter widget
      *
      * @private
      * @returns

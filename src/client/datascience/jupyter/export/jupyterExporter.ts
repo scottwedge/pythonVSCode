@@ -7,7 +7,7 @@ import { JSONObject } from '@phosphor/coreutils';
 import { inject, injectable } from 'inversify';
 import { IFileSystem, TemporaryFile } from '../../../common/platform/types';
 import { noop } from '../../../common/utils/misc';
-import { ICell, INotebookExporter, NotebookExportOptions } from '../../types';
+import { ICell, INotebookExporter, NotebookExportOptions, PythonExportOptions } from '../../types';
 import { NotebookConverter } from './notebookConverter';
 import { PythonConverter } from './pythonConverter';
 
@@ -22,11 +22,11 @@ export class JupyterExporter implements INotebookExporter {
         noop();
     }
     public export(format: 'notebook', cells: ICell[], _options: NotebookExportOptions): Promise<JSONObject>;
-    public export(format: 'python', cells: ICell[], _options: NotebookExportOptions): Promise<string>;
+    public export(format: 'python', cells: ICell[], _options: PythonExportOptions): Promise<string>;
     // tslint:disable-next-line: unified-signatures
-    public export(format: 'python', notebookFilePath: string, options: NotebookExportOptions): Promise<string>;
+    public export(format: 'python', notebookFilePath: string, options: PythonExportOptions): Promise<string>;
     // tslint:disable-next-line: no-any
-    public export(format: any, input: any, options: NotebookExportOptions): Promise<any> {
+    public export(format: any, input: any, options: NotebookExportOptions | PythonExportOptions): Promise<any> {
         switch (format) {
             case 'python':
                 if (typeof input === 'string'){
@@ -35,19 +35,21 @@ export class JupyterExporter implements INotebookExporter {
                     return this.exportToPython(input as ICell[], options);
                 }
             case 'notebook':
-                return this.notebookConverter.convert(input as ICell[], options.directoryChange);
+                return this.notebookConverter.convert(input as ICell[], options);
             default:
                 throw new Error(`Exporting cells to '${format}' format not supported!`);
         }
     }
-    public async save(format: 'notebook' | 'python', cells: ICell[], options: NotebookExportOptions & { filePath: string }): Promise<void> {
+    public async save(format: 'notebook', cells: ICell[], options: NotebookExportOptions & {filePath: string; indent?: string}): Promise<void>;
+    public async save(format: 'python', cells: ICell[], options: PythonExportOptions & {filePath: string}): Promise<void>;
+    public async save(format: 'notebook' | 'python', cells: ICell[], options: (NotebookExportOptions & {filePath: string; indent?: string}) | (PythonExportOptions & {filePath: string})): Promise<void> {
         switch (format) {
             case 'python': {
                 const code = await this.exportToPython(cells, options);
                 return this.fileSystem.writeFile(options.filePath, code, { encoding: 'utf-8' });
             }
             case 'notebook': {
-                const data = await this.notebookConverter.convert(cells, options.directoryChange);
+                const data = await this.notebookConverter.convert(cells, options);
                 const notebook = JSON.stringify(data, undefined, 2);
                 return this.fileSystem.writeFile(options.filePath, notebook, { encoding: 'utf-8' });
             }
@@ -61,11 +63,11 @@ export class JupyterExporter implements INotebookExporter {
      *
      * @private
      * @param {ICell[]} cells
-     * @param {NotebookExportOptions} options
+     * @param {PythonExportOptions} options
      * @returns {Promise<string>}
      * @memberof JupyterExporter
      */
-    private async exportToPython(cells: ICell[], options: NotebookExportOptions): Promise<string> {
+    private async exportToPython(cells: ICell[], options: PythonExportOptions): Promise<string> {
         // First generate a temporary notebook with these cells.
         let tempFile: TemporaryFile | undefined;
         try {

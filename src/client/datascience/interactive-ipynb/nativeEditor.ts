@@ -29,7 +29,7 @@ import { StopWatch } from '../../common/utils/stopWatch';
 import { EXTENSION_ROOT_DIR } from '../../constants';
 import { IInterpreterService } from '../../interpreter/contracts';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
-import { concatMultilineStringInput, splitMultilineString } from '../common';
+import { concatMultilineStringInput } from '../common';
 import {
     EditorContexts,
     Identifiers,
@@ -60,7 +60,6 @@ import {
     INotebookEditor,
     INotebookEditorProvider,
     INotebookExporter,
-    INotebookImporter,
     INotebookServerOptions,
     IStatusProvider,
     IThemeFinder
@@ -108,7 +107,6 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         @inject(IDataViewerProvider) dataExplorerProvider: IDataViewerProvider,
         @inject(IJupyterVariables) jupyterVariables: IJupyterVariables,
         @inject(IJupyterDebugger) jupyterDebugger: IJupyterDebugger,
-        @inject(INotebookImporter) private importer: INotebookImporter,
         @inject(IDataScienceErrorHandler) errorHandler: IDataScienceErrorHandler,
         @inject(IMemento) @named(WORKSPACE_MEMENTO) private workspaceStorage: Memento
     ) {
@@ -588,7 +586,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.visibleCells = cells;
 
             // Save our dirty state in the storage for reopen later
-            await this.storeContents(this.generateNotebookContent(cells));
+            const contents = await this.jupyterExporter.export('notebook', cells, {notebookJson: this.notebookJson});
+            await this.storeContents(JSON.stringify(contents, undefined, this.indentAmount));
 
             // Indicate dirty
             await this.setDirty();
@@ -618,7 +617,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     private async export(cells: ICell[]): Promise<void> {
         const status = this.setStatus(localize.DataScience.convertingToPythonFile());
         try {
-            const contents = await this.jupyterExporter.export('python', cells, {});
+            const contents = await this.jupyterExporter.export('python', cells, {notebookJson: this.notebookJson});
             await this.viewDocument(contents);
         } catch (e) {
             await this.errorHandler.handleError(e);
@@ -630,23 +629,6 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     private async viewDocument(contents: string): Promise<void> {
         const doc = await this.documentManager.openTextDocument({ language: 'python', content: contents });
         await this.documentManager.showTextDocument(doc, ViewColumn.One);
-    }
-
-    private fixupCell(cell: nbformat.ICell): nbformat.ICell {
-        // Source is usually a single string on input. Convert back to an array
-        return {
-            ...cell,
-            source: splitMultilineString(cell.source)
-        };
-    }
-
-    private generateNotebookContent(cells: ICell[]): string {
-        // Reuse our original json except for the cells.
-        const json = {
-            ...this.notebookJson,
-            cells: cells.map(c => this.fixupCell(c.data))
-        };
-        return JSON.stringify(json, null, this.indentAmount);
     }
 
     @captureTelemetry(Telemetry.Save, undefined, true)
@@ -673,7 +655,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             if (fileToSaveTo && isDirty) {
                 // Save our visible cells into the file
-                await this.jupyterExporter.save('notebook', this.visibleCells, {filePath: fileToSaveTo.fsPath});
+                await this.jupyterExporter.save('notebook', this.visibleCells, {filePath: fileToSaveTo.fsPath, indent: this.indentAmount });
 
                 // Update our file name and dirty state
                 this._file = fileToSaveTo;

@@ -11,64 +11,45 @@ import * as uuid from 'uuid/v4';
 
 import { IWorkspaceService } from '../../../common/application/types';
 import { IFileSystem, IPlatformService } from '../../../common/platform/types';
-import { IConfigurationService } from '../../../common/types';
 import * as localize from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
-import { CellMatcher } from '../../cellMatcher';
-import { concatMultilineString } from '../../common';
+import { concatMultilineString, splitMultilineString } from '../../common';
 import { CodeSnippits, Identifiers } from '../../constants';
-import { CellState, ICell, IJupyterExecution } from '../../types';
+import { CellState, ICell, NotebookExportOptions } from '../../types';
 
 @injectable()
 export class NotebookConverter {
     constructor(
-        @inject(IJupyterExecution) private jupyterExecution: IJupyterExecution,
         @inject(IWorkspaceService) private workspaceService: IWorkspaceService,
-        @inject(IConfigurationService) private configService: IConfigurationService,
         @inject(IFileSystem) private fileSystem: IFileSystem,
         @inject(IPlatformService) private readonly platform: IPlatformService
-    ) {
-    }
+    ) {}
 
     public dispose() {
         noop();
     }
 
-    public async convert(cells: ICell[], changeDirectory?: string): Promise<nbformat.INotebookContent> {
+    public async convert(cells: ICell[], options: NotebookExportOptions): Promise<nbformat.INotebookContent> {
         // If requested, add in a change directory cell to fix relative paths
-        if (changeDirectory) {
-            cells = await this.addDirectoryChangeCell(cells, changeDirectory);
+        if (options.directoryChange) {
+            cells = await this.addDirectoryChangeCell(cells, options.directoryChange);
         }
 
-        const pythonNumber = await this.extractPythonMainVersion();
-
         // Use this to build our metadata object
-        const metadata: nbformat.INotebookMetadata = {
-            language_info: {
-                name: 'python',
-                codemirror_mode: {
-                    name: 'ipython',
-                    version: pythonNumber
-                }
-            },
-            orig_nbformat: 2,
-            file_extension: '.py',
-            mimetype: 'text/x-python',
-            name: 'python',
-            npconvert_exporter: 'python',
-            pygments_lexer: `ipython${pythonNumber}`,
-            version: pythonNumber
-        };
-
-        // Create an object for matching cell definitions
-        const matcher = new CellMatcher(this.configService.getSettings().datascience);
+        // tslint:disable-next-line: no-any
+        const notebookData: nbformat.INotebookContent = options.notebookJson || {} as any;
 
         // Combine this into a JSON object
         return {
-            cells: this.pruneCells(cells, matcher),
-            nbformat: 4,
-            nbformat_minor: 2,
-            metadata: metadata
+            ...notebookData,
+            cells: cells.map(c => this.fixupCell(c.data))
+        };
+    }
+    private fixupCell(cell: nbformat.ICell): nbformat.ICell {
+        // Source is usually a single string on input. Convert back to an array
+        return {
+            ...cell,
+            source: splitMultilineString(cell.source)
         };
     }
 
@@ -77,7 +58,11 @@ export class NotebookConverter {
         const changeDirectory = await this.calculateDirectoryChange(file, cells);
 
         if (changeDirectory) {
-            const exportChangeDirectory = CodeSnippits.ChangeDirectory.join(os.EOL).format(localize.DataScience.exportChangeDirectoryComment(), CodeSnippits.ChangeDirectoryCommentIdentifier, changeDirectory);
+            const exportChangeDirectory = CodeSnippits.ChangeDirectory.join(os.EOL).format(
+                localize.DataScience.exportChangeDirectoryComment(),
+                CodeSnippits.ChangeDirectoryCommentIdentifier,
+                changeDirectory
+            );
 
             const cell: ICell = {
                 data: {
@@ -148,42 +133,5 @@ export class NotebookConverter {
         } else {
             return undefined;
         }
-    }
-
-    private pruneCells = (cells: ICell[], cellMatcher: CellMatcher): nbformat.IBaseCell[] => {
-        // First filter out sys info cells. Jupyter doesn't understand these
-        return cells.filter(c => c.data.cell_type !== 'messages')
-            // Then prune each cell down to just the cell data.
-            .map(c => this.pruneCell(c, cellMatcher));
-    }
-
-    private pruneCell = (cell: ICell, cellMatcher: CellMatcher): nbformat.IBaseCell => {
-        // Remove the #%% of the top of the source if there is any. We don't need
-        // this to end up in the exported ipynb file.
-        const copy = { ...cell.data };
-        copy.source = this.pruneSource(cell.data.source, cellMatcher);
-        return copy;
-    }
-
-    private pruneSource = (source: nbformat.MultilineString, cellMatcher: CellMatcher): nbformat.MultilineString => {
-
-        if (Array.isArray(source) && source.length > 0) {
-            if (cellMatcher.isCell(source[0])) {
-                return source.slice(1);
-            }
-        } else {
-            const array = source.toString().split('\n').map(s => `${s}\n`);
-            if (array.length > 0 && cellMatcher.isCell(array[0])) {
-                return array.slice(1);
-            }
-        }
-
-        return source;
-    }
-
-    private extractPythonMainVersion = async (): Promise<number> => {
-        // Use the active interpreter
-        const usableInterpreter = await this.jupyterExecution.getUsableJupyterPython();
-        return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
     }
 }

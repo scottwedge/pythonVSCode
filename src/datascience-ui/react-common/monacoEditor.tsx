@@ -479,7 +479,8 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         // Its possible the parameter widget is one of them.
         const hoverElements: Element[] = Array.prototype.slice.call(document.querySelectorAll(':hover'));
         // Find all parameter widgets related to this monaco editor that are currently displayed.
-        const visibleParameterHintsWidgets: Element[] = Array.prototype.slice.call(this.widgetParent.querySelectorAll('.parameter-hints-widget.visible'));
+        const visibleParameterHintsWidgets: Element[] = Array.prototype.slice.call(this.widgetParent.querySelectorAll('.parameter-hints-widget.visible'))
+                                                        .filter(item => this.isElementVisible(item));
         if (hoverElements.length === 0 && visibleParameterHintsWidgets.length === 0){
             // If user is not hovering over anything and there are no visible parameter widgets,
             // then, we have nothing to do but get out of here.
@@ -487,7 +488,8 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         }
 
         // Find all parameter widgets related to this monaco editor.
-        const knownParameterHintsWidgets: HTMLDivElement[] = Array.prototype.slice.call(this.widgetParent.querySelectorAll('.parameter-hints-widget'));
+        const knownParameterHintsWidgets: HTMLDivElement[] = Array.prototype.slice.call(this.widgetParent.querySelectorAll('.parameter-hints-widget'))
+                                                            .filter(item => this.isElementVisible(item));
 
         // Lets not assume we'll have the exact same DOM for parameter widgets.
         // So, just remove the event handler, and add it again later.

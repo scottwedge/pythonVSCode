@@ -21,7 +21,7 @@ import {
 } from '../../common/application/types';
 import { ContextKey } from '../../common/contextKey';
 import { traceError } from '../../common/logger';
-import { IFileSystem, TemporaryFile } from '../../common/platform/types';
+import { IFileSystem } from '../../common/platform/types';
 import { IConfigurationService, IDisposableRegistry, IMemento, WORKSPACE_MEMENTO } from '../../common/types';
 import { createDeferred, Deferred } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
@@ -617,25 +617,12 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     @captureTelemetry(Telemetry.ConvertToPythonFile, undefined, false)
     private async export(cells: ICell[]): Promise<void> {
         const status = this.setStatus(localize.DataScience.convertingToPythonFile());
-        // First generate a temporary notebook with these cells.
-        let tempFile: TemporaryFile | undefined;
         try {
-            tempFile = await this.fileSystem.createTemporaryFile('.ipynb');
-
-            // Translate the cells into a notebook
-            await this.fileSystem.writeFile(tempFile.filePath, this.generateNotebookContent(cells), { encoding: 'utf-8' });
-
-            // Import this file and show it
-            const contents = await this.importer.importFromFile(tempFile.filePath);
-            if (contents) {
-                await this.viewDocument(contents);
-            }
+            const contents = await this.jupyterExporter.export('python', cells, {});
+            await this.viewDocument(contents);
         } catch (e) {
             await this.errorHandler.handleError(e);
         } finally {
-            if (tempFile) {
-                tempFile.dispose();
-            }
             status.dispose();
         }
     }
@@ -685,8 +672,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             }
 
             if (fileToSaveTo && isDirty) {
-                // Write out our visible cells
-                await this.fileSystem.writeFile(fileToSaveTo.fsPath, this.generateNotebookContent(this.visibleCells));
+                // Save our visible cells into the file
+                await this.jupyterExporter.save('notebook', this.visibleCells, {filePath: fileToSaveTo.fsPath});
 
                 // Update our file name and dirty state
                 this._file = fileToSaveTo;

@@ -8,6 +8,7 @@ import { inject, injectable } from 'inversify';
 import * as os from 'os';
 import * as path from 'path';
 import * as uuid from 'uuid/v4';
+
 import { IWorkspaceService } from '../../../common/application/types';
 import { IFileSystem, IPlatformService } from '../../../common/platform/types';
 import { IConfigurationService } from '../../../common/types';
@@ -26,7 +27,8 @@ export class NotebookConverter {
         @inject(IConfigurationService) private configService: IConfigurationService,
         @inject(IFileSystem) private fileSystem: IFileSystem,
         @inject(IPlatformService) private readonly platform: IPlatformService
-    ) {}
+    ) {
+    }
 
     public dispose() {
         noop();
@@ -75,11 +77,7 @@ export class NotebookConverter {
         const changeDirectory = await this.calculateDirectoryChange(file, cells);
 
         if (changeDirectory) {
-            const exportChangeDirectory = CodeSnippits.ChangeDirectory.join(os.EOL).format(
-                localize.DataScience.exportChangeDirectoryComment(),
-                CodeSnippits.ChangeDirectoryCommentIdentifier,
-                changeDirectory
-            );
+            const exportChangeDirectory = CodeSnippits.ChangeDirectory.join(os.EOL).format(localize.DataScience.exportChangeDirectoryComment(), CodeSnippits.ChangeDirectoryCommentIdentifier, changeDirectory);
 
             const cell: ICell = {
                 data: {
@@ -154,12 +152,9 @@ export class NotebookConverter {
 
     private pruneCells = (cells: ICell[], cellMatcher: CellMatcher): nbformat.IBaseCell[] => {
         // First filter out sys info cells. Jupyter doesn't understand these
-        return (
-            cells
-                .filter(c => c.data.cell_type !== 'messages')
-                // Then prune each cell down to just the cell data.
-                .map(c => this.pruneCell(c, cellMatcher))
-        );
+        return cells.filter(c => c.data.cell_type !== 'messages')
+            // Then prune each cell down to just the cell data.
+            .map(c => this.pruneCell(c, cellMatcher));
     }
 
     private pruneCell = (cell: ICell, cellMatcher: CellMatcher): nbformat.IBaseCell => {
@@ -171,15 +166,13 @@ export class NotebookConverter {
     }
 
     private pruneSource = (source: nbformat.MultilineString, cellMatcher: CellMatcher): nbformat.MultilineString => {
+
         if (Array.isArray(source) && source.length > 0) {
             if (cellMatcher.isCell(source[0])) {
                 return source.slice(1);
             }
         } else {
-            const array = source
-                .toString()
-                .split('\n')
-                .map(s => `${s}\n`);
+            const array = source.toString().split('\n').map(s => `${s}\n`);
             if (array.length > 0 && cellMatcher.isCell(array[0])) {
                 return array.slice(1);
             }

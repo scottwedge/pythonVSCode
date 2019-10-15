@@ -5,8 +5,8 @@
 
 import { JSONObject } from '@phosphor/coreutils';
 import { inject, injectable } from 'inversify';
-import { noop } from '../../../../test/core';
 import { IFileSystem, TemporaryFile } from '../../../common/platform/types';
+import { noop } from '../../../common/utils/misc';
 import { ICell, INotebookExporter, NotebookExportOptions } from '../../types';
 import { NotebookConverter } from './notebookConverter';
 import { PythonConverter } from './pythonConverter';
@@ -23,13 +23,19 @@ export class JupyterExporter implements INotebookExporter {
     }
     public export(format: 'notebook', cells: ICell[], _options: NotebookExportOptions): Promise<JSONObject>;
     public export(format: 'python', cells: ICell[], _options: NotebookExportOptions): Promise<string>;
+    // tslint:disable-next-line: unified-signatures
+    public export(format: 'python', notebookFilePath: string, options: NotebookExportOptions): Promise<string>;
     // tslint:disable-next-line: no-any
-    public export(format: any, cells: any, options: NotebookExportOptions): Promise<any> {
+    public export(format: any, input: any, options: NotebookExportOptions): Promise<any> {
         switch (format) {
             case 'python':
-                return this.exportToPython(cells, options);
+                if (typeof input === 'string'){
+                    return this.pythonConverter.convert(input);
+                } else {
+                    return this.exportToPython(input as ICell[], options);
+                }
             case 'notebook':
-                return this.notebookConverter.convert(cells, options.directoryChange);
+                return this.notebookConverter.convert(input as ICell[], options.directoryChange);
             default:
                 throw new Error(`Exporting cells to '${format}' format not supported!`);
         }

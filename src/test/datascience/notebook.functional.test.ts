@@ -502,7 +502,7 @@ suite('DataScience notebook tests', () => {
         try {
             await fs.writeFile(temp.filePath, JSON.stringify(notebook), 'utf8');
             // Try importing this. This should verify export works and that importing is possible
-            const results = await importer.importFromFile(temp.filePath);
+            const results = await exporter.export('python', temp.filePath, {});
 
             // Make sure we have a single chdir in our results
             const first = results.indexOf('os.chdir');

@@ -8,11 +8,11 @@ import { inject, injectable } from 'inversify';
 import * as os from 'os';
 import * as path from 'path';
 import { IWorkspaceService } from '../../../common/application/types';
+import '../../../common/extensions';
 import { IFileSystem, IPlatformService } from '../../../common/platform/types';
 import { IConfigurationService, IDisposableRegistry } from '../../../common/types';
 import * as localize from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
-import '../../common/extensions';
 import { CodeSnippits, Identifiers } from '../../constants';
 import { IJupyterExecution } from '../../types';
 

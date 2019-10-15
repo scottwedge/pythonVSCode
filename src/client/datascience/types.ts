@@ -185,7 +185,6 @@ export interface IJupyterKernelSpec extends IAsyncDisposable {
 
 export const INotebookImporter = Symbol('INotebookImporter');
 export interface INotebookImporter extends Disposable {
-    importFromFile(file: string): Promise<string>;
     importCellsFromFile(file: string): Promise<ICell[]>;
     importCells(json: string): Promise<ICell[]>;
 }
@@ -216,6 +215,17 @@ export interface INotebookExporter extends Disposable {
      * @memberof INotebookExporter
      */
     export(format: 'python', cells: ICell[], options: NotebookExportOptions): Promise<string>;
+    /**
+     * Export the ipynb (notebook) into python code.
+     *
+     * @param {'notebook'} format
+     * @param {string} notebookFilePath
+     * @param {string} [directoryChange]
+     * @returns {Promise<JSONObject>}
+     * @memberof INotebookExporter
+     */
+    // tslint:disable-next-line: unified-signatures
+    export(format: 'python', notebookFilePath: string, options: NotebookExportOptions): Promise<string>;
     /**
      * Save the cells into a notebook or python file.
      *

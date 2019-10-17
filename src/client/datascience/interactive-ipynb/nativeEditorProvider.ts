@@ -52,7 +52,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         // host, so postpone till after the ctor is finished.
         setTimeout(() => {
             if (this.documentManager.textDocuments && this.documentManager.textDocuments.forEach) {
-                this.documentManager.textDocuments.forEach(doc => this.openNotebookAndCloseEditor(undefined, doc, false));
+                this.documentManager.textDocuments.forEach(doc => this.openNotebookAndCloseEditor(doc, false));
             }
         }, 0);
 
@@ -140,14 +140,12 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
      * @memberof NativeEditorProvider
      */
     private addActiveTextEditorChangeHandler(){
-        if (this.onDidChangeActiveTextEditorHandler){
-            this.onDidChangeActiveTextEditorHandler.dispose();
-        }
         this.onDidChangeActiveTextEditorHandler = this.documentManager.onDidChangeActiveTextEditor(editor => {
-            if (!editor){
+            // I we're a source control diff view, then ignore this editor.
+            if (!editor || this.isEditorPartOfDiffView(editor)){
                 return;
             }
-            this.openNotebookAndCloseEditor(editor, editor.document, true).ignoreErrors();
+            this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
         });
     }
 
@@ -196,20 +194,15 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         return Uri.file(`${localize.DataScience.untitledNotebookFileName()}-${number}`);
     }
 
-    private openNotebookAndCloseEditor = async (editor: TextEditor | undefined, document: TextDocument, closeDocumentBeforeOpeningNotebook: boolean) => {
+    private openNotebookAndCloseEditor = async (document: TextDocument, closeDocumentBeforeOpeningNotebook: boolean) => {
         // See if this is an ipynb file
         if (this.isNotebook(document) && this.configuration.getSettings().datascience.useNotebookEditor) {
-            // I we're a source control diff view, then ignore this editor.
-            if (editor && this.isEditorPartOfDiffView(editor)){
-                return;
-            }
             try {
                 // Before we change the active document, remove the existing event handlers.
                 // Else, what'll happen is we'll change the active document and this method will get called again & again..
                 // Recursively...
                 if (this.onDidChangeActiveTextEditorHandler) {
                     this.onDidChangeActiveTextEditorHandler.dispose();
-                    this.onDidChangeActiveTextEditorHandler = undefined;
                 }
                 const contents = document.getText();
                 const uri = document.uri;

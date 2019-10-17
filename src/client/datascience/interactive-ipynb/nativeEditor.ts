@@ -46,6 +46,7 @@ import {
     ISubmitNewCell
 } from '../interactive-common/interactiveWindowTypes';
 import { InvalidNotebookFileError } from '../jupyter/invalidNotebookFileError';
+import { JupyterNotebookBase } from '../jupyter/jupyterNotebook';
 import {
     CellState,
     ICell,
@@ -173,10 +174,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         const dirtyContents = this.getStoredContents();
         if (dirtyContents) {
             // This means we're dirty. Indicate dirty and load from this content
-            return this.loadContents(dirtyContents, true);
+            await this.loadContents(dirtyContents, true);
         } else {
             // Load without setting dirty
-            return this.loadContents(contents, false);
+            await this.loadContents(contents, false);
         }
     }
 
@@ -199,8 +200,23 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     public get isDirty(): boolean {
         return this._dirty;
     }
+    protected async createNotebook() {
+        await super.createNotebook();
+        // tslint:disable-next-line: no-console
+        console.log('Notebook created');
+        if ((this.notebook as JupyterNotebookBase).onIOPub){
+            // tslint:disable-next-line: no-console
+            console.log('Event handler added');
+            (this.notebook as JupyterNotebookBase).onIOPub(msg => {
+                // tslint:disable-next-line: no-console
+                console.log('oniopub');
+                // tslint:disable-next-line: no-console
+                this.postMessage('oniopub', msg).catch(ex => console.error('Failed to post oniopub message', ex));
+            });
+        }
+    }
 
-    // tslint:disable-next-line: no-any
+    // tslint:disable-next-line: no-any member-ordering
     public onMessage(message: string, payload: any) {
         super.onMessage(message, payload);
         switch (message) {
@@ -234,6 +250,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         }
     }
 
+    // tslint:disable: member-ordering
     public async getNotebookOptions(): Promise<INotebookServerOptions> {
         return this.ipynbProvider.getNotebookOptions();
     }

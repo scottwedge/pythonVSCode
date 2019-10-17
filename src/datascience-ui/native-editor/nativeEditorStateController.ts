@@ -7,14 +7,24 @@ import * as uuid from 'uuid/v4';
 import { noop } from '../../client/common/utils/misc';
 import { concatMultilineStringInput } from '../../client/datascience/common';
 import { Identifiers } from '../../client/datascience/constants';
-import {
-    ILoadAllCells,
-    InteractiveWindowMessages,
-    NativeCommandType
-} from '../../client/datascience/interactive-common/interactiveWindowTypes';
+import { ILoadAllCells, InteractiveWindowMessages, NativeCommandType } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { createEmptyCell, extractInputText, ICellViewModel } from '../interactive-common/mainState';
 import { IMainStateControllerProps, MainStateController } from '../interactive-common/mainStateController';
 import { getSettings } from '../react-common/settingsReactSide';
+
+/* tslint:disable */
+
+console.log('We Started in react');
+let commTargetCallback: Function | undefined;
+(document as any).Kernel = {};
+(document as any).getKernel = function() {
+    console.log('get Kernel invoked');
+    return {
+        registerCommTarget: (_: any, cb: any) => {
+            commTargetCallback = cb;
+        }
+    };
+};
 
 export class NativeEditorStateController extends MainStateController {
     private waitingForLoadRender: boolean = false;
@@ -53,14 +63,37 @@ export class NativeEditorStateController extends MainStateController {
             case InteractiveWindowMessages.NotebookAddCellBelow:
                 this.addNewCell();
                 break;
-            case  InteractiveWindowMessages.DoSave:
+            case InteractiveWindowMessages.DoSave:
                 this.save();
                 break;
-
+            case 'oniopub':
+                console.log(commTargetCallback ? 'commTargetCallback is ok' : 'commTargetCallback is not ok');
+                try {
+                    if (commTargetCallback){
+                        // const comm = {id:'xxx'};
+                        try {
+                            if (payload.content && payload.content.comm_id){
+                                if (!payload.content.commId) {
+                                    payload.content.commId = payload.content.comm_id;
+                                }
+                                debugger;
+                                commTargetCallback(payload.content, payload);
+                            } else {
+                                debugger;
+                            }
+                        } catch (ex){
+                            console.error('Failed to exec commTargetCallback', ex);
+                        }
+                    }
+                    (document as any).onIOPub(payload);
+                } catch (ex) {
+                    console.error('Failed to exec onIOPub', ex);
+                }
+                break;
             default:
                 break;
         }
-
+        console.log(`Msg type = ${msg}`);
         return super.handleMessage(msg, payload);
     }
 
@@ -72,13 +105,13 @@ export class NativeEditorStateController extends MainStateController {
 
     public canMoveUp = (cellId?: string) => {
         const index = this.getState().cellVMs.findIndex(cvm => cvm.cell.id === cellId);
-        return (index > 0);
-    }
+        return index > 0;
+    };
 
     public canMoveDown = (cellId?: string) => {
         const index = this.getState().cellVMs.findIndex(cvm => cvm.cell.id === cellId);
-        return (index < this.getState().cellVMs.length - 1);
-    }
+        return index < this.getState().cellVMs.length - 1;
+    };
 
     public canRunAbove = (cellId?: string) => {
         const cells = this.getState().cellVMs;
@@ -86,7 +119,7 @@ export class NativeEditorStateController extends MainStateController {
 
         // Any code cells above, we can run above
         return index > 0 && cells.find((cvm, i) => i < index && cvm.cell.data.cell_type === 'code');
-    }
+    };
 
     public canRunBelow = (cellId?: string) => {
         const cells = this.getState().cellVMs;
@@ -94,7 +127,7 @@ export class NativeEditorStateController extends MainStateController {
 
         // Any code cells below, we can run below
         return index > 0 && cells.find((cvm, i) => i >= index && cvm.cell.data.cell_type === 'code');
-    }
+    };
 
     public runSelectedCell = () => {
         const selectedCellId = this.getState().selectedCellId;
@@ -106,16 +139,15 @@ export class NativeEditorStateController extends MainStateController {
                 this.submitInput(concatMultilineStringInput(selectedCell.cell.data.source), selectedCell);
             }
         }
-    }
+    };
 
     public runAll = () => {
         // Run all code cells (markdown don't need to be run)
         this.suspendUpdates();
         const cells = this.getState().cellVMs;
-        cells.filter(cvm => cvm.cell.data.cell_type === 'code').
-            forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
+        cells.filter(cvm => cvm.cell.data.cell_type === 'code').forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
         this.resumeUpdates();
-    }
+    };
 
     public addNewCell = (): ICellViewModel | undefined => {
         const cells = this.getState().cellVMs;
@@ -132,7 +164,7 @@ export class NativeEditorStateController extends MainStateController {
         }
         this.resumeUpdates();
         return vm;
-    }
+    };
 
     public possiblyDeleteCell = (cellId: string) => {
         const cells = this.getState().cellVMs;
@@ -154,29 +186,27 @@ export class NativeEditorStateController extends MainStateController {
             // Otherwise delete as normal
             this.deleteCell(cellId);
         }
-    }
+    };
 
     public runAbove = (cellId?: string) => {
         const cells = this.getState().cellVMs;
         const index = cellId === Identifiers.EditCellId ? cells.length : cells.findIndex(cvm => cvm.cell.id === cellId);
         if (index > 0) {
             this.suspendUpdates();
-            cells.filter((cvm, i) => i < index && cvm.cell.data.cell_type === 'code').
-                forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
+            cells.filter((cvm, i) => i < index && cvm.cell.data.cell_type === 'code').forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
             this.resumeUpdates();
         }
-    }
+    };
 
     public runBelow = (cellId?: string) => {
         const cells = this.getState().cellVMs;
         const index = cells.findIndex(cvm => cvm.cell.id === cellId);
         if (index >= 0) {
             this.suspendUpdates();
-            cells.filter((cvm, i) => i >= index && cvm.cell.data.cell_type === 'code').
-                forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
+            cells.filter((cvm, i) => i >= index && cvm.cell.data.cell_type === 'code').forEach(cvm => this.submitInput(concatMultilineStringInput(cvm.cell.data.source), cvm));
             this.resumeUpdates();
         }
-    }
+    };
 
     public insertAbove = (cellId?: string, isMonaco?: boolean): string | undefined => {
         const cells = this.getState().cellVMs;
@@ -190,7 +220,7 @@ export class NativeEditorStateController extends MainStateController {
             this.resumeUpdates();
             return id;
         }
-    }
+    };
 
     public insertBelow = (cellId?: string, isMonaco?: boolean): string | undefined => {
         const cells = this.getState().cellVMs;
@@ -204,7 +234,7 @@ export class NativeEditorStateController extends MainStateController {
             this.resumeUpdates();
             return id;
         }
-    }
+    };
 
     public moveCellUp = (cellId?: string) => {
         const origVms = this.getState().cellVMs;
@@ -218,7 +248,7 @@ export class NativeEditorStateController extends MainStateController {
             });
             this.sendMessage(InteractiveWindowMessages.SwapCells, { firstCellId: cellId!, secondCellId: cellVms[index].cell.id });
         }
-    }
+    };
 
     public moveCellDown = (cellId?: string) => {
         const origVms = this.getState().cellVMs;
@@ -232,7 +262,7 @@ export class NativeEditorStateController extends MainStateController {
             });
             this.sendMessage(InteractiveWindowMessages.SwapCells, { firstCellId: cellId!, secondCellId: cellVms[index].cell.id });
         }
-    }
+    };
 
     public sendCommand(command: NativeCommandType, source: 'keyboard' | 'mouse') {
         this.sendMessage(InteractiveWindowMessages.NativeCommand, { command, source });
@@ -242,7 +272,6 @@ export class NativeEditorStateController extends MainStateController {
         super.renderUpdate(newState);
 
         if (!this.getState().busy && this.waitingForLoadRender) {
-
             // After this render is complete (see this SO)
             // https://stackoverflow.com/questions/26556436/react-after-render-code,
             // indicate we are done loading. We want to wait for the render

@@ -20,6 +20,8 @@ import { AddCellLine } from './addCellLine';
 import { NativeCell } from './nativeCell';
 import { NativeEditorStateController } from './nativeEditorStateController';
 
+/* tslint:disable */
+
 // See the discussion here: https://github.com/Microsoft/tslint-microsoft-contrib/issues/676
 // tslint:disable: react-this-binding-issue
 // tslint:disable-next-line:no-require-imports no-var-requires
@@ -115,6 +117,7 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
                 <header id='main-panel-toolbar'>
                     {this.renderToolbarPanel()}
                     {progressBar}
+                    <div className='widgetarea'>Hello Don</div>
                 </header>
                 <section id='main-panel-variable' aria-label={getLocString('DataScience.collapseVariableExplorerLabel', 'Variables')}>
                     {this.renderVariablePanel(this.props.baseTheme)}

@@ -607,7 +607,11 @@ export class JupyterNotebookBase implements INotebook {
             await this.executeSilently(`%cd "${directory}"`);
         }
     }
-
+    // tslint:disable-next-line: member-ordering
+    private ioPubEvent = new EventEmitter<KernelMessage.IIOPubMessage>();
+    public get onIOPub(): Event<KernelMessage.IIOPubMessage> {
+        return this.ioPubEvent.event;
+    }
     // tslint:disable-next-line: max-func-body-length
     private handleCodeRequest = (subscriber: CellSubscriber, silent?: boolean) => {
         // Generate a new request if we still can
@@ -657,6 +661,7 @@ export class JupyterNotebookBase implements INotebook {
 
                     // Listen to messages.
                     request.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+                        this.ioPubEvent.fire(msg);
                         try {
                             if (jupyterLab.KernelMessage.isExecuteResultMsg(msg)) {
                                 this.handleExecuteResult(msg as KernelMessage.IExecuteResultMsg, clearState, subscriber.cell, trimFunc);

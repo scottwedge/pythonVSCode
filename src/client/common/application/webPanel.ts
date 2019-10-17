@@ -120,6 +120,7 @@ export class WebPanel implements IWebPanel {
     private generateReactHtml(mainScriptPath: string, webView: Webview, embeddedCss?: string, settings?: any) {
         const uriBase = webView.asWebviewUri(Uri.file(`${path.dirname(mainScriptPath)}/`));
         const uri = webView.asWebviewUri(Uri.file(mainScriptPath));
+        const uriipy = webView.asWebviewUri(Uri.file('/Users/donjayamanne/Desktop/Development/vsc/pythonVSCode/out/datascience-ui/native-editor/index.built.js'));
         const locDatabase = localize.getCollectionJSON();
         const style = embeddedCss ? embeddedCss : '';
         const settingsString = settings ? JSON.stringify(settings) : '{}';
@@ -157,6 +158,7 @@ export class WebPanel implements IWebPanel {
                     }
                 </script>
             <script type="text/javascript" src="${uri}"></script></body>
+            <script type="text/javascript" src="${uriipy}"></script></body>
         </html>`;
     }
 }

@@ -3,6 +3,7 @@
 'use strict';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 
+import { KernelMessage } from '@jupyterlab/services';
 import { CssMessages, IGetCssRequest, IGetCssResponse, SharedMessages } from '../messages';
 import { ICell, IInteractiveWindowInfo, IJupyterVariable, IJupyterVariablesResponse } from '../types';
 
@@ -262,6 +263,7 @@ export class IInteractiveWindowMapping {
     public [InteractiveWindowMessages.GotoCodeCell]: IGotoCode;
     public [InteractiveWindowMessages.CopyCodeCell]: ICopyCode;
     public [InteractiveWindowMessages.RestartKernel]: never | undefined;
+    public ['oniopub']: KernelMessage.IIOPubMessage;
     public [InteractiveWindowMessages.Export]: ICell[];
     public [InteractiveWindowMessages.GetAllCells]: ICell;
     public [InteractiveWindowMessages.ReturnAllCells]: ICell[];

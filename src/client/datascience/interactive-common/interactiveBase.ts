@@ -83,7 +83,8 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
     private restartingKernel: boolean = false;
     private potentiallyUnfinishedStatus: Disposable[] = [];
     private addSysInfoPromise: Deferred<boolean> | undefined;
-    private notebook: INotebook | undefined;
+    // tslint:disable-next-line: member-ordering
+    protected notebook: INotebook | undefined;
     private _id: string;
     private executeEvent: EventEmitter<string> = new EventEmitter<string>();
     private variableRequestStopWatch: StopWatch | undefined;
@@ -1051,7 +1052,8 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         }
     }
 
-    private async createNotebook(): Promise<void> {
+    // tslint:disable-next-line: member-ordering
+    protected async createNotebook(): Promise<void> {
         traceInfo('Getting jupyter server options ...');
 
         // Extract our options

@@ -3,12 +3,12 @@
 'use strict';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
-import { TextDocument, Uri, TextEditor } from 'vscode';
+import { TextDocument, TextEditor, Uri } from 'vscode';
 
 import { ICommandManager, IDocumentManager, IWorkspaceService } from '../../common/application/types';
 import { JUPYTER_LANGUAGE } from '../../common/constants';
 import { IFileSystem } from '../../common/platform/types';
-import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry, IDisposable } from '../../common/types';
+import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposable, IDisposableRegistry } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';

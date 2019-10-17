@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { instance, mock, when } from 'ts-mockito';
 import * as typemoq from 'typemoq';
-import { EventEmitter, TextDocument, Uri, TextEditor } from 'vscode';
+import { EventEmitter, TextDocument, TextEditor, Uri } from 'vscode';
 import { CommandManager } from '../../../client/common/application/commandManager';
 import { DocumentManager } from '../../../client/common/application/documentManager';
 import { ICommandManager, IDocumentManager, IWorkspaceService } from '../../../client/common/application/types';

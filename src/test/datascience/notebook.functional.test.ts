@@ -37,19 +37,19 @@ import {
     INotebookExecutionLogger,
     INotebookExporter,
     INotebookImporter,
-    InterruptResult
-} from '../../client/datascience/types';
+    InterruptResult} from '../../client/datascience/types';
 import {
     IInterpreterService,
     IKnownSearchPathsForInterpreters,
     PythonInterpreter
 } from '../../client/interpreter/contracts';
-import { generateTestState, ICellViewModel } from '../../datascience-ui/interactive-common/mainState';
+import { ICellViewModel } from '../../datascience-ui/interactive-common/mainState';
 import { asyncDump } from '../common/asyncDump';
 import { sleep } from '../core';
 import { DataScienceIocContainer } from './dataScienceIocContainer';
 import { getConnectionInfo, getIPConnectionInfo, getNotebookCapableInterpreter } from './jupyterHelpers';
 import { MockPythonService } from './mockPythonService';
+import { generateTestState } from './testState';
 
 // tslint:disable:no-any no-multiline-string max-func-body-length no-console max-classes-per-file trailing-comma
 suite('DataScience notebook tests', () => {
@@ -1106,3 +1106,4 @@ plt.show()`,
         }
     });
 });
+

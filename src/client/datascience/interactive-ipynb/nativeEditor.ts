@@ -588,7 +588,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.visibleCells = cells;
 
             // Save our dirty state in the storage for reopen later
-            await this.storeContents(this.generateNotebookContent(cells));
+            await this.storeContents(await this.generateNotebookContent(cells));
 
             // Indicate dirty
             await this.setDirty();
@@ -623,7 +623,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             tempFile = await this.fileSystem.createTemporaryFile('.ipynb');
 
             // Translate the cells into a notebook
-            await this.fileSystem.writeFile(tempFile.filePath, this.generateNotebookContent(cells), { encoding: 'utf-8' });
+            await this.fileSystem.writeFile(tempFile.filePath, await this.generateNotebookContent(cells), { encoding: 'utf-8' });
 
             // Import this file and show it
             const contents = await this.importer.importFromFile(tempFile.filePath);
@@ -653,12 +653,50 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         };
     }
 
-    private generateNotebookContent(cells: ICell[]): string {
+    private async extractPythonMainVersion(): Promise<number> {
+        // Use the active interpreter
+        const usableInterpreter = await this.jupyterExecution.getUsableJupyterPython();
+        return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
+    }
+
+    private async generateNotebookContent(cells: ICell[]): Promise<string> {
+        const pythonNumber = await this.extractPythonMainVersion();
+        // Use this to build our metadata object
+        // Use these as the defaults unless we have been given some in the options.
+        const metadata: nbformat.INotebookMetadata = {
+            language_info: {
+                name: 'python',
+                codemirror_mode: {
+                    name: 'ipython',
+                    version: pythonNumber
+                }
+            },
+            orig_nbformat: 2,
+            file_extension: '.py',
+            mimetype: 'text/x-python',
+            name: 'python',
+            npconvert_exporter: 'python',
+            pygments_lexer: `ipython${pythonNumber}`,
+            version: pythonNumber
+        };
+
+        // If the notebook data provided only contains cell information, then add the above default information.
+        // Not adding this is gives a invalid notebook with just cells.
+        const properties = Object.keys(this.notebookJson || {});
+        const useDefaultData = properties.length === 0 || Array.isArray((this.notebookJson || {}).cells);
+        const defaultData = {
+            nbformat: 4,
+            nbformat_minor: 2,
+            metadata: metadata
+        };
+        const notebookData = useDefaultData ? defaultData : this.notebookJson;
+
         // Reuse our original json except for the cells.
         const json = {
-            ...this.notebookJson,
+            ...(notebookData as nbformat.INotebookContent),
             cells: cells.map(c => this.fixupCell(c.data))
         };
+
         return JSON.stringify(json, null, this.indentAmount);
     }
 
@@ -686,7 +724,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             if (fileToSaveTo && isDirty) {
                 // Write out our visible cells
-                await this.fileSystem.writeFile(fileToSaveTo.fsPath, this.generateNotebookContent(this.visibleCells));
+                await this.fileSystem.writeFile(fileToSaveTo.fsPath, await this.generateNotebookContent(this.visibleCells));
 
                 // Update our file name and dirty state
                 this._file = fileToSaveTo;

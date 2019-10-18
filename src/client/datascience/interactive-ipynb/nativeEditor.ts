@@ -653,14 +653,23 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         };
     }
 
-    private async extractPythonMainVersion(): Promise<number> {
+    private async extractPythonMainVersion(notebookData: Partial<nbformat.INotebookContent>): Promise<number> {
+        if (notebookData && notebookData.metadata &&
+            notebookData.metadata.language_info &&
+            notebookData.metadata.language_info.codemirror_mode &&
+            // tslint:disable-next-line: no-any
+            typeof (notebookData.metadata.language_info.codemirror_mode as any).version === 'number'){
+
+                // tslint:disable-next-line: no-any
+            return (notebookData.metadata.language_info.codemirror_mode as any).version;
+        }
         // Use the active interpreter
         const usableInterpreter = await this.jupyterExecution.getUsableJupyterPython();
         return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
     }
 
     private async generateNotebookContent(cells: ICell[]): Promise<string> {
-        const pythonNumber = await this.extractPythonMainVersion();
+        const pythonNumber = await this.extractPythonMainVersion(this.notebookJson);
         // Use this to build our metadata object
         // Use these as the defaults unless we have been given some in the options.
         const metadata: nbformat.INotebookMetadata = {

@@ -8,7 +8,7 @@ import { TextDocument, TextEditor, Uri } from 'vscode';
 import { ICommandManager, IDocumentManager, IWorkspaceService } from '../../common/application/types';
 import { JUPYTER_LANGUAGE } from '../../common/constants';
 import { IFileSystem } from '../../common/platform/types';
-import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposable, IDisposableRegistry } from '../../common/types';
+import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
@@ -21,7 +21,6 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     private executedEditors: Set<string> = new Set<string>();
     private notebookCount: number = 0;
     private openedNotebookCount: number = 0;
-    private onDidChangeActiveTextEditorHandler?: IDisposable;
     constructor(
         @inject(IServiceContainer) private serviceContainer: IServiceContainer,
         @inject(IAsyncDisposableRegistry) asyncRegistry: IAsyncDisposableRegistry,
@@ -45,7 +44,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
             findFilesPromise.then(r => this.notebookCount += r.length);
         }
 
-        this.addActiveTextEditorChangeHandler();
+        this.disposables.push(this.documentManager.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditorHandler.bind(this)));
 
         // Since we may have activated after a document was opened, also run open document for all documents.
         // This needs to be async though. Iterating over all of these in the .ctor is crashing the extension
@@ -71,9 +70,6 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         sendTelemetryEvent(Telemetry.NotebookOpenCount, this.openedNotebookCount);
         sendTelemetryEvent(Telemetry.NotebookRunCount, this.executedEditors.size);
         sendTelemetryEvent(Telemetry.NotebookWorkspaceCount, this.notebookCount);
-        if (this.onDidChangeActiveTextEditorHandler){
-            this.onDidChangeActiveTextEditorHandler.dispose();
-        }
     }
 
     public get activeEditor(): INotebookEditor | undefined {
@@ -139,14 +135,12 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
      * @private
      * @memberof NativeEditorProvider
      */
-    private addActiveTextEditorChangeHandler(){
-        this.onDidChangeActiveTextEditorHandler = this.documentManager.onDidChangeActiveTextEditor(editor => {
-            // I we're a source control diff view, then ignore this editor.
-            if (!editor || this.isEditorPartOfDiffView(editor)){
-                return;
-            }
-            this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
-        });
+    private onDidChangeActiveTextEditorHandler(editor?: TextEditor){
+        // I we're a source control diff view, then ignore this editor.
+        if (!editor || this.isEditorPartOfDiffView(editor)){
+            return;
+        }
+        this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
     }
 
     private async create(file: Uri, contents: string): Promise<INotebookEditor> {
@@ -196,15 +190,10 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
 
     private openNotebookAndCloseEditor = async (document: TextDocument, closeDocumentBeforeOpeningNotebook: boolean) => {
         // See if this is an ipynb file
-        if (this.isNotebook(document) && this.configuration.getSettings().datascience.useNotebookEditor) {
+        if (this.isNotebook(document) && this.configuration.getSettings().datascience.useNotebookEditor &&
+            !this.activeEditors.has(document.uri.fsPath)) {
             try {
-                // Before we change the active document, remove the existing event handlers.
-                // Else, what'll happen is we'll change the active document and this method will get called again & again..
-                // Recursively...
-                if (this.onDidChangeActiveTextEditorHandler) {
-                    this.onDidChangeActiveTextEditorHandler.dispose();
-                }
-                const contents = document.getText();
+                const contents = document.  getText();
                 const uri = document.uri;
                 const closeActiveEditorCommand = 'workbench.action.closeActiveEditor';
 
@@ -226,8 +215,6 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
                 }
             } catch (e) {
                 return this.dataScienceErrorHandler.handleError(e);
-            } finally {
-                this.addActiveTextEditorChangeHandler();
             }
         }
     }

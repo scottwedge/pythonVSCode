@@ -587,8 +587,11 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         if (!fastDeepEqual(this.visibleCells, cells)) {
             this.visibleCells = cells;
 
-            // Save our dirty state in the storage for reopen later
-            await this.storeContents(await this.generateNotebookContent(cells));
+            // Save our dirty state in the storage for reopen later.
+            // Do not block current code, hence let this run in the background.
+            this.generateNotebookContent(cells)
+                .then(data => this.storeContents(data))
+                .catch(ex => traceError('Failed to generate notebook content to store in state', ex));
 
             // Indicate dirty
             await this.setDirty();

@@ -683,7 +683,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // If the notebook data provided only contains cell information, then add the above default information.
         // Not adding this is gives a invalid notebook with just cells.
         const properties = Object.keys(this.notebookJson || {});
-        const useDefaultData = properties.length === 0 || Array.isArray((this.notebookJson || {}).cells);
+        // If we only have cells property, then use default data.
+        const useDefaultData = properties.length === 0 || (properties.length === 1 && Array.isArray((this.notebookJson || {}).cells));
         const defaultData = {
             nbformat: 4,
             nbformat_minor: 2,

@@ -671,7 +671,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
     }
 
-    private async generateNotebookContent(cells: ICell[]): Promise<string> {
+    private async generateNotebookData(cells: ICell[]): Promise<nbformat.INotebookContent> {
         const pythonNumber = await this.extractPythonMainVersion(this.notebookJson);
         // Use this to build our metadata object
         // Use these as the defaults unless we have been given some in the options.
@@ -705,11 +705,14 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         const notebookData = useDefaultData ? defaultData : this.notebookJson;
 
         // Reuse our original json except for the cells.
-        const json = {
+        return {
             ...(notebookData as nbformat.INotebookContent),
             cells: cells.map(c => this.fixupCell(c.data))
         };
+    }
 
+    private async generateNotebookContent(cells: ICell[]): Promise<string> {
+        const json = await this.generateNotebookData(cells);
         return JSON.stringify(json, null, this.indentAmount);
     }
 

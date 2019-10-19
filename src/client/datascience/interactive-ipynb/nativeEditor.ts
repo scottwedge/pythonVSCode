@@ -697,16 +697,12 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
     }
 
-    private generateNotebookData(cells: ICell[]): nbformat.INotebookContent {
+    private generateNotebookContent(cells: ICell[]): string {
         // Reuse our original json except for the cells.
-        return {
+        const json = {
             ...(this.notebookJson as nbformat.INotebookContent),
             cells: cells.map(c => this.fixupCell(c.data))
         };
-    }
-
-    private generateNotebookContent(cells: ICell[]): string {
-        const json = this.generateNotebookData(cells);
         return JSON.stringify(json, null, this.indentAmount);
     }
 

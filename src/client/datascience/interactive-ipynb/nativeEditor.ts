@@ -429,6 +429,33 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // Then save the contents. We'll stick our cells back into this format when we save
         if (json) {
             this.notebookJson = json;
+        } else {
+            const pythonNumber = await this.extractPythonMainVersion(this.notebookJson);
+            // Use this to build our metadata object
+            // Use these as the defaults unless we have been given some in the options.
+            const metadata: nbformat.INotebookMetadata = {
+                language_info: {
+                    name: 'python',
+                    codemirror_mode: {
+                        name: 'ipython',
+                        version: pythonNumber
+                    }
+                },
+                orig_nbformat: 2,
+                file_extension: '.py',
+                mimetype: 'text/x-python',
+                name: 'python',
+                npconvert_exporter: 'python',
+                pygments_lexer: `ipython${pythonNumber}`,
+                version: pythonNumber
+            };
+
+            // Default notebook data.
+            this.notebookJson = {
+                nbformat: 4,
+                nbformat_minor: 2,
+                metadata: metadata
+            };
         }
 
         // Extract cells from the json
@@ -672,41 +699,9 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     private async generateNotebookData(cells: ICell[]): Promise<nbformat.INotebookContent> {
-        const pythonNumber = await this.extractPythonMainVersion(this.notebookJson);
-        // Use this to build our metadata object
-        // Use these as the defaults unless we have been given some in the options.
-        const metadata: nbformat.INotebookMetadata = {
-            language_info: {
-                name: 'python',
-                codemirror_mode: {
-                    name: 'ipython',
-                    version: pythonNumber
-                }
-            },
-            orig_nbformat: 2,
-            file_extension: '.py',
-            mimetype: 'text/x-python',
-            name: 'python',
-            npconvert_exporter: 'python',
-            pygments_lexer: `ipython${pythonNumber}`,
-            version: pythonNumber
-        };
-
-        // If the notebook data provided only contains cell information, then add the above default information.
-        // Not adding this is gives a invalid notebook with just cells.
-        const properties = Object.keys(this.notebookJson || {});
-        // If we only have cells property, then use default data.
-        const useDefaultData = properties.length === 0 || (properties.length === 1 && Array.isArray((this.notebookJson || {}).cells));
-        const defaultData = {
-            nbformat: 4,
-            nbformat_minor: 2,
-            metadata: metadata
-        };
-        const notebookData = useDefaultData ? defaultData : this.notebookJson;
-
         // Reuse our original json except for the cells.
         return {
-            ...(notebookData as nbformat.INotebookContent),
+            ...(this.notebookJson as nbformat.INotebookContent),
             cells: cells.map(c => this.fixupCell(c.data))
         };
     }

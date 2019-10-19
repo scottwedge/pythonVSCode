@@ -616,8 +616,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             // Save our dirty state in the storage for reopen later.
             // Do not block current code, hence let this run in the background.
-            this.generateNotebookContent(cells)
-                .then(data => this.storeContents(data))
+            this.storeContents(this.generateNotebookContent(cells))
                 .catch(ex => traceError('Failed to generate notebook content to store in state', ex));
 
             // Indicate dirty
@@ -653,7 +652,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             tempFile = await this.fileSystem.createTemporaryFile('.ipynb');
 
             // Translate the cells into a notebook
-            await this.fileSystem.writeFile(tempFile.filePath, await this.generateNotebookContent(cells), { encoding: 'utf-8' });
+            await this.fileSystem.writeFile(tempFile.filePath, this.generateNotebookContent(cells), { encoding: 'utf-8' });
 
             // Import this file and show it
             const contents = await this.importer.importFromFile(tempFile.filePath);
@@ -698,7 +697,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return usableInterpreter && usableInterpreter.version ? usableInterpreter.version.major : 3;
     }
 
-    private async generateNotebookData(cells: ICell[]): Promise<nbformat.INotebookContent> {
+    private generateNotebookData(cells: ICell[]): nbformat.INotebookContent {
         // Reuse our original json except for the cells.
         return {
             ...(this.notebookJson as nbformat.INotebookContent),
@@ -706,8 +705,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         };
     }
 
-    private async generateNotebookContent(cells: ICell[]): Promise<string> {
-        const json = await this.generateNotebookData(cells);
+    private generateNotebookContent(cells: ICell[]): string {
+        const json = this.generateNotebookData(cells);
         return JSON.stringify(json, null, this.indentAmount);
     }
 
@@ -735,7 +734,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             if (fileToSaveTo && isDirty) {
                 // Write out our visible cells
-                await this.fileSystem.writeFile(fileToSaveTo.fsPath, await this.generateNotebookContent(this.visibleCells));
+                await this.fileSystem.writeFile(fileToSaveTo.fsPath, this.generateNotebookContent(this.visibleCells));
 
                 // Update our file name and dirty state
                 this._file = fileToSaveTo;

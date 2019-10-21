@@ -4,6 +4,7 @@
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as uuid from 'uuid/v4';
 
+import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { noop } from '../../client/common/utils/misc';
 import { concatMultilineStringInput } from '../../client/datascience/common';
 import { Identifiers } from '../../client/datascience/constants';
@@ -11,11 +12,12 @@ import { ILoadAllCells, InteractiveWindowMessages, NativeCommandType } from '../
 import { createEmptyCell, extractInputText, ICellViewModel } from '../interactive-common/mainState';
 import { IMainStateControllerProps, MainStateController } from '../interactive-common/mainStateController';
 import { getSettings } from '../react-common/settingsReactSide';
+import { JSONValue, JSONObject } from '@phosphor/coreutils';
 
 /* tslint:disable */
 
 console.log('We Started in react');
-let commTargetCallback: Function | undefined;
+let commTargetCallback: (comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) => void | PromiseLike<void>;
 (document as any).Kernel = {};
 (document as any).getKernel = function() {
     console.log('get Kernel invoked');
@@ -77,7 +79,14 @@ export class NativeEditorStateController extends MainStateController {
                                     payload.content.commId = payload.content.comm_id;
                                 }
                                 debugger;
-                                commTargetCallback(payload.content, payload);
+                                const comm: Kernel.IComm = payload.content;
+                                (comm as any).send = (data: JSONValue, metadata?: JSONObject, _buffers?: (ArrayBuffer | ArrayBufferView)[], _disposeOnDone?: boolean) => {
+                                    debugger;
+                                    console.log('Sending');
+                                    this.sendMessage('shellSend', {data, metadata, commId: payload.content.commId});
+                                    return {};
+                                };
+                                commTargetCallback(comm, payload);
                             } else {
                                 debugger;
                             }

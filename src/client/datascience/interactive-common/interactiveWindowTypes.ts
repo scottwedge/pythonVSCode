@@ -264,6 +264,8 @@ export class IInteractiveWindowMapping {
     public [InteractiveWindowMessages.CopyCodeCell]: ICopyCode;
     public [InteractiveWindowMessages.RestartKernel]: never | undefined;
     public ['oniopub']: KernelMessage.IIOPubMessage;
+    // tslint:disable-next-line: no-any
+    public ['shellSend']: any;
     public [InteractiveWindowMessages.Export]: ICell[];
     public [InteractiveWindowMessages.GetAllCells]: ICell;
     public [InteractiveWindowMessages.ReturnAllCells]: ICell[];

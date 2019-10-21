@@ -28,7 +28,6 @@ import { CodeSnippits, Identifiers, Telemetry } from '../constants';
 import {
     CellState,
     ICell,
-    IJupyterSession,
     INotebook,
     INotebookCompletion,
     INotebookExecutionLogger,
@@ -36,6 +35,7 @@ import {
     INotebookServerLaunchInfo,
     InterruptResult
 } from '../types';
+import { JupyterSession } from './jupyterSession';
 import { expandWorkingDir } from './jupyterUtils';
 
 class CellSubscriber {
@@ -144,7 +144,7 @@ export class JupyterNotebookBase implements INotebook {
 
     constructor(
         _liveShare: ILiveShareApi, // This is so the liveshare mixin works
-        private session: IJupyterSession,
+        public session: JupyterSession,
         private configService: IConfigurationService,
         private disposableRegistry: IDisposableRegistry,
         private owner: INotebookServer,

@@ -27,12 +27,14 @@ import { JupyterKernelPromiseFailedError } from './jupyterKernelPromiseFailedErr
 import { JupyterWaitForIdleError } from './jupyterWaitForIdleError';
 
 export class JupyterSession implements IJupyterSession {
-    private session: Session.ISession | undefined;
+    public session: Session.ISession | undefined;
     private restartSessionPromise: Promise<Session.ISession | undefined> | undefined;
     private notebookFiles: Contents.IModel[] = [];
     private onRestartedEvent: EventEmitter<void> | undefined;
     private statusHandler: Slot<Session.ISession, Kernel.Status> | undefined;
     private connected: boolean = false;
+    // tslint:disable-next-line: member-ordering
+    public comm?: Kernel.IComm;
 
     constructor(
         private connInfo: IConnection,
@@ -92,6 +94,20 @@ export class JupyterSession implements IJupyterSession {
     public async waitForIdle(timeout: number): Promise<void> {
         // Wait for idle on this session
         await this.waitForIdleOnSession(this.session, timeout);
+        this.session!.kernel.registerCommTarget('', (comm: Kernel.IComm) => {
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            console.error('We have registered the comm');
+            this.comm = comm;
+        });
     }
 
     public async restart(_timeout: number): Promise<void> {

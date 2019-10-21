@@ -53,7 +53,7 @@ export class HostJupyterNotebook
         getDisposedError: () => Error,
         workspace: IWorkspaceService
     ) {
-        super(liveShare, session, configService, disposableRegistry, owner, launchInfo, loggers, resource, getDisposedError, workspace);
+        super(liveShare, session as any, configService, disposableRegistry, owner, launchInfo, loggers, resource, getDisposedError, workspace);
     }
 
     public dispose = async (): Promise<void> => {

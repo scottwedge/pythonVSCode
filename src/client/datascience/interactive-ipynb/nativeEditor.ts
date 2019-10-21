@@ -4,6 +4,7 @@
 import '../../common/extensions';
 
 import { nbformat } from '@jupyterlab/coreutils/lib/nbformat';
+import { KernelMessage } from '@jupyterlab/services';
 import * as detectIndent from 'detect-indent';
 import * as fastDeepEqual from 'fast-deep-equal';
 import { inject, injectable, multiInject, named } from 'inversify';
@@ -243,6 +244,33 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             // call this to update the whole document for intellisense
             case InteractiveWindowMessages.LoadAllCellsComplete:
                 this.dispatchMessage(message, payload, this.loadCellsComplete);
+                break;
+
+            case 'shellSend':
+                //, {data, metadata}:
+                debugger;
+                try {
+                    const kernel = (this.notebook as JupyterNotebookBase).session.session!.kernel;
+                    const msg: KernelMessage.IShellMessage = KernelMessage.createMessage({
+                        msgType: 'comm_msg',
+                        channel: 'shell',
+                        username: kernel.username,
+                        session: kernel.clientId,
+                        content: {
+                            comm_id: payload.commId,
+                            data: payload.data
+                        },
+                        metadata: payload.metadata
+                        // buffers
+                    // tslint:disable-next-line: no-any
+                    } as any) as any;
+
+                    kernel.sendShellMessage(msg);
+                    // (this.notebook as JupyterNotebookBase).session.comm!.send(payload.data, payload.metadata);
+                } catch (ex){
+                    console.error('Ooops failed to send comm message');
+                }
+                // this.dispatchMessage(message, payload, this.loadCellsComplete);
                 break;
 
             default:

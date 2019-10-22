@@ -13,6 +13,7 @@ import * as TypeMoq from 'typemoq';
 import { Disposable, TextDocument, TextEditor, Uri, WindowState } from 'vscode';
 
 import { IApplicationShell, IDocumentManager } from '../../client/common/application/types';
+import { IFileSystem } from '../../client/common/platform/types';
 import { createDeferred, waitForPromise } from '../../client/common/utils/async';
 import { createTemporaryFile } from '../../client/common/utils/fs';
 import { noop } from '../../client/common/utils/misc';
@@ -59,7 +60,6 @@ import {
     verifyHtmlOnCell,
     waitForMessageResponse
 } from './testHelpers';
-import { IFileSystem } from '../../client/common/platform/types';
 
 use(chaiAsPromised);
 

@@ -9,7 +9,7 @@ import * as glob from 'glob';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as tmp from 'tmp';
-import * as vscode from 'vscode';
+import { FileStat, Uri, workspace } from 'vscode';
 import { createDeferred } from '../utils/async';
 import { IFileSystem, IPlatformService, TemporaryFile } from './types';
 
@@ -20,34 +20,8 @@ export class FileSystem implements IFileSystem {
     public get directorySeparatorChar(): string {
         return path.sep;
     }
-    public async stat(filePath: string): Promise<vscode.FileStat> {
-        try {
-            // Use a try catch, if this filesystem class is used in the debugger context.
-            // Within the debugger context, the `vscode` package is not available.
-            // tslint:disable-next-line: no-require-imports
-            const vsc = require('vscode') as typeof vscode;
-            return vsc.workspace.fs.stat(vsc.Uri.file(filePath));
-        } catch {
-            const stat = await fs.lstat(filePath);
-            // We're inside the debugger context, at this point we do not have access to VS Code.
-            // Hence use traditional fs apii and hard code the enum values.
-            let type: vscode.FileType = 0;
-            if (stat.isDirectory()) {
-                type = 2;
-            }
-            if (stat.isFile()) {
-                type = 1;
-            }
-            if (stat.isSymbolicLink()) {
-                type = 64;
-            }
-            return {
-                ctime: stat.ctimeMs,
-                mtime: stat.mtimeMs,
-                size: stat.size,
-                type
-            };
-        }
+    public async stat(filePath: string): Promise<FileStat> {
+        return workspace.fs.stat(Uri.file(filePath));
     }
 
     public objectExists(filePath: string, statCheck: (s: fs.Stats) => boolean): Promise<boolean> {

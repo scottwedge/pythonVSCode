@@ -59,6 +59,7 @@ import {
     verifyHtmlOnCell,
     waitForMessageResponse
 } from './testHelpers';
+import { IFileSystem } from '../../client/common/platform/types';
 
 use(chaiAsPromised);
 
@@ -270,6 +271,9 @@ for _ in range(50):
         }, () => { return ioc; });
 
         runMountedTest('Startup and shutdown', async (wrapper) => {
+            // Stub the `stat` method to return a dummy value.
+            sinon.stub(ioc.serviceContainer.get<IFileSystem>(IFileSystem), 'stat').resolves({mtime: 0} as any);
+
             addMockData(ioc, 'b=2\nb', 2);
             addMockData(ioc, 'c=3\nc', 3);
 

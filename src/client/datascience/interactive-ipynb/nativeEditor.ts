@@ -553,7 +553,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
     /**
      * Gets any unsaved changes to the notebook file.
-     * If the file has been modified since the uncommited changes were stored, then ignore the uncommited changes.
+     * If the file has been modified since the uncommitted changes were stored, then ignore the uncommitted changes.
      *
      * @private
      * @returns {(Promise<string | undefined>)}
@@ -572,9 +572,9 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     /**
-     * Stores the uncommited notebook changes into a temporary location.
+     * Stores the uncommitted notebook changes into a temporary location.
      * Also keep track of the current time. This way we can check whether changes were
-     * made to the file since the last time uncommited changes were stored.
+     * made to the file since the last time uncommitted changes were stored.
      *
      * @private
      * @param {string} [contents]

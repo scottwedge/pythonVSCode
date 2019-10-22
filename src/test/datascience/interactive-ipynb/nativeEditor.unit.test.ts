@@ -318,7 +318,7 @@ suite('Data Science - Native Editor', () => {
         return editor;
     }
 
-    test('Editing a notebook will save uncommited changes into memento', async () => {
+    test('Editing a notebook will save uncommitted changes into memento', async () => {
         const file = Uri.parse('file://foo.ipynb');
 
         // Initially nothing in memento
@@ -327,7 +327,7 @@ suite('Data Science - Native Editor', () => {
         await loadEditorAddCellAndWaitForMementoUpdate(file);
     });
 
-    test('Opening a notebook will restore uncommited changes', async () => {
+    test('Opening a notebook will restore uncommitted changes', async () => {
         const file = Uri.parse('file://foo.ipynb');
         when(fileSystem.stat(anything())).thenResolve({mtime: 1} as any);
 
@@ -351,7 +351,7 @@ suite('Data Science - Native Editor', () => {
         expect(notebook.cells).to.be.lengthOf(4);
     });
 
-    test('Opening a notebook will restore uncommited changes (ignoring contents of file)', async () => {
+    test('Opening a notebook will restore uncommitted changes (ignoring contents of file)', async () => {
         const file = Uri.parse('file://foo.ipynb');
         when(fileSystem.stat(anything())).thenResolve({mtime: 1} as any);
 
@@ -376,7 +376,7 @@ suite('Data Science - Native Editor', () => {
         expect(notebook.cells).to.be.lengthOf(4);
     });
 
-    test('Opening a notebook will NOT restore uncommited changes if file has been modified since', async () => {
+    test('Opening a notebook will NOT restore uncommitted changes if file has been modified since', async () => {
         const file = Uri.parse('file://foo.ipynb');
         when(fileSystem.stat(anything())).thenResolve({mtime: 1} as any);
 

@@ -13,6 +13,7 @@ import { createEmptyCell, extractInputText, ICellViewModel } from '../interactiv
 import { IMainStateControllerProps, MainStateController } from '../interactive-common/mainStateController';
 import { getSettings } from '../react-common/settingsReactSide';
 import { JSONValue, JSONObject } from '@phosphor/coreutils';
+import { Deferred, createDeferred } from '../../client/common/utils/async';
 
 /* tslint:disable */
 
@@ -22,7 +23,10 @@ let commTargetCallback: (comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) =>
 (document as any).getKernel = function() {
     console.log('get Kernel invoked');
     return {
-        registerCommTarget: (_: any, cb: any) => {
+        registerCommTarget: (target: any, cb: any) => {
+            debugger;
+            // tslint:disable-next-line: no-any
+            (document as any).commTargetName = target;
             commTargetCallback = cb;
         }
     };
@@ -30,6 +34,8 @@ let commTargetCallback: (comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) =>
 
 export class NativeEditorStateController extends MainStateController {
     private waitingForLoadRender: boolean = false;
+    private requestDeferredMap = new Map<string, Kernel.IFuture & {deferred: Deferred<any>}>();
+    private comms: Kernel.IComm[] = [];
 
     // tslint:disable-next-line:max-func-body-length
     constructor(props: IMainStateControllerProps) {
@@ -68,8 +74,28 @@ export class NativeEditorStateController extends MainStateController {
             case InteractiveWindowMessages.DoSave:
                 this.save();
                 break;
-            case 'oniopub':
+            case 'shellSend_oniopub': {
+                debugger;
+                const requestId = payload.requestId;
+                const reply = this.requestDeferredMap.get(requestId)!;
+                reply.onIOPub(payload.msg);
+                break;
+            }
+            case 'shellSend_reply': {
+                debugger;
+                const requestId = payload.requestId;
+                const reply = this.requestDeferredMap.get(requestId)!;
+                reply.onReply(payload.msg);
+                reply.deferred.resolve(payload.msg);
+                break;
+            }
+            case 'oniopub': {
                 console.log(commTargetCallback ? 'commTargetCallback is ok' : 'commTargetCallback is not ok');
+                if (payload.content && payload.content.comm_id){
+                    if (!payload.content.commId) {
+                        payload.content.commId = payload.content.comm_id;
+                    }
+                }
                 try {
                     if (commTargetCallback){
                         // const comm = {id:'xxx'};
@@ -78,15 +104,35 @@ export class NativeEditorStateController extends MainStateController {
                                 if (!payload.content.commId) {
                                     payload.content.commId = payload.content.comm_id;
                                 }
-                                debugger;
-                                const comm: Kernel.IComm = payload.content;
-                                (comm as any).send = (data: JSONValue, metadata?: JSONObject, _buffers?: (ArrayBuffer | ArrayBufferView)[], _disposeOnDone?: boolean) => {
+                                if (payload.msg_type === "comm_open" && commTargetCallback){
                                     debugger;
-                                    console.log('Sending');
-                                    this.sendMessage('shellSend', {data, metadata, commId: payload.content.commId});
-                                    return {};
-                                };
-                                commTargetCallback(comm, payload);
+                                    const comm: Kernel.IComm = payload.content;
+                                    this.comms.push(comm);
+                                    (comm as any).send = (data: JSONValue, metadata?: JSONObject, buffers?: (ArrayBuffer | ArrayBufferView)[], disposeOnDone?: boolean) => {
+                                        debugger;
+                                        console.log('Sending');
+                                        const requestId = uuid();
+                                        const deferred = createDeferred<any>();
+                                        const reply: Kernel.IFuture = {
+                                            onIOPub: noop,
+                                            onReply: noop,
+                                            onStdin: noop,
+                                            done: deferred.promise,
+                                            msg: {
+                                                header: {
+                                                    msg_id: requestId
+                                                }
+                                            }
+                                        } as any;
+                                        this.requestDeferredMap.set(requestId, {...reply, deferred});
+                                        this.sendMessage('shellSend', {data, metadata, commId: payload.content.commId, requestId, buffers, disposeOnDone, target: (document as any).commTargetName});
+
+                                        return reply;
+                                    };
+                                    comm.onMsg = noop;
+                                    commTargetCallback(comm, payload);
+                                    commTargetCallback = undefined as any;
+                                }
                             } else {
                                 debugger;
                             }
@@ -98,7 +144,19 @@ export class NativeEditorStateController extends MainStateController {
                 } catch (ex) {
                     console.error('Failed to exec onIOPub', ex);
                 }
+
+                this.comms.forEach(comm => {
+                    try {
+                        if (payload.msg_type !== "status" && payload.msg_type !== "comm_open"){
+                            comm.onMsg(payload);
+                        }
+                    } catch (ex) {
+                        debugger;
+                        console.error('Failed to handle comm', ex);
+                    }
+                });
                 break;
+            }
             default:
                 break;
         }

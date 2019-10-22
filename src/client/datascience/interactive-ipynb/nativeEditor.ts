@@ -4,7 +4,7 @@
 import '../../common/extensions';
 
 import { nbformat } from '@jupyterlab/coreutils/lib/nbformat';
-import { KernelMessage } from '@jupyterlab/services';
+import { KernelMessage, Kernel } from '@jupyterlab/services';
 import * as detectIndent from 'detect-indent';
 import * as fastDeepEqual from 'fast-deep-equal';
 import { inject, injectable, multiInject, named } from 'inversify';
@@ -216,8 +216,12 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             });
         }
     }
-
-    // tslint:disable-next-line: no-any member-ordering
+    // tslint:disable-next-line: member-ordering
+    private done: boolean = false;
+    // tslint:disable-next-line: member-ordering
+    private comm?: Kernel.IComm;
+    // tslint:disable: no-any member-ordering
+    // tslint:disable: max-func-body-length
     public onMessage(message: string, payload: any) {
         super.onMessage(message, payload);
         switch (message) {
@@ -248,24 +252,68 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             case 'shellSend':
                 //, {data, metadata}:
-                debugger;
+                // debugger;
                 try {
                     const kernel = (this.notebook as JupyterNotebookBase).session.session!.kernel;
-                    const msg: KernelMessage.IShellMessage = KernelMessage.createMessage({
+                    // if (!this.done){
+                    //     (this.notebook as JupyterNotebookBase).onIOPub
+                    // }
+                    // if (!this.done && payload.commId) {
+                    //     this.done = true;
+                    // tslint:disable-next-line: no-any
+                    // this.comm = kernel.connectToComm(payload.target, payload.commId);
+                    // tslint:disable-next-line: no-any
+                    // this.comm.onMsg = (commMsg: any) => {
+                    //     this.postMessage('oniopub', commMsg).ignoreErrors();
+                    // };
+
+                    // }
+                    const requestId = payload.requestId;
+
+                    // if (this.comm){
+                    //     const future = this.comm.send(payload.data, payload.metadata, payload.buffers, payload.disposeOnDone)
+                    //     // tslint:disable-next-line: no-any
+                    //     future.onReply = (reply: any) =>{
+                    //         this.postMessage('shellSend_reply', {msg: reply, requestId}).ignoreErrors();
+                    //     };
+                    //     future.registerMessageHook((iopubMsg: KernelMessage.IIOPubMessage) => {
+                    //         this.postMessage('shellSend_oniopub', {msg: iopubMsg, requestId}).ignoreErrors();
+                    //         this.postMessage('oniopub', iopubMsg).ignoreErrors();
+                    //         return true;
+                    //     });
+                    //     future.done.then(reply => {
+                    //         this.postMessage('shellSend_reply', {msg: reply, requestId}).ignoreErrors();
+                    //     }).ignoreErrors();
+                    // }
+                    const msgOptionns : KernelMessage.IOptions = {
                         msgType: 'comm_msg',
                         channel: 'shell',
                         username: kernel.username,
-                        session: kernel.clientId,
-                        content: {
-                            comm_id: payload.commId,
-                            data: payload.data
-                        },
-                        metadata: payload.metadata
-                        // buffers
-                    // tslint:disable-next-line: no-any
-                    } as any) as any;
+                        session: kernel.clientId
+                    };
+                    const content = {
+                        comm_id: payload.commId,
+                        target_name: payload.target,
+                        data: payload.data || {}
+                    };
 
-                    kernel.sendShellMessage(msg);
+                    const msg: KernelMessage.IShellMessage = KernelMessage.createShellMessage(msgOptionns, content, payload.metadata, payload.buffers || []);
+                    msg.header.msg_id = requestId;
+                    const future = kernel.sendShellMessage(msg, false, true);
+                    // tslint:disable-next-line: no-any
+                    // future.onReply = (reply: any) =>{
+                    //     this.postMessage('shellSend_reply', {msg: reply, requestId}).ignoreErrors();
+                    // };
+                    // future.registerMessageHook((iopubMsg: KernelMessage.IIOPubMessage) => {
+                    //     this.postMessage('shellSend_oniopub', {msg: iopubMsg, requestId}).ignoreErrors();
+                    //     // tslint:disable-next-line: no-any
+                    //     // this.postMessage('oniopub', {msg: iopubMsg, requestId} as any).ignoreErrors();
+                    //     this.postMessage('oniopub', iopubMsg).ignoreErrors();
+                    //     return true;
+                    // });
+                    // future.done.then(reply => {
+                    //     this.postMessage('shellSend_reply', {msg: reply, requestId}).ignoreErrors();
+                    // }).ignoreErrors();
                     // (this.notebook as JupyterNotebookBase).session.comm!.send(payload.data, payload.metadata);
                 } catch (ex){
                     console.error('Ooops failed to send comm message');

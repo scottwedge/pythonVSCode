@@ -562,7 +562,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     private async getStoredContents(): Promise<string | undefined> {
         const data = this.globalStorage.get<{contents?: string; lastModifiedTimeMs?: number}>(this.getStorageKey());
         // Check whether the file has been modified since the last time the contents were saved.
-        if (data && data.lastModifiedTimeMs && !this.isUntitled){
+        if (data && data.lastModifiedTimeMs && !this.isUntitled && this.file.scheme === 'file'){
             const stat = await this.fileSystem.stat(this.file.fsPath);
             if (stat.mtime > data.lastModifiedTimeMs){
                 return;

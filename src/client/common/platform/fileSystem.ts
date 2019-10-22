@@ -9,15 +9,45 @@ import * as glob from 'glob';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as tmp from 'tmp';
+import * as vscode from 'vscode';
 import { createDeferred } from '../utils/async';
 import { IFileSystem, IPlatformService, TemporaryFile } from './types';
 
 @injectable()
 export class FileSystem implements IFileSystem {
-    constructor(@inject(IPlatformService) private platformService: IPlatformService) { }
+    constructor(@inject(IPlatformService) private platformService: IPlatformService) {}
 
     public get directorySeparatorChar(): string {
         return path.sep;
+    }
+    public async stat(filePath: string): Promise<vscode.FileStat> {
+        try {
+            // Use a try catch, if this filesystem class is used in the debugger context.
+            // Within the debugger context, the `vscode` package is not available.
+            // tslint:disable-next-line: no-require-imports
+            const vsc = require('vscode') as typeof vscode;
+            return vsc.workspace.fs.stat(vsc.Uri.file(filePath));
+        } catch {
+            const stat = await fs.lstat(filePath);
+            // We're inside the debugger context, at this point we do not have access to VS Code.
+            // Hence use traditional fs apii and hard code the enum values.
+            let type: vscode.FileType = 0;
+            if (stat.isDirectory()) {
+                type = 2;
+            }
+            if (stat.isFile()) {
+                type = 1;
+            }
+            if (stat.isSymbolicLink()) {
+                type = 64;
+            }
+            return {
+                ctime: stat.ctimeMs,
+                mtime: stat.mtimeMs,
+                size: stat.size,
+                type
+            };
+        }
     }
 
     public objectExists(filePath: string, statCheck: (s: fs.Stats) => boolean): Promise<boolean> {
@@ -32,7 +62,7 @@ export class FileSystem implements IFileSystem {
     }
 
     public fileExists(filePath: string): Promise<boolean> {
-        return this.objectExists(filePath, (stats) => stats.isFile());
+        return this.objectExists(filePath, stats => stats.isFile());
     }
     public fileExistsSync(filePath: string): boolean {
         return fs.existsSync(filePath);
@@ -52,7 +82,7 @@ export class FileSystem implements IFileSystem {
     }
 
     public directoryExists(filePath: string): Promise<boolean> {
-        return this.objectExists(filePath, (stats) => stats.isDirectory());
+        return this.objectExists(filePath, stats => stats.isDirectory());
     }
 
     public createDirectory(directoryPath: string): Promise<void> {
@@ -61,7 +91,7 @@ export class FileSystem implements IFileSystem {
 
     public deleteDirectory(directoryPath: string): Promise<void> {
         const deferred = createDeferred<void>();
-        fs.rmdir(directoryPath, err => err ? deferred.reject(err) : deferred.resolve());
+        fs.rmdir(directoryPath, err => (err ? deferred.reject(err) : deferred.resolve()));
         return deferred.promise;
     }
 
@@ -71,19 +101,17 @@ export class FileSystem implements IFileSystem {
                 if (error) {
                     return resolve([]);
                 }
-                const subDirs = (
-                    await Promise.all(
-                        files.map(async name => {
-                            const fullPath = path.join(rootDir, name);
-                            try {
-                                if ((await fs.stat(fullPath)).isDirectory()) {
-                                    return fullPath;
-                                }
-                                // tslint:disable-next-line:no-empty
-                            } catch (ex) { }
-                        })
-                    ))
-                    .filter(dir => dir !== undefined) as string[];
+                const subDirs = (await Promise.all(
+                    files.map(async name => {
+                        const fullPath = path.join(rootDir, name);
+                        try {
+                            if ((await fs.stat(fullPath)).isDirectory()) {
+                                return fullPath;
+                            }
+                            // tslint:disable-next-line:no-empty
+                        } catch (ex) {}
+                    })
+                )).filter(dir => dir !== undefined) as string[];
                 resolve(subDirs);
             });
         });
@@ -128,21 +156,24 @@ export class FileSystem implements IFileSystem {
 
     public copyFile(src: string, dest: string): Promise<void> {
         const deferred = createDeferred<void>();
-        const rs = fs.createReadStream(src).on('error', (err) => {
+        const rs = fs.createReadStream(src).on('error', err => {
             deferred.reject(err);
         });
-        const ws = fs.createWriteStream(dest).on('error', (err) => {
-            deferred.reject(err);
-        }).on('close', () => {
-            deferred.resolve();
-        });
+        const ws = fs
+            .createWriteStream(dest)
+            .on('error', err => {
+                deferred.reject(err);
+            })
+            .on('close', () => {
+                deferred.resolve();
+            });
         rs.pipe(ws);
         return deferred.promise;
     }
 
     public deleteFile(filename: string): Promise<void> {
         const deferred = createDeferred<void>();
-        fs.unlink(filename, err => err ? deferred.reject(err) : deferred.resolve());
+        fs.unlink(filename, err => (err ? deferred.reject(err) : deferred.resolve()));
         return deferred.promise;
     }
 
@@ -152,7 +183,9 @@ export class FileSystem implements IFileSystem {
                 if (err) {
                     reject(err);
                 } else {
-                    const actual = createHash('sha512').update(`${stats.ctimeMs}-${stats.mtimeMs}`).digest('hex');
+                    const actual = createHash('sha512')
+                        .update(`${stats.ctimeMs}-${stats.mtimeMs}`)
+                        .digest('hex');
                     resolve(actual);
                 }
             });

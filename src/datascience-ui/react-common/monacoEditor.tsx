@@ -15,7 +15,6 @@ const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
 // tslint:disable-next-line:no-require-imports no-var-requires
 const throttle = require('lodash/throttle') as typeof import('lodash/throttle');
 
-import { debounceSync } from '../../client/common/utils/decorators';
 import './monacoEditor.css';
 
 const LINE_HEIGHT = 18;
@@ -86,6 +85,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         this.containerRef = React.createRef<HTMLDivElement>();
         this.measureWidthRef = React.createRef<HTMLDivElement>();
         this.debouncedUpdateEditorSize = debounce(this.updateEditorSize.bind(this), 150);
+        this.hideAllOtherHoverAndParameterWidgets = debounce(this.hideAllOtherHoverAndParameterWidgets.bind(this), 150);
 
         // JSDOM has MutationObserver in the window object
         if ('MutationObserver' in window) {

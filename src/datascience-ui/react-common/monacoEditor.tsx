@@ -15,6 +15,7 @@ const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
 // tslint:disable-next-line:no-require-imports no-var-requires
 const throttle = require('lodash/throttle') as typeof import('lodash/throttle');
 
+import { debounceSync } from '../../client/common/utils/decorators';
 import './monacoEditor.css';
 
 const LINE_HEIGHT = 18;
@@ -597,6 +598,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
      * @returns
      * @memberof MonacoEditor
      */
+    @debounceSync(200)
     private hideAllOtherHoverAndParameterWidgets(){
         const root = document.getElementById('root');
         if (!root || !this.widgetParent){

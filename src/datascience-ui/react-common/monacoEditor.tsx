@@ -598,7 +598,6 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
      * @returns
      * @memberof MonacoEditor
      */
-    @debounceSync(200)
     private hideAllOtherHoverAndParameterWidgets(){
         const root = document.getElementById('root');
         if (!root || !this.widgetParent){

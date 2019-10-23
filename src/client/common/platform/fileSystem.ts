@@ -9,7 +9,7 @@ import * as glob from 'glob';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as tmp from 'tmp';
-import { FileStat, Uri, workspace } from 'vscode';
+import { FileStat } from 'vscode';
 import { createDeferred } from '../utils/async';
 import { IFileSystem, IPlatformService, TemporaryFile } from './types';
 
@@ -21,7 +21,11 @@ export class FileSystem implements IFileSystem {
         return path.sep;
     }
     public async stat(filePath: string): Promise<FileStat> {
-        return workspace.fs.stat(Uri.file(filePath));
+        // Do not import vscode directly, as this isn't available in the Debugger Context.
+        // If stat is used in debugger context, it will fail, however theres a separate PR that will resolve this.
+        // tslint:disable-next-line: no-require-imports
+        const vscode = require('vscode');
+        return vscode.workspace.fs.stat(vscode.Uri.file(filePath));
     }
 
     public objectExists(filePath: string, statCheck: (s: fs.Stats) => boolean): Promise<boolean> {

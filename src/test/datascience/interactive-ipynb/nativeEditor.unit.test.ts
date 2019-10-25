@@ -432,7 +432,6 @@ suite('Data Science - Native Editor', () => {
         const version: Version = {build: [], major: 10, minor: 11, patch: 12, prerelease: [], raw: '10.11.12'};
         when(executionProvider.getUsableJupyterPython()).thenResolve(({version} as any));
 
-
         try {
             editor.onMessage(InteractiveWindowMessages.SubmitNewCell, {code: 'hello', id: '1'});
         } catch {

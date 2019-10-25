@@ -4,6 +4,8 @@
 import '../../common/extensions';
 
 import * as fs from 'fs-extra';
+import { Server } from 'http';
+import { Context } from 'koa';
 import * as path from 'path';
 import { Uri, ViewColumn, Webview, WebviewPanel, window } from 'vscode';
 import * as localize from '../../common/utils/localize';
@@ -11,6 +13,7 @@ import { Identifiers } from '../../datascience/constants';
 import { IServiceContainer } from '../../ioc/types';
 import { IDisposableRegistry } from '../types';
 import { IWebPanel, IWebPanelMessageListener, WebPanelMessage } from './types';
+import { AddressInfo } from 'net';
 
 export class WebPanel implements IWebPanel {
 
@@ -19,7 +22,7 @@ export class WebPanel implements IWebPanel {
     private loadPromise: Promise<void>;
     private disposableRegistry: IDisposableRegistry;
     private rootPath: string;
-
+    private server?: Server;
     constructor(
         viewColumn: ViewColumn,
         serviceContainer: IServiceContainer,
@@ -55,6 +58,10 @@ export class WebPanel implements IWebPanel {
         if (this.panel) {
             this.panel.dispose();
         }
+        if (this.server){
+            this.server.close();
+            this.server = undefined;
+        }
     }
 
     public isVisible(): boolean {
@@ -81,6 +88,31 @@ export class WebPanel implements IWebPanel {
         }
     }
 
+    private async startWebServer(cwd: string, indexHtml: string): Promise<void> {
+        type KoaType = typeof import('koa');
+        // tslint:disable-next-line: no-require-imports
+        const Koa: KoaType = require('koa') as KoaType;
+        // tslint:disable-next-line: no-require-imports
+        const koaStatic = require('koa-static') as typeof import('koa-static');
+        // tslint:disable-next-line: no-require-imports
+        const compose = require('koa-compose') as typeof import('koa-compose');
+        const app = new Koa();
+
+        async function index(ctx: Context, next: Function) {
+            if ('/index' === ctx.path) {
+              ctx.body = indexHtml;
+            } else {
+              await next();
+            }
+        }
+
+        const middlewares  = compose([koaStatic(cwd), index]);
+
+        app.use(middlewares);
+        await new Promise((resolve, _reject) => {
+            this.server = app.listen(undefined, undefined, undefined, resolve);
+        });
+    }
     // tslint:disable-next-line:no-any
     private async load(mainScriptPath: string, embeddedCss?: string, settings?: any) {
         if (this.panel) {
@@ -88,8 +120,10 @@ export class WebPanel implements IWebPanel {
 
                 // Call our special function that sticks this script inside of an html page
                 // and translates all of the paths to vscode-resource URIs
-                this.panel.webview.html = this.generateReactHtml(mainScriptPath, this.panel.webview, embeddedCss, settings);
-
+                const html = this.generateReactHtml(mainScriptPath, this.panel.webview, embeddedCss, settings);
+                await this.startWebServer(path.dirname(mainScriptPath), html);
+                const port = (this.server!.address() as AddressInfo).port;
+                this.panel.webview.html = this.generateIFrameContainerHtml(port);
                 // Reset when the current panel is closed
                 this.disposableRegistry.push(this.panel.onDidDispose(() => {
                     this.panel = undefined;
@@ -117,8 +151,26 @@ export class WebPanel implements IWebPanel {
     }
 
     // tslint:disable-next-line:no-any
+    private generateIFrameContainerHtml(port: number) {
+        return `<!doctype html>
+        <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http:;">
+                <meta name="theme-color" content="#000000">
+                <meta name="theme" content="${Identifiers.GeneratedThemeName}"/>
+                <title>React App</title>
+            </head>
+            <body>
+            <iframe id="reactIFrame" frameborder="0" sandbox="allow-scripts allow-forms allow-same-origin" style="display: block; margin: 0px; overflow: hidden; position: absolute; width: 100%; height: 100%; visibility: visible;" src="http://localhost:${port}/index"></iframe>
+            </body>
+        </html>`;
+    }
+
+    // tslint:disable-next-line:no-any
     private generateReactHtml(mainScriptPath: string, webView: Webview, embeddedCss?: string, settings?: any) {
-        const uriBase = webView.asWebviewUri(Uri.file(`${path.dirname(mainScriptPath)}/`));
+        // const uriBase = webView.asWebviewUri(Uri.file(`${path.dirname(mainScriptPath)}/`));
         const uri = webView.asWebviewUri(Uri.file(mainScriptPath));
         const locDatabase = localize.getCollectionJSON();
         const style = embeddedCss ? embeddedCss : '';
@@ -133,7 +185,6 @@ export class WebPanel implements IWebPanel {
                 <meta name="theme-color" content="#000000">
                 <meta name="theme" content="${Identifiers.GeneratedThemeName}"/>
                 <title>React App</title>
-                <base href="${uriBase}"/>
                 <style type="text/css">
                 ${style}
                 </style>
@@ -144,10 +195,10 @@ export class WebPanel implements IWebPanel {
                 <script type="text/javascript">
                     function resolvePath(relativePath) {
                         if (relativePath && relativePath[0] == '.' && relativePath[1] != '.') {
-                            return "${uriBase}" + relativePath.substring(1);
+                            return relativePath.substring(1);
                         }
 
-                        return "${uriBase}" + relativePath;
+                        return relativePath;
                     }
                     function getLocStrings() {
                         return ${locDatabase};
@@ -156,7 +207,7 @@ export class WebPanel implements IWebPanel {
                         return ${settingsString};
                     }
                 </script>
-            <script type="text/javascript" src="${uri}"></script></body>
+            <script type="text/javascript" src="${path.basename(uri.fsPath)}"></script></body>
         </html>`;
     }
 }

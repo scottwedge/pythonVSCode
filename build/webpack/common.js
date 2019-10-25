@@ -31,7 +31,9 @@ exports.nodeModulesToExternalize = [
     'crypto-js',
     'fontkit',
     'linebreak',
-    'png-js'
+    'png-js',
+    'koa',
+    'koa-static'
 ];
 exports.nodeModulesToReplacePaths = [
     ...exports.nodeModulesToExternalize

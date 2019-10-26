@@ -4,6 +4,7 @@
 
 import { WebPanelMessage } from '../../client/common/application/types';
 import { IDisposable } from '../../client/common/types';
+import { noop } from '../../client/common/utils/misc';
 
 export interface IVsCodeApi {
     // tslint:disable-next-line:no-any
@@ -30,6 +31,12 @@ export class PostOffice implements IDisposable {
     private vscodeApi : IVsCodeApi | undefined;
     private handlers: IMessageHandler[] = [];
     private baseHandler = this.handleMessages.bind(this);
+    public static send = (_data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView): void => {
+        //
+    }
+
+    public static wsHandleMessages(ev: MessageEvent) {
+    }
 
     public dispose() {
         if (this.registered) {
@@ -72,7 +79,15 @@ export class PostOffice implements IDisposable {
         if (!this.registered) {
             this.registered = true;
             window.addEventListener('message', this.baseHandler);
+            PostOffice.wsHandleMessages = this.baseHandler.bind(this);
         }
+        return {
+            // tslint:disable-next-line: no-any
+            getState: noop as any,
+            // tslint:disable-next-line: no-any
+            setState: noop as any,
+            postMessage: data => PostOffice.send(JSON.stringify(data))
+        };
 
         return this.vscodeApi;
     }

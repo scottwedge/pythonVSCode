@@ -19,6 +19,7 @@ import { getSettings } from '../react-common/settingsReactSide';
 import { AddCellLine } from './addCellLine';
 import { NativeCell } from './nativeCell';
 import { NativeEditorStateController } from './nativeEditorStateController';
+import { PostOffice } from '../react-common/postOffice';
 
 // See the discussion here: https://github.com/Microsoft/tslint-microsoft-contrib/issues/676
 // tslint:disable: react-this-binding-issue
@@ -40,12 +41,30 @@ interface INativeEditorProps {
 //     }
 // };
 const ws = new WebSocket(`ws://localhost:${window.location.port}/`);
+// tslint:disable-next-line: no-any
+const messages: any[] = [];
+PostOffice.send = data => {
+    messages.push(data);
+};
 ws.onopen = () => {
-    ws.send('hello from server');
-    ws.onmessage = (evt: MessageEvent) => {
-        console.log('Message from server');
-        console.log(evt.data);
+    // ws.send('hello from server');
+    PostOffice.send = data => {
+        ws.send(data);
     };
+    ws.onmessage = (evt: MessageEvent) => {
+        const evtData = {data: JSON.parse(evt.data)};
+        // tslint:disable-next-line: no-any
+        PostOffice.wsHandleMessages(evtData as any);
+    };
+    ws.onerror = ex =>{
+        debugger;
+        console.error(ex);
+    };
+    ws.onclose = ex =>{
+        debugger;
+        console.error(ex);
+    };
+    messages.forEach(PostOffice.send);
 };
 export class NativeEditor extends React.Component<INativeEditorProps, IMainState> {
     // Public so can access it from test code
@@ -76,7 +95,19 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
         });
 
         // Default our state.
-        this.state = this.stateController.getState();
+        const state = this.stateController.getState();
+        state.rootCss = `
+        :root {
+            --code-comment-color: #6A9955;
+            --code-numeric-color: #b5cea8;
+            --code-string-color: #ce9178;
+            --code-variable-color: #9CDCFE;
+            --code-type-color: #4EC9B0;
+            --code-font-family: Menlo, Monaco, 'Courier New', monospace;
+            --code-font-size: 12px;
+        }
+`;
+        this.state = state;
     }
 
     public shouldComponentUpdate(_nextProps: INativeEditorProps, nextState: IMainState): boolean {
@@ -124,7 +155,7 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
             <div id='main-panel' ref={this.mainPanelRef} role='Main' style={dynamicFont}>
                 <div className='styleSetter'>
                     <style>
-                        {this.state.rootCss}
+                        ${this.state.rootCss}
                     </style>
                 </div>
                 <header id='main-panel-toolbar'>

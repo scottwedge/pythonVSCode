@@ -291,7 +291,7 @@ export class WebViewHost<IMapping> implements IDisposable {
             traceInfo('Loading web view...');
             // Use this script to create our web view panel. It should contain all of the necessary
             // script to communicate with this class.
-            this.webPanel = this.provider.create(this.viewColumn, this.messageListener, this.title, this.mainScriptPath, '', settings);
+            this.webPanel = this.provider.create(this.viewColumn, this.messageListener, this.title, this.mainScriptPath, '', settings, this.cssGenerator);
 
             traceInfo('Web view created.');
         }

@@ -14,6 +14,7 @@ import { IServiceContainer } from '../../ioc/types';
 import { IDisposableRegistry } from '../types';
 import { IWebPanel, IWebPanelMessageListener, WebPanelMessage } from './types';
 import { AddressInfo } from 'net';
+import { ICodeCssGenerator } from '../../datascience/types';
 
 export class WebPanel implements IWebPanel {
 
@@ -31,7 +32,8 @@ export class WebPanel implements IWebPanel {
         mainScriptPath: string,
         embeddedCss?: string,
         // tslint:disable-next-line:no-any
-        settings?: any) {
+        settings?: any,
+        private readonly cssGenerator: ICodeCssGenerator) {
         this.disposableRegistry = serviceContainer.get<IDisposableRegistry>(IDisposableRegistry);
         this.listener = listener;
         this.rootPath = path.dirname(mainScriptPath);
@@ -120,9 +122,14 @@ export class WebPanel implements IWebPanel {
 
                 // Call our special function that sticks this script inside of an html page
                 // and translates all of the paths to vscode-resource URIs
-                const html = this.generateReactHtml(mainScriptPath, this.panel.webview, embeddedCss, settings);
+                const css = await this.cssGenerator.generateThemeCss(true, 'vscode-dark');
+                const html = this.generateReactHtml(mainScriptPath, this.panel.webview, css, settings);
                 await this.startWebServer(path.dirname(mainScriptPath), html);
                 const port = (this.server!.address() as AddressInfo).port;
+                console.error(port);
+                console.error(port);
+                console.error(port);
+                console.error(port);
                 this.panel.webview.html = this.generateIFrameContainerHtml(port);
                 // Reset when the current panel is closed
                 this.disposableRegistry.push(this.panel.onDidDispose(() => {

@@ -32,21 +32,21 @@ interface INativeEditorProps {
     baseTheme: string;
 }
 
-(window as any).MonacoEnvironment = {
-    getWorkerUrl: (moduleId: string, label: string) => {
-        console.log('Hellll');
-        console.log(moduleId);
-        console.log(label);
-    }
-};
-// const ws = new WebSocket(`ws://localhost:${window.location.port}/`);
-// ws.onopen = () => {
-//     ws.send('hello from server');
-//     ws.onmessage = (evt: MessageEvent) => {
-//         console.log('Message from server');
-//         console.log(evt.data);
-//     };
+// (window as any).MonacoEnvironment = {
+//     getWorkerUrl: (moduleId: string, label: string) => {
+//         console.log('Hellll');
+//         console.log(moduleId);
+//         console.log(label);
+//     }
 // };
+const ws = new WebSocket(`ws://localhost:${window.location.port}/`);
+ws.onopen = () => {
+    ws.send('hello from server');
+    ws.onmessage = (evt: MessageEvent) => {
+        console.log('Message from server');
+        console.log(evt.data);
+    };
+};
 export class NativeEditor extends React.Component<INativeEditorProps, IMainState> {
     // Public so can access it from test code
     public stateController: NativeEditorStateController;

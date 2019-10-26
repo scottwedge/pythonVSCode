@@ -98,7 +98,9 @@ export class WebPanel implements IWebPanel {
         const koaStatic = require('koa-static') as typeof import('koa-static');
         // tslint:disable-next-line: no-require-imports
         const compose = require('koa-compose') as typeof import('koa-compose');
-        const app = new Koa();
+        // tslint:disable-next-line: no-require-imports
+        const websockify = require('koa-websocket') as typeof import('koa-websocket');
+        const app = websockify(new Koa());
 
         async function index(ctx: Context, next: Function) {
             if ('/index' === ctx.path) {
@@ -107,6 +109,21 @@ export class WebPanel implements IWebPanel {
               await next();
             }
         }
+
+        // Regular middleware
+        // Note it's app.ws.use and not app.use
+        app.ws.use((ctx, next) => {
+            // `ctx` is the regular koa context created from the `ws` onConnection `socket.upgradeReq` object.
+            // the websocket is added to the context on `ctx.websocket`.
+            ctx.websocket.send('Hello World');
+            ctx.websocket.on('message', (message) => {
+                // do something with the message from client
+                // tslint:disable-next-line: no-console
+                console.log(message);
+            });
+            // return `next` to pass the context (ctx) on to the next ws middleware
+            return (next as Function)(ctx);
+        });
 
         const middlewares  = compose([koaStatic(cwd), index]);
 
@@ -164,7 +181,7 @@ export class WebPanel implements IWebPanel {
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
-                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http:;">
+                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http: ws:;">
                 <meta name="theme-color" content="#000000">
                 <meta name="theme" content="${Identifiers.GeneratedThemeName}"/>
                 <title>React App</title>
@@ -188,7 +205,7 @@ export class WebPanel implements IWebPanel {
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
-                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http:;">
+                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http: ws:;">
                 <meta name="theme-color" content="#000000">
                 <meta name="theme" content="${Identifiers.GeneratedThemeName}"/>
                 <title>React App</title>

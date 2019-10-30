@@ -78,12 +78,20 @@ import { InteractiveWindowMessageListener } from './interactiveWindowMessageList
 
 @injectable()
 export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapping> implements IInteractiveBase {
+
+    public get id(): string {
+        return this._id;
+    }
+
+    public get onExecutedCode(): Event<string> {
+        return this.executeEvent.event;
+    }
+    protected notebook: INotebook | undefined;
     private interpreterChangedDisposable: Disposable;
     private unfinishedCells: ICell[] = [];
     private restartingKernel: boolean = false;
     private potentiallyUnfinishedStatus: Disposable[] = [];
     private addSysInfoPromise: Deferred<boolean> | undefined;
-    private notebook: INotebook | undefined;
     private _id: string;
     private executeEvent: EventEmitter<string> = new EventEmitter<string>();
     private variableRequestStopWatch: StopWatch | undefined;
@@ -112,7 +120,7 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         @unmanaged() private jupyterDebugger: IJupyterDebugger,
         @unmanaged() protected ipynbProvider: INotebookEditorProvider,
         @unmanaged() protected errorHandler: IDataScienceErrorHandler,
-        @unmanaged() indexPath: string,
+        @unmanaged() scriptsPath: string | string[],
         @unmanaged() title: string,
         @unmanaged() viewColumn: ViewColumn
     ) {
@@ -123,7 +131,7 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
             themeFinder,
             workspaceService,
             (c, v, d) => new InteractiveWindowMessageListener(liveShare, c, v, d),
-            indexPath,
+            scriptsPath,
             title,
             viewColumn);
 
@@ -149,10 +157,6 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         }, 0);
     }
 
-    public get id(): string {
-        return this._id;
-    }
-
     public async show(): Promise<void> {
         if (!this.isDisposed) {
             // Make sure we're loaded first
@@ -164,10 +168,6 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
             // Then show our web panel.
             return super.show(true);
         }
-    }
-
-    public get onExecutedCode(): Event<string> {
-        return this.executeEvent.event;
     }
 
     // tslint:disable-next-line: no-any no-empty cyclomatic-complexity max-func-body-length
@@ -701,6 +701,25 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         }
     }
 
+    protected async createNotebook(): Promise<void> {
+        traceInfo('Getting jupyter server options ...');
+
+        // Extract our options
+        const options = await this.getNotebookOptions();
+
+        traceInfo('Connecting to jupyter server ...');
+
+        // Now try to create a notebook server
+        const server = await this.jupyterExecution.connectToNotebookServer(options);
+
+        // Then create a new notebook
+        if (server) {
+            this.notebook = await server.createNotebook(await this.getNotebookIdentity());
+        }
+
+        traceInfo('Connected to jupyter server.');
+    }
+
     // tslint:disable-next-line: no-any
     private postMessageToListeners(message: string, payload: any) {
         if (this.listeners) {
@@ -1070,25 +1089,6 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         } else {
             await this.setDarkPromise.promise;
         }
-    }
-
-    private async createNotebook(): Promise<void> {
-        traceInfo('Getting jupyter server options ...');
-
-        // Extract our options
-        const options = await this.getNotebookOptions();
-
-        traceInfo('Connecting to jupyter server ...');
-
-        // Now try to create a notebook server
-        const server = await this.jupyterExecution.connectToNotebookServer(options);
-
-        // Then create a new notebook
-        if (server) {
-            this.notebook = await server.createNotebook(await this.getNotebookIdentity());
-        }
-
-        traceInfo('Connected to jupyter server.');
     }
 
     private generateSysInfoCell = async (reason: SysInfoReason): Promise<ICell | undefined> => {

@@ -141,10 +141,10 @@ export class JupyterNotebookBase implements INotebook {
     private _resource: Uri;
     private _disposed: boolean = false;
     private _workingDirectory: string | undefined;
-
+    private _onIOPubMessage = new EventEmitter<{msg: KernelMessage.IIOPubMessage; requestId: string}>();
     constructor(
         _liveShare: ILiveShareApi, // This is so the liveshare mixin works
-        private session: IJupyterSession,
+        public session: IJupyterSession,
         private configService: IConfigurationService,
         private disposableRegistry: IDisposableRegistry,
         private owner: INotebookServer,
@@ -157,7 +157,9 @@ export class JupyterNotebookBase implements INotebook {
         this.sessionStartTime = Date.now();
         this._resource = resource;
     }
-
+    public get onIOPub() {
+        return this._onIOPubMessage.event;
+    }
     public get server(): INotebookServer {
         return this.owner;
     }
@@ -685,6 +687,7 @@ export class JupyterNotebookBase implements INotebook {
                                 subscriber.cell.data.execution_count = msg.content.execution_count as number;
                             }
 
+                            this._onIOPubMessage.fire({msg, requestId: request.msg.header.msg_id});
                             // Show our update if any new output.
                             subscriber.next(this.sessionStartTime);
                         } catch (err) {

@@ -25,13 +25,14 @@ export class WebPanel implements IWebPanel {
         serviceContainer: IServiceContainer,
         listener: IWebPanelMessageListener,
         title: string,
-        mainScriptPath: string,
+        mainScriptPath: string | string[],
         embeddedCss?: string,
         // tslint:disable-next-line:no-any
         settings?: any) {
+        const scripts = Array.isArray(mainScriptPath) ? mainScriptPath : [mainScriptPath];
         this.disposableRegistry = serviceContainer.get<IDisposableRegistry>(IDisposableRegistry);
         this.listener = listener;
-        this.rootPath = path.dirname(mainScriptPath);
+        this.rootPath = path.dirname(scripts[0]);
         this.panel = window.createWebviewPanel(
             title.toLowerCase().replace(' ', ''),
             title,
@@ -41,7 +42,7 @@ export class WebPanel implements IWebPanel {
                 retainContextWhenHidden: true,
                 localResourceRoots: [Uri.file(this.rootPath)]
             });
-        this.loadPromise = this.load(mainScriptPath, embeddedCss, settings);
+        this.loadPromise = this.load(scripts, embeddedCss, settings);
     }
 
     public async show(preserveFocus: boolean) {
@@ -82,13 +83,13 @@ export class WebPanel implements IWebPanel {
     }
 
     // tslint:disable-next-line:no-any
-    private async load(mainScriptPath: string, embeddedCss?: string, settings?: any) {
+    private async load(scripts: string[], embeddedCss?: string, settings?: any) {
         if (this.panel) {
-            if (await fs.pathExists(mainScriptPath)) {
+            if (await Promise.all(scripts.map(script => fs.pathExists(script)))) {
 
                 // Call our special function that sticks this script inside of an html page
                 // and translates all of the paths to vscode-resource URIs
-                this.panel.webview.html = this.generateReactHtml(mainScriptPath, this.panel.webview, embeddedCss, settings);
+                this.panel.webview.html = this.generateReactHtml(scripts, this.panel.webview, embeddedCss, settings);
 
                 // Reset when the current panel is closed
                 this.disposableRegistry.push(this.panel.onDidDispose(() => {
@@ -111,15 +112,17 @@ export class WebPanel implements IWebPanel {
             } else {
                 // Indicate that we can't load the file path
                 const badPanelString = localize.DataScience.badWebPanelFormatString();
-                this.panel.webview.html = badPanelString.format(mainScriptPath);
+                this.panel.webview.html = badPanelString.format(scripts.join(', '));
             }
         }
     }
 
     // tslint:disable-next-line:no-any
-    private generateReactHtml(mainScriptPath: string, webView: Webview, embeddedCss?: string, settings?: any) {
-        const uriBase = webView.asWebviewUri(Uri.file(`${path.dirname(mainScriptPath)}/`));
-        const uri = webView.asWebviewUri(Uri.file(mainScriptPath));
+    private generateReactHtml(scripts: string[], webView: Webview, embeddedCss?: string, settings?: any) {
+        const uriBase = webView.asWebviewUri(Uri.file(`${path.dirname(scripts[0])}/`));
+        const scriptTags = scripts
+            .map(script => webView.asWebviewUri(Uri.file(script)))
+            .map(uri => `<script type="text/javascript" src="${uri}"></script>`);
         const locDatabase = localize.getCollectionJSON();
         const style = embeddedCss ? embeddedCss : '';
         const settingsString = settings ? JSON.stringify(settings) : '{}';
@@ -136,11 +139,18 @@ export class WebPanel implements IWebPanel {
                 <base href="${uriBase}"/>
                 <style type="text/css">
                 ${style}
+                .widget-container {
+                    height:500px;
+                    display: block;
+                }
                 </style>
+                <script type="text/javascript" src="https://requirejs.org/docs/release/2.3.6/comments/require.js"></script>
+                <script type="text/javascript" src="https://unpkg.com/@jupyter-widgets/html-manager@0.18.3/dist/embed-amd.js"></script>
             </head>
             <body>
                 <noscript>You need to enable JavaScript to run this app.</noscript>
                 <div id="root"></div>
+                <div id="rootWidget"></div>
                 <script type="text/javascript">
                     function resolvePath(relativePath) {
                         if (relativePath && relativePath[0] == '.' && relativePath[1] != '.') {
@@ -156,7 +166,8 @@ export class WebPanel implements IWebPanel {
                         return ${settingsString};
                     }
                 </script>
-            <script type="text/javascript" src="${uri}"></script></body>
+                ${scriptTags.join('\n')}
+            </body>
         </html>`;
     }
 }

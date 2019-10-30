@@ -60,7 +60,8 @@ export class NativeEditor extends React.Component<INativeEditorProps, IMainState
             defaultEditable: true,
             hasEdit: false,
             enableGather: false
-        });
+        }
+        );
 
         // Default our state.
         this.state = this.stateController.getState();

@@ -4,6 +4,9 @@
 import { nbformat } from '@jupyterlab/coreutils';
 import { JSONObject } from '@phosphor/coreutils';
 import ansiRegex from 'ansi-regex';
+import * as fastDeepEqual from 'fast-deep-equal';
+// tslint:disable-next-line: no-require-imports
+import cloneDeep = require('lodash/cloneDeep');
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
 import '../../client/common/extensions';
@@ -12,6 +15,7 @@ import { Identifiers } from '../../client/datascience/constants';
 import { CellState } from '../../client/datascience/types';
 import { ClassType } from '../../client/ioc/types';
 import { noop } from '../../test/core';
+import { WidgetManager } from '../ipywidgets';
 import { Image, ImageName } from '../react-common/image';
 import { ImageButton } from '../react-common/imageButton';
 import { getLocString } from '../react-common/locReactSide';
@@ -49,8 +53,12 @@ interface ICellOutput {
 export class CellOutput extends React.Component<ICellOutputProps> {
     // tslint:disable-next-line: no-any
     private static ansiToHtmlClass_ctor: ClassType<any> | undefined;
+    private ipyWidgetRef: React.RefObject<HTMLDivElement>;
+    // private renderedWidgets: {dispose: Function }[] = [];
+    private renderedView: {dispose: Function}[] = [];
     constructor(prop: ICellOutputProps) {
         super(prop);
+        this.ipyWidgetRef = React.createRef<HTMLDivElement>();
     }
 
     // tslint:disable-next-line: no-any
@@ -119,9 +127,58 @@ export class CellOutput extends React.Component<ICellOutputProps> {
                 'markdown-cell-output-container';
 
             // Then combine them inside a div
-            return <div className={outputClassNames}>{this.renderResults()}</div>;
+            return <div className={outputClassNames} ref={this.ipyWidgetRef}>{this.renderResults()}</div>;
         }
         return null;
+    }
+    public shouldComponentUpdate(nextProps: ICellOutputProps): boolean {
+        return !fastDeepEqual(this.props, nextProps);
+    }
+    public componentWillUnmount(){
+        this.renderedView.forEach(view => {
+            try {
+                view.dispose();
+            } catch {
+                //
+            }
+        });
+        this.renderedView = [];
+    }
+    // tslint:disable-next-line: max-func-body-length
+    public componentDidUpdate(prevProps: ICellOutputProps) {
+        if (!this.isCodeCell() || !this.hasOutput() || !this.getCodeCell().outputs || this.props.hideOutput) {
+            return;
+        }
+        if (fastDeepEqual(this.props, prevProps)){
+            return;
+        }
+        // Check if outupt has changed.
+        if (prevProps.cellVM.cell.data.cell_type === 'code' &&
+            prevProps.cellVM.cell.state === this.getCell()!.state &&
+            prevProps.hideOutput === this.props.hideOutput &&
+            fastDeepEqual(this.props.cellVM.cell.data, prevProps.cellVM.cell.data)) {
+
+            return;
+        }
+
+        // Render the outputs
+        // tslint:disable-next-line: no-any
+        const outputs = this.getCodeCell().outputs;
+        // tslint:disable-next-line: no-any
+        Promise.all<any>(outputs.map(async output => {
+            // tslint:disable-next-line: no-any
+            if (!output || !output.data || !(output.data as any)['application/vnd.jupyter.widget-view+json']){
+                return;
+            }
+
+            // tslint:disable-next-line: no-any
+            const widgetData: any = (output.data as any)['application/vnd.jupyter.widget-view+json'];
+            const element = this.ipyWidgetRef.current!;
+            const view = await WidgetManager.instance.renderWidget(widgetData, element);
+            this.renderedView.push(view);
+        })).catch(ex => {
+            console.error('Failed to render the widget', ex);
+        });
     }
 
     // Public for testing
@@ -152,7 +209,8 @@ export class CellOutput extends React.Component<ICellOutputProps> {
      private renderResults = (): JSX.Element[] => {
         // Results depend upon the type of cell
         if (this.isCodeCell()) {
-            return this.renderCodeOutputs();
+            // tslint:disable-next-line: no-any
+            return this.renderCodeOutputs().filter(item => !!item).map(item => item as any as JSX.Element);
         } else if (this.props.cellVM.cell.id !== Identifiers.EditCellId) {
             return this.renderMarkdownOutputs();
         } else {
@@ -161,11 +219,12 @@ export class CellOutput extends React.Component<ICellOutputProps> {
     }
 
     private renderCodeOutputs = () => {
+        // return [];
         if (this.isCodeCell() && this.hasOutput() && this.getCodeCell().outputs && !this.props.hideOutput) {
             // Render the outputs
             return this.renderOutputs(this.getCodeCell().outputs);
         }
-
+        console.log(this.renderOutputs);
         return [];
     }
 
@@ -345,11 +404,15 @@ export class CellOutput extends React.Component<ICellOutputProps> {
     }
 
     // tslint:disable-next-line: max-func-body-length
-    private renderOutputs(outputs: nbformat.IOutput[]): JSX.Element[] {
-        return outputs.map(this.renderOutput);
+    private renderOutputs(outputs: nbformat.IOutput[]): (JSX.Element | null)[] {
+        return outputs.map(this.renderOutput).filter(item => !!item);
     }
 
-    private renderOutput = (output: nbformat.IOutput, index: number): JSX.Element => {
+    private renderOutput = (output: nbformat.IOutput, index: number): JSX.Element | null => {
+        // // tslint:disable-next-line: no-any
+        // if (output.data && (output.data as any)['application/vnd.jupyter.widget-view+json']){
+        //     return (null);
+        // }
         const transformed = this.transformOutput(output);
         let mimetype = transformed.mimeType;
 

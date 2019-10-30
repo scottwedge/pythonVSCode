@@ -13,14 +13,20 @@ import {
 } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { createEmptyCell, extractInputText, ICellViewModel } from '../interactive-common/mainState';
 import { IMainStateControllerProps, MainStateController } from '../interactive-common/mainStateController';
+import { WidgetManager } from '../ipywidgets';
 import { getSettings } from '../react-common/settingsReactSide';
 
 export class NativeEditorStateController extends MainStateController {
     private waitingForLoadRender: boolean = false;
+    private readonly widgetManager: WidgetManager;
 
     // tslint:disable-next-line:max-func-body-length
+    // tslint:disable-next-line: no-any
     constructor(props: IMainStateControllerProps) {
         super(props);
+        console.error('start');
+        this.widgetManager = new WidgetManager(document.getElementById('rootWidget')!);
+        this.widgetManager.registerPostOffice(this.postOffice);
     }
     // tslint:disable-next-line: no-any
     public handleMessage(msg: string, payload?: any) {

@@ -3,10 +3,20 @@
 'use strict';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 
+import { KernelMessage } from '@jupyterlab/services';
 import { CssMessages, IGetCssRequest, IGetCssResponse, SharedMessages } from '../messages';
 import { ICell, IInteractiveWindowInfo, IJupyterVariable, IJupyterVariablesResponse } from '../types';
 
 export namespace InteractiveWindowMessages {
+    export const IPyWidgets_display_data_msg = 'IPyWidgets_display_data_msg';
+    export const IPyWidgets_comm_msg = 'IPyWidgets_comm_msg';
+    export const IPyWidgets_comm_open = 'IPyWidgets_comm_open';
+    export const IPyWidgets_ShellSend = 'IPyWidgets_ShellSend';
+    export const IPyWidgets_registerCommTarget = 'IPyWidgets_registerCommTarget';
+    export const IPyWidgets_ShellSend_onIOPub = 'IPyWidgets_ShellSend_onIOPub';
+    export const IPyWidgets_ShellSend_reply = 'IPyWidgets_ShellSend_reply';
+    export const IPyWidgets_ShellSend_resolve = 'IPyWidgets_ShellSend_resolve';
+    export const IPyWidgets_ShellSend_reject = 'IPyWidgets_ShellSend_reject';
     export const StartCell = 'start_cell';
     export const FinishCell = 'finish_cell';
     export const UpdateCell = 'update_cell';
@@ -266,6 +276,18 @@ export interface IFocusedCellEditor {
 
 // Map all messages to specific payloads
 export class IInteractiveWindowMapping {
+    // tslint:disable-next-line: no-any
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend]: { data: any; metadata: any; commId: string; requestId: string };
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub]: { requestId: string; msg: KernelMessage.IIOPubMessage };
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend_reply]: { requestId: string; msg: KernelMessage.IShellMessage };
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend_resolve]: { requestId: string; msg?: KernelMessage.IShellMessage };
+    // tslint:disable-next-line: no-any
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend_reject]: { requestId: string; msg?: any };
+    public [InteractiveWindowMessages.IPyWidgets_registerCommTarget]: string;
+    public [InteractiveWindowMessages.IPyWidgets_comm_open]: KernelMessage.ICommOpenMsg;
+    public [InteractiveWindowMessages.IPyWidgets_comm_msg]: KernelMessage.ICommMsgMsg;
+    public [InteractiveWindowMessages.IPyWidgets_display_data_msg]: KernelMessage.IDisplayDataMsg;
+
     public [InteractiveWindowMessages.StartCell]: ICell;
     public [InteractiveWindowMessages.FinishCell]: ICell;
     public [InteractiveWindowMessages.UpdateCell]: ICell;

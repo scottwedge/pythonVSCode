@@ -34,5 +34,6 @@
         "build",
         "uitests",
         "ipywidgets"
+        "tmp"
     ]
 }

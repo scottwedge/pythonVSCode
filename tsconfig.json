@@ -33,7 +33,7 @@
         "src/smoke",
         "build",
         "uitests",
-        "ipywidgets"
+        "ipywidgets",
         "tmp"
     ]
 }

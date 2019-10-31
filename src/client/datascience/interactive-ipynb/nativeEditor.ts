@@ -328,6 +328,13 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     protected handleOnIOPub(data: {msg: KernelMessage.IIOPubMessage; requestId: string}) {
         if (KernelMessage.isDisplayDataMsg(data.msg)) {
             this.postMessage(InteractiveWindowMessages.IPyWidgets_display_data_msg, data.msg).catch(ex => console.error('Failed to post oniopub message', ex));
+        } else if (KernelMessage.isStatusMsg(data.msg)){
+            // Do nothing.
+        } else if (KernelMessage.isCommOpenMsg(data.msg)){
+            // Do nothing, handled in the place we have registered for a target.
+        } else if (KernelMessage.isCommMsgMsg(data.msg)){
+            this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, data.msg as KernelMessage.ICommMsgMsg)
+            .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         }
     }
     // tslint:disable-next-line: member-ordering
@@ -374,22 +381,40 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     // tslint:disable-next-line: no-any
     protected async sendIPythonShellMsg(payload: { data: any; metadata: any; commId: string; requestId: string }){
         const kernel = ((this.notebook as JupyterNotebookBase).session as JupyterSession).session!.kernel;
-        const shellMessage: KernelMessage.IShellMessage = KernelMessage.createMessage(
-            {
-                msgType: 'comm_msg',
-                channel: 'shell',
-                username: kernel.username,
-                session: kernel.clientId
-            },
-            {
+        const shellMessage = KernelMessage.createMessage<KernelMessage.ICommMsgMsg<'shell'>>({
+            msgType: 'comm_msg',
+            channel: 'shell',
+            buffers: [],
+            content: {
                 data: payload.data,
-                comm_id: payload.commId,
-                target_name: 'jupyter.widget'
+                comm_id: payload.commId
             },
-            payload.metadata,
-            []
+            metadata: payload.metadata,
+            // tslint:disable-next-line: no-any
+            msgId: payload.requestId as any,
+            session: kernel.clientId,
+            username: kernel.username
+        });
+        // TODO: Do we need this?
         // tslint:disable-next-line: no-any
-        ) as any;
+        (shellMessage.content as any).target_name = 'jupyter.widget';
+
+        // const shellMessage: KernelMessage.IShellMessage = KernelMessage.createMessage(
+        //     {
+        //         msgType: 'comm_msg',
+        //         channel: 'shell',
+        //         username: kernel.username,
+        //         session: kernel.clientId
+        //     },
+        //     {
+        //         data: payload.data,
+        //         comm_id: payload.commId,
+        //         target_name: 'jupyter.widget'
+        //     },
+        //     payload.metadata,
+        //     []
+        // // tslint:disable-next-line: no-any
+        // ) as any;
         // tslint:disable-next-line: no-any
         const requestId = shellMessage.header.msg_id = payload.requestId as any;
         const future = kernel.sendShellMessage(shellMessage, false, true);
@@ -404,10 +429,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub, {requestId, msg})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
 
-            if (KernelMessage.isCommMsgMsg(msg)){
-                this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
-                .catch(ex => console.error('Failed to post oniopub message for handler', ex));
-            }
+            // if (KernelMessage.isCommMsgMsg(msg)){
+            //     this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
+            //     .catch(ex => console.error('Failed to post oniopub message for handler', ex));
+            // }
         };
         future.onReply = (reply: KernelMessage.IShellMessage) => {
             this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_reply, {requestId, msg: reply})

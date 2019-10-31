@@ -5,6 +5,7 @@
 
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { nbformat } from '@jupyterlab/services/node_modules/@jupyterlab/coreutils';
+import 'rxjs/add/operator/switchMap';
 import * as uuid from 'uuid/v4';
 import { createDeferred, Deferred } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
@@ -25,8 +26,8 @@ export class WidgetManager implements IIPyWidgetManager {
     public commOpenHandled: string[] = [];
     // tslint:disable-next-line: no-any
     private commTargetCallbacks = new Map<string, CommTargetCallback>();
-    private requestFutureMap = new Map<string, { future: Kernel.IFuture; deferred: Deferred<KernelMessage.IShellMessage | undefined> }>();
-    private commIdOnMsg = new Map<string, Kernel.IComm>();
+    private requestFutureMap = new Map<string, { future: Kernel.IShellFuture; deferred: Deferred<KernelMessage.IShellMessage | undefined> }>();
+    private commsById = new Map<string, Kernel.IComm>();
     private readonly proxyKernel = new ProxyKernel();
     private postOffice!: PostOffice;
     private messagesToSend: string[] = [];
@@ -41,7 +42,6 @@ export class WidgetManager implements IIPyWidgetManager {
      */
     private modelIdsToBeDisplayed = new Map<string, Deferred<void>>();
     constructor(widgetContainer: HTMLElement) {
-            debugger;
             this.proxyKernel.on('commTargetRegistered', this.onCommTargetRegistered.bind(this));
             // tslint:disable-next-line: no-any
             const kernel = (this.proxyKernel as any) as Kernel.IKernel;
@@ -59,7 +59,9 @@ export class WidgetManager implements IIPyWidgetManager {
     public registerPostOffice(postOffice: PostOffice): void {
         this.postOffice = postOffice;
         postOffice.addHandler(this);
-
+        // postOffice.asObservable()
+        //     .switchMap(async msg => this.handleCommOpen(msg.type, msg.payload))
+        //     .subscribe();
         this.messagesToSend.forEach(targetName => this.sendMessage(InteractiveWindowMessages.IPyWidgets_registerCommTarget, targetName));
         this.messagesToSend = [];
     }
@@ -67,7 +69,7 @@ export class WidgetManager implements IIPyWidgetManager {
         await this.manager.clear_state();
     }
     // tslint:disable-next-line: member-ordering no-any
-    private pendingMessages: {msg: string, payload?: any}[] = [];
+    private pendingMessages: {msg: string; payload?: any}[] = [];
     // tslint:disable: member-ordering
     private busyProcessingMessages: boolean = false;
     // tslint:disable-next-line: no-any
@@ -89,10 +91,33 @@ export class WidgetManager implements IIPyWidgetManager {
                 // tslint:disable-next-line: no-console
                 console.error('Failed to process a message', ex);
             }
+            break;
         }
         this.busyProcessingMessages = false;
         if (this.pendingMessages.length > 0){
             setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
+        }
+    }
+    // tslint:disable-next-line: no-any
+    private async handleCommOpen(msg: string, payload?: any): Promise<void>{
+        if (msg !== InteractiveWindowMessages.IPyWidgets_comm_open){
+            return;
+        }
+        // Happens when a comm is opened (generatelly part of a cell execution).
+        // We're only interested in `comm_open` messages.
+        if (payload && payload.msg_type === 'comm_open') {
+            const commOpenMessage = payload as KernelMessage.ICommOpenMsg;
+            try {
+                await this.onCommOpen(commOpenMessage);
+            } catch (ex) {
+                console.error('Failed to exec commTargetCallback', ex);
+                // try {
+                //     await this.onCommOpen(commOpenMessage);
+                //     this.commOpenHandled.push(commOpenMessage.content.comm_id);
+                // } catch (ex) {
+                //     console.error('Failed to exec commTargetCallback', ex);
+                // }
+            }
         }
     }
     // tslint:disable-next-line: max-func-body-length no-any member-ordering no-any
@@ -143,7 +168,7 @@ export class WidgetManager implements IIPyWidgetManager {
                 // These messages need to be propagated back on the `onMsg` callback.
                 const commMsg = payload as KernelMessage.ICommMsgMsg;
                 if (commMsg.content && commMsg.content.comm_id){
-                    const comm = this.commIdOnMsg.get(commMsg.content.comm_id);
+                    const comm = this.commsById.get(commMsg.content.comm_id);
                     if (comm) {
                         comm.onMsg(commMsg);
                     }
@@ -164,6 +189,10 @@ export class WidgetManager implements IIPyWidgetManager {
                     if (!this.modelIdsToBeDisplayed.has(modelId)){
                         this.modelIdsToBeDisplayed.set(modelId, createDeferred());
                     }
+                    const modelPromise = this.manager.get_model(data.model_id);
+                    if (modelPromise){
+                        await modelPromise;
+                    }
                     // Mark it as completed (i.e. ready to display).
                     this.modelIdsToBeDisplayed.get(modelId)!.resolve();
                     // await this.renderWidget(data, this.widgetContainer);
@@ -171,22 +200,7 @@ export class WidgetManager implements IIPyWidgetManager {
                 break;
             }
             case InteractiveWindowMessages.IPyWidgets_comm_open:
-                // Happens when a comm is opened (generatelly part of a cell execution).
-                // We're only interested in `comm_open` messages.
-                if (payload && payload.msg_type === 'comm_open') {
-                    const commOpenMessage = payload as KernelMessage.ICommOpenMsg;
-                    try {
-                        await this.onCommOpen(commOpenMessage);
-                    } catch (ex) {
-                        console.error('Failed to exec commTargetCallback', ex);
-                        // try {
-                        //     await this.onCommOpen(commOpenMessage);
-                        //     this.commOpenHandled.push(commOpenMessage.content.comm_id);
-                        // } catch (ex) {
-                        //     console.error('Failed to exec commTargetCallback', ex);
-                        // }
-                    }
-                }
+                await this.handleCommOpen(msg, payload);
                 break;
             default:
                 break;
@@ -260,7 +274,7 @@ export class WidgetManager implements IIPyWidgetManager {
         // The actual object is at the extension end. Back there we listen to messages arriving
         // in the callback of `IComm.onMsg`, those will come into this class and we need to send
         // them through the `comm` object. To propogate those messages we need to tie the delegate to the comm id.
-        this.commIdOnMsg.set(msg.content.comm_id, comm);
+        this.commsById.set(msg.content.comm_id, comm);
 
         // Invoke the CommOpen callbacks with the comm and the corresponding message.
         // This is the handshake with the ipywidgets.
@@ -319,7 +333,7 @@ export class WidgetManager implements IIPyWidgetManager {
             // Dummy because the actual IFuture object will be on the extension side.
             // tslint:disable-next-line: no-any
             const shellMessage = ({ header: { msg_id: requestId } } as any) as KernelMessage.IShellMessage;
-            const reply: Partial<Kernel.IFuture> = {
+            const reply: Partial<Kernel.IShellFuture> = {
                 onIOPub: noop,
                 onReply: noop,
                 onStdin: noop,
@@ -327,7 +341,7 @@ export class WidgetManager implements IIPyWidgetManager {
                 msg: shellMessage
             };
             // tslint:disable-next-line: no-any
-            const future = (reply as any) as Kernel.IFuture;
+            const future = (reply as any) as Kernel.IShellFuture;
             // Keep track of the future.
             // When messages arrive from extension we can resolve this future.
             this.requestFutureMap.set(requestId, { future, deferred });

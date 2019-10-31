@@ -115,7 +115,7 @@ export class Editor extends React.Component<IEditorProps, IEditorState> {
             readOnly: readOnly,
             occurrencesHighlight: false,
             selectionHighlight: false,
-            lineDecorationsWidth: 5,
+            lineDecorationsWidth: 0,
             contextmenu: false,
             matchBrackets: false,
             fontSize: this.props.font.size,

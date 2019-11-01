@@ -5,8 +5,6 @@ import { nbformat } from '@jupyterlab/coreutils';
 import { JSONObject } from '@phosphor/coreutils';
 import ansiRegex from 'ansi-regex';
 import * as fastDeepEqual from 'fast-deep-equal';
-// tslint:disable-next-line: no-require-imports
-import cloneDeep = require('lodash/cloneDeep');
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
 import '../../client/common/extensions';

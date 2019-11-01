@@ -429,10 +429,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub, {requestId, msg})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
 
-            // if (KernelMessage.isCommMsgMsg(msg)){
-            //     this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
-            //     .catch(ex => console.error('Failed to post oniopub message for handler', ex));
-            // }
+            if (KernelMessage.isCommMsgMsg(msg)){
+                this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
+                .catch(ex => console.error('Failed to post oniopub message for handler', ex));
+            }
         };
         future.onReply = (reply: KernelMessage.IShellMessage) => {
             this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_reply, {requestId, msg: reply})

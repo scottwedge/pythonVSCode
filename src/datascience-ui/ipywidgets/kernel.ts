@@ -50,8 +50,8 @@ export class ClassicCommShellCallbackManager {
                 // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
                 // ipywidgets uses the `IComm.send` method.
                 const requestId = payload.requestId;
-                this.unregisterFuture(requestId);
                 const reply = this.requestFutureMap.get(requestId)!;
+                this.unregisterFuture(requestId);
                 reply.deferred.resolve(payload.msg);
                 break;
             }
@@ -60,8 +60,8 @@ export class ClassicCommShellCallbackManager {
                 // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
                 // ipywidgets uses the `IComm.send` method.
                 const requestId = payload.requestId;
-                this.unregisterFuture(requestId);
                 const reply = this.requestFutureMap.get(requestId)!;
+                this.unregisterFuture(requestId);
                 reply.deferred.reject(payload.msg);
                 break;
             }
@@ -178,7 +178,10 @@ export class ProxyKernel implements Partial<Kernel.IKernel> {
                 if (commMsg.content && commMsg.content.comm_id) {
                     const comm = this.commsById.get(commMsg.content.comm_id);
                     if (comm) {
-                        comm.onMsg(commMsg);
+                        const promise = comm.onMsg(commMsg);
+                        if (promise){
+                            await promise;
+                        }
                     }
                 }
                 break;

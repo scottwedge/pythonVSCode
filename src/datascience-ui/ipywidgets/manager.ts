@@ -76,6 +76,8 @@ export class WidgetManager implements IIPyWidgetManager, IMessageSender {
         while (this.pendingMessages.length > 0) {
             const data = this.pendingMessages.shift()!;
             try {
+                // tslint:disable-next-line: no-any
+                this.restoreBuffers(data.payload as any);
                 await this.proxyKernel.handleMessageAsync(data.msg, data.payload);
                 await this.handleMessageAsync(data.msg, data.payload);
             } catch (ex){
@@ -87,6 +89,26 @@ export class WidgetManager implements IIPyWidgetManager, IMessageSender {
         this.busyProcessingMessages = false;
         if (this.pendingMessages.length > 0){
             setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
+        }
+    }
+    private restoreBuffers(msg: KernelMessage.IIOPubMessage){
+        if (!msg || !Array.isArray(msg.buffers) || msg.buffers.length === 0){
+            return;
+        }
+        // tslint:disable-next-line: prefer-for-of
+        for (let i = 0; i < msg.buffers.length; i += 1) {
+            const item = msg.buffers[i];
+            if ('buffer' in item && 'byteOffset' in item){
+                const buffer = new Uint8Array(item.buffer).buffer;
+                // It is an ArrayBufferView
+                // tslint:disable-next-line: no-any
+                const bufferView = new DataView(buffer, item.byteOffset, item.byteLength);
+                msg.buffers[i] = bufferView;
+            } else {
+                const buffer = new Uint8Array(item).buffer;
+                // tslint:disable-next-line: no-any
+                msg.buffers[i] = buffer;
+            }
         }
     }
     // tslint:disable-next-line: no-any

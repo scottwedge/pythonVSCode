@@ -362,6 +362,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
                 this.targetNames.forEach(targetName => {
                     // kernel.registerCommTarget('jupyter.widget', (_comm, msg) => {
                     kernel.registerCommTarget(targetName, (_comm, msg) => {
+                        this.serializeDataViews(msg as any);
                         this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
                     });
                 });
@@ -375,8 +376,40 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         }
         const kernel = ((this.notebook as JupyterNotebookBase).session as JupyterSession).session!.kernel;
         kernel.registerCommTarget(targetName, (_comm, msg) => {
+            // tslint:disable-next-line: no-any
+            this.serializeDataViews(msg as any);
             this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
         });
+    }
+    protected serializeDataViews(msg: KernelMessage.IIOPubMessage){
+        if (!Array.isArray(msg.buffers) || msg.buffers.length === 0){
+            return;
+        }
+        // tslint:disable-next-line: no-any
+        const newBufferView: any[] = [];
+        // tslint:disable-next-line: prefer-for-of
+        for (let i = 0; i < msg.buffers.length; i += 1) {
+            const item = msg.buffers[i];
+            if ('buffer' in item && 'byteOffset' in item){
+                // It is an ArrayBufferView
+                // tslint:disable-next-line: no-any
+                const buffer = Array.apply(null, new Uint8Array(item.buffer as any) as any);
+                newBufferView.push({
+                    ...item,
+                    byteLength: item.byteLength,
+                    byteOffset: item.byteOffset,
+                    buffer
+                    // tslint:disable-next-line: no-any
+                } as any);
+            } else {
+                // tslint:disable-next-line: no-any
+                newBufferView.push(Array.apply(null, new Uint8Array(item as any) as any) as any);
+            }
+        }
+
+        // tslint:disable-next-line: no-any
+        // msg.buffers = JSON.stringify(newBufferView) as any;
+        msg.buffers = newBufferView;
     }
     // tslint:disable-next-line: no-any
     protected async sendIPythonShellMsg(payload: { data: any; metadata: any; commId: string; requestId: string }){
@@ -426,6 +459,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         });
         future.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+            this.serializeDataViews(msg);
             this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub, {requestId, msg})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
 

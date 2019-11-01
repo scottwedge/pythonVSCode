@@ -6,13 +6,12 @@
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { nbformat } from '@jupyterlab/services/node_modules/@jupyterlab/coreutils';
 import 'rxjs/add/operator/switchMap';
-import * as uuid from 'uuid/v4';
 import { createDeferred, Deferred } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
 import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { PostOffice } from '../react-common/postOffice';
-import { ProxyKernel } from './kernel';
-import { CommTargetCallback, IHtmlWidgetManager, IHtmlWidgetManagerCtor, IIPyWidgetManager } from './types';
+import { IMessageSender, ProxyKernel } from './kernel';
+import { IHtmlWidgetManager, IHtmlWidgetManagerCtor, IIPyWidgetManager } from './types';
 
 // The HTMLWidgetManager will be exposed in the global variable `window.ipywidgets.main` (check webpack config).
 // tslint:disable-next-line: no-any
@@ -20,17 +19,12 @@ const HtmlWidgetManager = (window as any).vscIPyWidgets.WidgetManager as IHtmlWi
 if (!HtmlWidgetManager) {
     throw new Error('HtmlWidgetManager not defined. Please include/check ipywidgets.js file');
 }
-export class WidgetManager implements IIPyWidgetManager {
+export class WidgetManager implements IIPyWidgetManager, IMessageSender {
     public static instance: WidgetManager;
     public manager!: IHtmlWidgetManager;
     public commOpenHandled: string[] = [];
-    // tslint:disable-next-line: no-any
-    private commTargetCallbacks = new Map<string, CommTargetCallback>();
-    private requestFutureMap = new Map<string, { future: Kernel.IShellFuture; deferred: Deferred<KernelMessage.IShellMessage | undefined> }>();
-    private commsById = new Map<string, Kernel.IComm>();
-    private readonly proxyKernel = new ProxyKernel();
+    private readonly proxyKernel: ProxyKernel;
     private postOffice!: PostOffice;
-    private messagesToSend: string[] = [];
     /**
      * Contains promises related to model_ids that need to be displayed.
      * When we receive a message from the kernel of type = `display_data` for a widget (`application/vnd.jupyter.widget-view+json`),
@@ -42,7 +36,7 @@ export class WidgetManager implements IIPyWidgetManager {
      */
     private modelIdsToBeDisplayed = new Map<string, Deferred<void>>();
     constructor(widgetContainer: HTMLElement) {
-            this.proxyKernel.on('commTargetRegistered', this.onCommTargetRegistered.bind(this));
+            this.proxyKernel = new ProxyKernel(this);
             // tslint:disable-next-line: no-any
             const kernel = (this.proxyKernel as any) as Kernel.IKernel;
             this.manager = new HtmlWidgetManager(kernel, widgetContainer);
@@ -59,11 +53,7 @@ export class WidgetManager implements IIPyWidgetManager {
     public registerPostOffice(postOffice: PostOffice): void {
         this.postOffice = postOffice;
         postOffice.addHandler(this);
-        // postOffice.asObservable()
-        //     .switchMap(async msg => this.handleCommOpen(msg.type, msg.payload))
-        //     .subscribe();
-        this.messagesToSend.forEach(targetName => this.sendMessage(InteractiveWindowMessages.IPyWidgets_registerCommTarget, targetName));
-        this.messagesToSend = [];
+        this.proxyKernel.initialize();
     }
     public async clear(): Promise<void> {
         await this.manager.clear_state();
@@ -86,6 +76,7 @@ export class WidgetManager implements IIPyWidgetManager {
         while (this.pendingMessages.length > 0) {
             const data = this.pendingMessages.shift()!;
             try {
+                await this.proxyKernel.handleMessageAsync(data.msg, data.payload);
                 await this.handleMessageAsync(data.msg, data.payload);
             } catch (ex){
                 // tslint:disable-next-line: no-console
@@ -99,111 +90,29 @@ export class WidgetManager implements IIPyWidgetManager {
         }
     }
     // tslint:disable-next-line: no-any
-    private async handleCommOpen(msg: string, payload?: any): Promise<void>{
-        if (msg !== InteractiveWindowMessages.IPyWidgets_comm_open){
-            return;
-        }
-        // Happens when a comm is opened (generatelly part of a cell execution).
-        // We're only interested in `comm_open` messages.
-        if (payload && payload.msg_type === 'comm_open') {
-            const commOpenMessage = payload as KernelMessage.ICommOpenMsg;
-            try {
-                await this.onCommOpen(commOpenMessage);
-            } catch (ex) {
-                console.error('Failed to exec commTargetCallback', ex);
-                // try {
-                //     await this.onCommOpen(commOpenMessage);
-                //     this.commOpenHandled.push(commOpenMessage.content.comm_id);
-                // } catch (ex) {
-                //     console.error('Failed to exec commTargetCallback', ex);
-                // }
-            }
-        }
-    }
-    // tslint:disable-next-line: max-func-body-length no-any member-ordering no-any
     public async handleMessageAsync(msg: string, payload?: any): Promise<void> {
-        switch (msg) {
-            case InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub: {
-                // We got an `iopub` message on the comm for the `shell_` message that was sent by ipywidgets.
-                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
-                // ipywidgets uses the `IComm.send` method.
-                const requestId = payload.requestId;
-                const reply = this.requestFutureMap.get(requestId)!;
-                reply.future.onIOPub(payload.msg);
-                break;
-            }
-            case InteractiveWindowMessages.IPyWidgets_ShellSend_reply: {
-                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
-                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
-                // ipywidgets uses the `IComm.send` method.
-                const requestId = payload.requestId;
-                const reply = this.requestFutureMap.get(requestId)!;
-                reply.future.onReply(payload.msg);
-                break;
-            }
-            case InteractiveWindowMessages.IPyWidgets_ShellSend_resolve: {
-                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
-                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
-                // ipywidgets uses the `IComm.send` method.
-                const requestId = payload.requestId;
-                const reply = this.requestFutureMap.get(requestId)!;
-                reply.deferred.resolve(payload.msg);
-                break;
-            }
-            case InteractiveWindowMessages.IPyWidgets_ShellSend_reject: {
-                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
-                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
-                // ipywidgets uses the `IComm.send` method.
-                const requestId = payload.requestId;
-                const reply = this.requestFutureMap.get(requestId)!;
-                reply.deferred.reject(payload.msg);
-                break;
-            }
-            case InteractiveWindowMessages.IPyWidgets_comm_msg: {
-                // We got a `comm_msg` on the comm channel from kernel.
-                // These messages must be given to all widgets, to update their states.
-                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
-                // ipywidgets uses the `IComm.send` method.
+        if (msg === InteractiveWindowMessages.IPyWidgets_display_data_msg) {
+            // General IOPub message
+            const displayMsg = payload as KernelMessage.IDisplayDataMsg;
 
-                // These messages need to be propagated back on the `onMsg` callback.
-                const commMsg = payload as KernelMessage.ICommMsgMsg;
-                if (commMsg.content && commMsg.content.comm_id){
-                    const comm = this.commsById.get(commMsg.content.comm_id);
-                    if (comm) {
-                        comm.onMsg(commMsg);
-                    }
+            if (displayMsg.content &&
+                displayMsg.content.data &&
+                displayMsg.content.data['application/vnd.jupyter.widget-view+json']) {
+                // tslint:disable-next-line: no-any
+                const data = displayMsg.content.data['application/vnd.jupyter.widget-view+json'] as any;
+                const modelId = data.model_id;
+
+                if (!this.modelIdsToBeDisplayed.has(modelId)){
+                    this.modelIdsToBeDisplayed.set(modelId, createDeferred());
                 }
-                break;
-            }
-            case InteractiveWindowMessages.IPyWidgets_display_data_msg: {
-                // General IOPub message
-                const displayMsg = payload as KernelMessage.IDisplayDataMsg;
-
-                if (displayMsg.content &&
-                    displayMsg.content.data &&
-                    displayMsg.content.data['application/vnd.jupyter.widget-view+json']) {
-                    // tslint:disable-next-line: no-any
-                    const data = displayMsg.content.data['application/vnd.jupyter.widget-view+json'] as any;
-                    const modelId = data.model_id;
-
-                    if (!this.modelIdsToBeDisplayed.has(modelId)){
-                        this.modelIdsToBeDisplayed.set(modelId, createDeferred());
-                    }
-                    const modelPromise = this.manager.get_model(data.model_id);
-                    if (modelPromise){
-                        await modelPromise;
-                    }
-                    // Mark it as completed (i.e. ready to display).
-                    this.modelIdsToBeDisplayed.get(modelId)!.resolve();
-                    // await this.renderWidget(data, this.widgetContainer);
+                const modelPromise = this.manager.get_model(data.model_id);
+                if (modelPromise){
+                    await modelPromise;
                 }
-                break;
+                // Mark it as completed (i.e. ready to display).
+                this.modelIdsToBeDisplayed.get(modelId)!.resolve();
+                // await this.renderWidget(data, this.widgetContainer);
             }
-            case InteractiveWindowMessages.IPyWidgets_comm_open:
-                await this.handleCommOpen(msg, payload);
-                break;
-            default:
-                break;
         }
     }
     public async renderWidget(data: nbformat.IMimeBundle & {model_id: string; version_major: number}, ele: HTMLElement): Promise<{ dispose: Function }> {
@@ -250,110 +159,7 @@ export class WidgetManager implements IIPyWidgetManager {
         // tslint:disable-next-line: no-any
         return this.manager.display_view(view, { el: ele }).then(vw => ({ dispose: vw.remove.bind(vw) }));
     }
-    /**
-     * Handle `comm_open` messages.
-     *
-     * @protected
-     * @param {KernelMessage.ICommOpenMsg} msg
-     * @memberof WidgetManager
-     */
-    protected async onCommOpen(msg: KernelMessage.ICommOpenMsg) {
-        if (!msg.content || !msg.content.comm_id || msg.content.target_name !== 'jupyter.widget') {
-            throw new Error('Unknown comm open message');
-        }
-        const commTargetCallback = this.commTargetCallbacks.get(msg.content.target_name);
-        if (!commTargetCallback) {
-            throw new Error(`Comm Target callback not registered for ${msg.content.target_name}`);
-        }
-
-        // Create the IComm object that ipywidgets will use to communicate directly with the kernel.
-        const comm = this.createKernelCommForCommOpenCallback(msg);
-
-        // When messages arrive on `onMsg` in the comm component, we need to send these back.
-        // Remember, `comm` here is a bogus IComm object.
-        // The actual object is at the extension end. Back there we listen to messages arriving
-        // in the callback of `IComm.onMsg`, those will come into this class and we need to send
-        // them through the `comm` object. To propogate those messages we need to tie the delegate to the comm id.
-        this.commsById.set(msg.content.comm_id, comm);
-
-        // Invoke the CommOpen callbacks with the comm and the corresponding message.
-        // This is the handshake with the ipywidgets.
-        // At this point ipywidgets manager has the comm object it needs to communicate with the kernel.
-        const promise = commTargetCallback(comm, msg);
-        // tslint:disable-next-line: no-any
-        if (promise && (promise as any).then){
-            await promise;
-        }
-    }
-    private onCommTargetRegistered(targetName: string, callback: CommTargetCallback) {
-        // this.sendMessage(InteractiveWindowMessages.IPyWidgets_registerCommTarget, targetName);
-        this.messagesToSend.push(targetName);
-        this.commTargetCallbacks.set(targetName, callback);
-    }
-    private sendMessage<M extends IInteractiveWindowMapping, T extends keyof M>(type: T, payload?: M[T]) {
+    public sendMessage<M extends IInteractiveWindowMapping, T extends keyof M>(type: T, payload?: M[T]) {
         this.postOffice.sendMessage(type, payload);
-    }
-
-    /**
-     * Create a `IComm` class that ipywidgets will use to communicate with the kernel.
-     * Here we create a bogus (proxy) class. While the actual implementation is at the extension end.
-     * Bascally this is a proxy, when `send` is invoked we send messages from the extension.
-     * Similarly when messages arrive at the extension end, we propagate them through to the UI and
-     * handl them here and invoke the corresponding delegates, such as `onMsg`.
-     *
-     * @private
-     * @param {KernelMessage.ICommOpenMsg} msg
-     * @returns {Kernel.IComm}
-     * @memberof WidgetManager
-     */
-    private createKernelCommForCommOpenCallback(msg: KernelMessage.ICommOpenMsg): Kernel.IComm {
-        const comm: Kernel.IComm = {
-            ...msg.content,
-            commId: msg.content.comm_id,
-            targetName: msg.content.target_name,
-            dispose: noop,
-            // tslint:disable-next-line: no-any
-            close: noop as any,
-            // tslint:disable-next-line: no-any
-            open: noop as any,
-            // tslint:disable-next-line: no-any
-            send: noop as any,
-            onMsg: noop,
-            isDisposed: false,
-            onClose: noop
-        };
-        // This `send` method is used by widgets to send messages to the kernel (e.g. kernel links).
-        // tslint:disable-next-line: no-any
-        comm.send = (data: any, metadata?: any, _buffers?: any[], _disposeOnDone?: boolean) => {
-            console.log('Sending');
-            const requestId = uuid();
-            const commId: string = msg.content.comm_id;
-            const deferred = createDeferred<KernelMessage.IShellMessage | undefined>();
-            // Create a dummy response (IFuture) that we'll send to ipywidgets controls.
-            // Dummy because the actual IFuture object will be on the extension side.
-            // tslint:disable-next-line: no-any
-            const shellMessage = ({ header: { msg_id: requestId } } as any) as KernelMessage.IShellMessage;
-            const reply: Partial<Kernel.IShellFuture> = {
-                onIOPub: noop,
-                onReply: noop,
-                onStdin: noop,
-                done: deferred.promise,
-                msg: shellMessage
-            };
-            // tslint:disable-next-line: no-any
-            const future = (reply as any) as Kernel.IShellFuture;
-            // Keep track of the future.
-            // When messages arrive from extension we can resolve this future.
-            this.requestFutureMap.set(requestId, { future, deferred });
-
-            // Send this payload to the extension where we'll use the real comms to send to the kernel.
-            // The response will be handled and sent back as messages to the UI as messages `shellSend_*`
-            this.sendMessage(InteractiveWindowMessages.IPyWidgets_ShellSend, { data, metadata, commId, requestId });
-
-            // ipywidgets will use this as a promise (ifuture).
-            return future;
-        };
-
-        return comm;
     }
 }

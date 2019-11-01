@@ -277,7 +277,7 @@ export interface IFocusedCellEditor {
 // Map all messages to specific payloads
 export class IInteractiveWindowMapping {
     // tslint:disable-next-line: no-any
-    public [InteractiveWindowMessages.IPyWidgets_ShellSend]: { data: any; metadata: any; commId: string; requestId: string };
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend]: { data: any; metadata: any; commId: string; requestId: string; buffers?: any[]; disposeOnDone?: boolean };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub]: { requestId: string; msg: KernelMessage.IIOPubMessage };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_reply]: { requestId: string; msg: KernelMessage.IShellMessage };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_resolve]: { requestId: string; msg?: KernelMessage.IShellMessage };

@@ -3,11 +3,129 @@
 
 'use strict';
 
-import { Kernel } from '@jupyterlab/services';
+import { Kernel, KernelMessage } from '@jupyterlab/services';
+import * as uuid from 'uuid/v4';
+import { createDeferred, Deferred } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
+import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CommTargetCallback } from './types';
 
 type CommTargetRegisteredHandler = (targetName: string, callback: CommTargetCallback) => void;
+
+export interface IMessageSender {
+    sendMessage<M extends IInteractiveWindowMapping, T extends keyof M>(type: T, payload?: M[T]): void;
+}
+
+export class ClassicCommShellCallbackManager {
+    private requestFutureMap = new Map<string, { future: Kernel.IShellFuture; deferred: Deferred<KernelMessage.IShellMessage | undefined> }>();
+    public registerFuture(requestId: string, future: Kernel.IShellFuture, deferred: Deferred<KernelMessage.IShellMessage | undefined>) {
+        this.requestFutureMap.set(requestId, { future, deferred });
+    }
+    public unregisterFuture(requestId: string) {
+        this.requestFutureMap.delete(requestId);
+    }
+    // tslint:disable-next-line: no-any
+    public async handleShellCallbacks(msg: string, payload?: any): Promise<void> {
+        switch (msg) {
+            case InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub: {
+                // We got an `iopub` message on the comm for the `shell_` message that was sent by ipywidgets.
+                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
+                // ipywidgets uses the `IComm.send` method.
+                const requestId = payload.requestId;
+                const reply = this.requestFutureMap.get(requestId)!;
+                reply.future.onIOPub(payload.msg);
+                break;
+            }
+            case InteractiveWindowMessages.IPyWidgets_ShellSend_reply: {
+                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
+                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
+                // ipywidgets uses the `IComm.send` method.
+                const requestId = payload.requestId;
+                const reply = this.requestFutureMap.get(requestId)!;
+                reply.future.onReply(payload.msg);
+                break;
+            }
+            case InteractiveWindowMessages.IPyWidgets_ShellSend_resolve: {
+                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
+                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
+                // ipywidgets uses the `IComm.send` method.
+                const requestId = payload.requestId;
+                this.unregisterFuture(requestId);
+                const reply = this.requestFutureMap.get(requestId)!;
+                reply.deferred.resolve(payload.msg);
+                break;
+            }
+            case InteractiveWindowMessages.IPyWidgets_ShellSend_reject: {
+                // We got a `reply` message on the comm for the `shell_` message that was sent by ipywidgets.
+                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
+                // ipywidgets uses the `IComm.send` method.
+                const requestId = payload.requestId;
+                this.unregisterFuture(requestId);
+                const reply = this.requestFutureMap.get(requestId)!;
+                reply.deferred.reject(payload.msg);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
+export class ClassicComm implements Kernel.IComm {
+    public isDisposed: boolean = false;
+    public onClose: (msg: KernelMessage.ICommCloseMsg) => void | PromiseLike<void> = noop;
+    public onMsg: (msg: KernelMessage.ICommMsgMsg) => void | PromiseLike<void> = noop;
+    private readonly registeredFutures: string[] = [];
+    constructor(
+        public readonly commId: string,
+        public readonly targetName: string,
+        private readonly messageSender: IMessageSender,
+        private readonly callbackManager: ClassicCommShellCallbackManager
+    ) {}
+    // tslint:disable-next-line: no-any
+    public open(_data?: any, _metadata?: any, _buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined): Kernel.IShellFuture {
+        throw new Error('VSCPython.IClassicComm.Open method not implemented!');
+    }
+    // tslint:disable-next-line: no-any
+    public close(_data?: any, _metadata?: any, _buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined): Kernel.IShellFuture {
+        this.registeredFutures.forEach(item => this.callbackManager.unregisterFuture(item));
+        throw new Error('VSCPython.IClassicComm.Close method not implemented!');
+    }
+    public dispose(): void {
+        this.registeredFutures.forEach(item => this.callbackManager.unregisterFuture(item));
+    }
+    // tslint:disable-next-line: no-any
+    public send(data: any, metadata?: any, buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined, disposeOnDone?: boolean | undefined): Kernel.IShellFuture {
+        // tslint:disable-next-line: no-console
+        console.log('Sending');
+        const requestId = uuid();
+        const commId: string = this.commId;
+        const deferred = createDeferred<KernelMessage.IShellMessage | undefined>();
+        // Create a dummy response (IFuture) that we'll send to ipywidgets controls.
+        // Dummy because the actual IFuture object will be on the extension side.
+        // tslint:disable-next-line: no-any
+        const shellMessage = ({ header: { msg_id: requestId } } as any) as KernelMessage.IShellMessage;
+        const reply: Partial<Kernel.IShellFuture> = {
+            onIOPub: noop,
+            onReply: noop,
+            onStdin: noop,
+            done: deferred.promise,
+            msg: shellMessage
+        };
+        // tslint:disable-next-line: no-any
+        const future = (reply as any) as Kernel.IShellFuture;
+        // Keep track of the future.
+        // When messages arrive from extension we can resolve this future.
+        this.registeredFutures.push(requestId);
+        this.callbackManager.registerFuture(requestId, future, deferred);
+
+        // Send this payload to the extension where we'll use the real comms to send to the kernel.
+        // The response will be handled and sent back as messages to the UI as messages `shellSend_*`
+        this.messageSender.sendMessage(InteractiveWindowMessages.IPyWidgets_ShellSend, { data, metadata, commId, requestId, disposeOnDone, buffers });
+
+        // ipywidgets will use this as a promise (ifuture).
+        return future;
+    }
+}
 
 /**
  * This is a proxy Kernel that ipython will use to communicate with jupyter.
@@ -19,7 +137,12 @@ type CommTargetRegisteredHandler = (targetName: string, callback: CommTargetCall
  * @implements {Partial<Kernel.IKernel>}
  */
 export class ProxyKernel implements Partial<Kernel.IKernel> {
+    private commRegistrationMessagesToSend: string[] = [];
     private readonly handlers: CommTargetRegisteredHandler[] = [];
+    private commTargetCallbacks = new Map<string, CommTargetCallback>();
+    private commsById = new Map<string, Kernel.IComm>();
+    private readonly shellCallbackManager = new ClassicCommShellCallbackManager();
+    constructor(private readonly messageSender: IMessageSender) {}
     /**
      * This method is used by ipywidgets manager.
      *
@@ -28,21 +151,89 @@ export class ProxyKernel implements Partial<Kernel.IKernel> {
      * @memberof ProxyKernel
      */
     public registerCommTarget(targetName: string, callback: CommTargetCallback): void {
+        this.commRegistrationMessagesToSend.push(targetName);
         this.handlers.forEach(handler => handler(targetName, callback));
+        this.commTargetCallbacks.set(targetName, callback);
     }
     public dispose() {
         while (this.handlers.shift()) {
             noop();
         }
     }
-    public on(_event: 'commTargetRegistered', callback: CommTargetRegisteredHandler) {
-        this.handlers.push(callback);
+    public initialize(): void {
+        this.commRegistrationMessagesToSend.forEach(targetName => this.messageSender.sendMessage(InteractiveWindowMessages.IPyWidgets_registerCommTarget, targetName));
+        this.commRegistrationMessagesToSend = [];
     }
+    // tslint:disable-next-line: no-any
+    public async handleMessageAsync(msg: string, payload?: any): Promise<void> {
+        switch (msg) {
+            case InteractiveWindowMessages.IPyWidgets_comm_msg: {
+                // We got a `comm_msg` on the comm channel from kernel.
+                // These messages must be given to all widgets, to update their states.
+                // The `shell` message was sent using our custom `IComm` component provided to ipywidgets.
+                // ipywidgets uses the `IComm.send` method.
 
-    public removeListener(_event: 'commTargetRegistered', callback: CommTargetRegisteredHandler) {
-        const index = this.handlers.indexOf(callback);
-        if (index > -1) {
-            this.handlers.splice(index, 1);
+                // These messages need to be propagated back on the `onMsg` callback.
+                const commMsg = payload as KernelMessage.ICommMsgMsg;
+                if (commMsg.content && commMsg.content.comm_id) {
+                    const comm = this.commsById.get(commMsg.content.comm_id);
+                    if (comm) {
+                        comm.onMsg(commMsg);
+                    }
+                }
+                break;
+            }
+            case InteractiveWindowMessages.IPyWidgets_comm_open:
+                await this.handleCommOpen(msg, payload);
+                break;
+            default:
+                await this.shellCallbackManager.handleShellCallbacks(msg, payload);
+                break;
+        }
+    }
+    protected async onCommOpen(msg: KernelMessage.ICommOpenMsg) {
+        if (!msg.content || !msg.content.comm_id || msg.content.target_name !== 'jupyter.widget') {
+            throw new Error('Unknown comm open message');
+        }
+        const commTargetCallback = this.commTargetCallbacks.get(msg.content.target_name);
+        if (!commTargetCallback) {
+            throw new Error(`Comm Target callback not registered for ${msg.content.target_name}`);
+        }
+
+        // Create the IComm object that ipywidgets will use to communicate directly with the kernel.
+        const comm = new ClassicComm(msg.content.comm_id, msg.content.target_name, this.messageSender, this.shellCallbackManager);
+        // const comm = this.createKernelCommForCommOpenCallback(msg);
+
+        // When messages arrive on `onMsg` in the comm component, we need to send these back.
+        // Remember, `comm` here is a bogus IComm object.
+        // The actual object is at the extension end. Back there we listen to messages arriving
+        // in the callback of `IComm.onMsg`, those will come into this class and we need to send
+        // them through the `comm` object. To propogate those messages we need to tie the delegate to the comm id.
+        this.commsById.set(msg.content.comm_id, comm);
+
+        // Invoke the CommOpen callbacks with the comm and the corresponding message.
+        // This is the handshake with the ipywidgets.
+        // At this point ipywidgets manager has the comm object it needs to communicate with the kernel.
+        const promise = commTargetCallback(comm, msg);
+        // tslint:disable-next-line: no-any
+        if (promise && (promise as any).then) {
+            await promise;
+        }
+    }
+    // tslint:disable-next-line: no-any
+    private async handleCommOpen(msg: string, payload?: any): Promise<void> {
+        if (msg !== InteractiveWindowMessages.IPyWidgets_comm_open) {
+            return;
+        }
+        // Happens when a comm is opened (generatelly part of a cell execution).
+        // We're only interested in `comm_open` messages.
+        if (payload && payload.msg_type === 'comm_open') {
+            const commOpenMessage = payload as KernelMessage.ICommOpenMsg;
+            try {
+                await this.onCommOpen(commOpenMessage);
+            } catch (ex) {
+                console.error('Failed to exec commTargetCallback', ex);
+            }
         }
     }
 }

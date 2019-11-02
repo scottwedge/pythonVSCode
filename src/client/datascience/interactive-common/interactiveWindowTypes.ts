@@ -12,6 +12,7 @@ export namespace InteractiveWindowMessages {
     export const IPyWidgets_comm_msg = 'IPyWidgets_comm_msg';
     export const IPyWidgets_comm_open = 'IPyWidgets_comm_open';
     export const IPyWidgets_ShellSend = 'IPyWidgets_ShellSend';
+    export const IPyWidgets_ShellCommOpen = 'IPyWidgets_ShellCommOpen';
     export const IPyWidgets_registerCommTarget = 'IPyWidgets_registerCommTarget';
     export const IPyWidgets_ShellSend_onIOPub = 'IPyWidgets_ShellSend_onIOPub';
     export const IPyWidgets_ShellSend_reply = 'IPyWidgets_ShellSend_reply';
@@ -277,7 +278,9 @@ export interface IFocusedCellEditor {
 // Map all messages to specific payloads
 export class IInteractiveWindowMapping {
     // tslint:disable-next-line: no-any
-    public [InteractiveWindowMessages.IPyWidgets_ShellSend]: { data: any; metadata: any; commId: string; requestId: string; buffers?: any[]; disposeOnDone?: boolean };
+    public [InteractiveWindowMessages.IPyWidgets_ShellSend]: { data: any; metadata: any; commId: string; requestId: string; buffers?: any[]; disposeOnDone?: boolean; targetName?   : string; msgType: string   };
+    // tslint:disable-next-line: no-any
+    // public [InteractiveWindowMessages.IPyWidgets_ShellCommOpen]: { data: any; metadata: any; commId: string; requestId: string; buffers?: any[]; disposeOnDone?: boolean };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub]: { requestId: string; msg: KernelMessage.IIOPubMessage };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_reply]: { requestId: string; msg: KernelMessage.IShellMessage };
     public [InteractiveWindowMessages.IPyWidgets_ShellSend_resolve]: { requestId: string; msg?: KernelMessage.IShellMessage };

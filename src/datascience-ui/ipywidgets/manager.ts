@@ -22,7 +22,6 @@ if (!HtmlWidgetManager) {
 export class WidgetManager implements IIPyWidgetManager, IMessageSender {
     public static instance: WidgetManager;
     public manager!: IHtmlWidgetManager;
-    public commOpenHandled: string[] = [];
     private readonly proxyKernel: ProxyKernel;
     private postOffice!: PostOffice;
     /**

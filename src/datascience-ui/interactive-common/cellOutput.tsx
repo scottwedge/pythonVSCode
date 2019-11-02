@@ -49,15 +49,6 @@ interface ICellOutput {
 }
 // tslint:disable: react-this-binding-issue
 export class CellOutput extends React.Component<ICellOutputProps> {
-    // tslint:disable-next-line: no-any
-    private static ansiToHtmlClass_ctor: ClassType<any> | undefined;
-    private ipyWidgetRef: React.RefObject<HTMLDivElement>;
-    // private renderedWidgets: {dispose: Function }[] = [];
-    private renderedView: {dispose: Function}[] = [];
-    constructor(prop: ICellOutputProps) {
-        super(prop);
-        this.ipyWidgetRef = React.createRef<HTMLDivElement>();
-    }
 
     // tslint:disable-next-line: no-any
     private static get ansiToHtmlClass(): ClassType<any> {
@@ -72,7 +63,18 @@ export class CellOutput extends React.Component<ICellOutputProps> {
         }
         return CellOutput.ansiToHtmlClass_ctor!;
     }
-
+    // tslint:disable-next-line: no-any
+    private static ansiToHtmlClass_ctor: ClassType<any> | undefined;
+    private ipyWidgetRef: React.RefObject<HTMLDivElement>;
+    // private renderedWidgets: {dispose: Function }[] = [];
+    private renderId: number = 0;
+    private renderedView: {dispose: Function}[] = [];
+    // tslint:disable-next-line: no-any
+    private timeout: any;
+    constructor(prop: ICellOutputProps) {
+        super(prop);
+        this.ipyWidgetRef = React.createRef<HTMLDivElement>();
+    }
     private static getAnsiToHtmlOptions() : { fg: string; bg: string; colors: string [] } {
         // Here's the default colors for ansiToHtml. We need to use the
         // colors from our current theme.
@@ -158,25 +160,48 @@ export class CellOutput extends React.Component<ICellOutputProps> {
 
             return;
         }
-
+        const renderId = this.renderId += 1;
         // Render the outputs
         // tslint:disable-next-line: no-any
         const outputs = this.getCodeCell().outputs;
-        // tslint:disable-next-line: no-any
-        Promise.all<any>(outputs.map(async output => {
-            // tslint:disable-next-line: no-any
-            if (!output || !output.data || !(output.data as any)['application/vnd.jupyter.widget-view+json']){
-                return;
+        this.renderedView.forEach(view => {
+            try {
+                view.dispose();
+            } catch {
+                //
             }
-
-            // tslint:disable-next-line: no-any
-            const widgetData: any = (output.data as any)['application/vnd.jupyter.widget-view+json'];
-            const element = this.ipyWidgetRef.current!;
-            const view = await WidgetManager.instance.renderWidget(widgetData, element);
-            this.renderedView.push(view);
-        })).catch(ex => {
-            console.error('Failed to render the widget', ex);
         });
+        this.renderedView = [];
+        if (this.timeout){
+            clearTimeout(this.timeout);
+        }
+        this.timeout = setTimeout(async() => {
+            // Render the output in order.
+            const itemsToRender = [...outputs];
+            const renderOutput = async () => {
+                if (itemsToRender.length === 0){
+                    return;
+                }
+                const output = itemsToRender.shift();
+                // tslint:disable-next-line: no-any
+                if (!output || !output.data || !(output.data as any)['application/vnd.jupyter.widget-view+json']){
+                    return;
+                }
+                // tslint:disable-next-line: no-any
+                const widgetData: any = (output.data as any)['application/vnd.jupyter.widget-view+json'];
+                const element = this.ipyWidgetRef.current!;
+                const view = await WidgetManager.instance.renderWidget(widgetData, element);
+                if (renderId !== this.renderId){
+                    view.dispose();
+                    return;
+                }
+                this.renderedView.push(view);
+                // tslint:disable-next-line: no-unnecessary-callback-wrapper
+                setTimeout(() => renderOutput(), 100);
+            };
+            // tslint:disable-next-line: no-unnecessary-callback-wrapper
+            setTimeout(() => renderOutput(), 100);
+        }, 1_00);
     }
 
     // Public for testing

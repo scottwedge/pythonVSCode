@@ -333,6 +333,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         } else if (KernelMessage.isCommOpenMsg(data.msg)){
             // Do nothing, handled in the place we have registered for a target.
         } else if (KernelMessage.isCommMsgMsg(data.msg)){
+            // tslint:disable-next-line: no-any
+            this.serializeDataViews(data.msg as any);
             this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, data.msg as KernelMessage.ICommMsgMsg)
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         }
@@ -411,13 +413,37 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // msg.buffers = JSON.stringify(newBufferView) as any;
         msg.buffers = newBufferView;
     }
+    protected restoreBuffers(buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined){
+        if (!buffers || !Array.isArray(buffers) || buffers.length === 0){
+            return buffers || [];
+        }
+        // tslint:disable-next-line: prefer-for-of no-any
+        const newBuffers: any[] = [];
+        // tslint:disable-next-line: prefer-for-of no-any
+        for (let i = 0; i < buffers.length; i += 1) {
+            const item = buffers[i];
+            if ('buffer' in item && 'byteOffset' in item){
+                const buffer = new Uint8Array(item.buffer).buffer;
+                // It is an ArrayBufferView
+                // tslint:disable-next-line: no-any
+                const bufferView = new DataView(buffer, item.byteOffset, item.byteLength);
+                newBuffers.push(bufferView);
+            } else {
+                const buffer = new Uint8Array(item).buffer;
+                // tslint:disable-next-line: no-any
+                newBuffers.push(buffer);
+            }
+        }
+        return newBuffers;
+    }
     // tslint:disable-next-line: no-any
-    protected async sendIPythonShellMsg(payload: { data: any; metadata: any; commId: string; requestId: string }){
+    protected async sendIPythonShellMsg(payload: { data: any; metadata: any; commId: string; requestId: string; buffers?: any; msgType: string; targetName?: string }){
         const kernel = ((this.notebook as JupyterNotebookBase).session as JupyterSession).session!.kernel;
         const shellMessage = KernelMessage.createMessage<KernelMessage.ICommMsgMsg<'shell'>>({
-            msgType: 'comm_msg',
+            // tslint:disable-next-line: no-any
+            msgType: payload.msgType as any,
             channel: 'shell',
-            buffers: [],
+            buffers: this.restoreBuffers(payload.buffers),
             content: {
                 data: payload.data,
                 comm_id: payload.commId
@@ -428,9 +454,9 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             session: kernel.clientId,
             username: kernel.username
         });
-        // TODO: Do we need this?
+        // Note defined in type definition.
         // tslint:disable-next-line: no-any
-        (shellMessage.content as any).target_name = 'jupyter.widget';
+        (shellMessage.content as any).target_name = payload.targetName;
 
         // const shellMessage: KernelMessage.IShellMessage = KernelMessage.createMessage(
         //     {

@@ -170,12 +170,12 @@ export class WidgetManager implements IIPyWidgetManager, IMessageSender {
         // That 3rd party library may not be available and may have to be downloaded.
         // Hence the promise to wait until it has been created.
         const model = await modelPromise;
-        // tslint:disable-next-line: no-floating-promises no-any
-        ((this.manager as any).get_state() as Promise<any>).then(s => {
-            console.error('state');
-            console.error(s);
-            console.error(JSON.stringify(s));
-        }).catch(ex => console.error('failed to get state', ex));
+        // // tslint:disable-next-line: no-floating-promises no-any
+        // ((this.manager as any).get_state() as Promise<any>).then(s => {
+        //     console.error('state');
+        //     console.error(s);
+        //     console.error(JSON.stringify(s));
+        // }).catch(ex => console.error('failed to get state', ex));
         const view = await this.manager.create_view(model, { el: ele });
         // tslint:disable-next-line: no-any
         return this.manager.display_view(view, { el: ele }).then(vw => ({ dispose: vw.remove.bind(vw) }));

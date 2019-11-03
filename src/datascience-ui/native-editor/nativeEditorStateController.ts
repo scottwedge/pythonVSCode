@@ -24,7 +24,6 @@ export class NativeEditorStateController extends MainStateController {
     // tslint:disable-next-line: no-any
     constructor(props: IMainStateControllerProps) {
         super(props);
-        console.error('start');
         this.widgetManager = new WidgetManager(document.getElementById('rootWidget')!);
         this.widgetManager.registerPostOffice(this.postOffice);
     }

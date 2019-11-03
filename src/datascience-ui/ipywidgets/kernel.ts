@@ -114,7 +114,6 @@ export class ClassicComm implements Kernel.IComm {
     // tslint:disable-next-line: no-any
     public open(data?: any, metadata?: any, buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined): Kernel.IShellFuture {
         // tslint:disable-next-line: no-console
-        console.log('Sending CommOpen');
         const requestId = uuid();
         const commId: string = this.commId;
         const deferred = createDeferred<KernelMessage.IShellMessage | undefined>();
@@ -163,7 +162,6 @@ export class ClassicComm implements Kernel.IComm {
     // tslint:disable-next-line: no-any
     public send(data: any, metadata?: any, buffers?: (ArrayBuffer | ArrayBufferView)[] | undefined, disposeOnDone?: boolean | undefined): Kernel.IShellFuture {
         // tslint:disable-next-line: no-console
-        console.log('Sending CommMsg');
         const requestId = uuid();
         const commId: string = this.commId;
         const deferred = createDeferred<KernelMessage.IShellMessage | undefined>();

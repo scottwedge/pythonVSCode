@@ -5,7 +5,7 @@
 
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { nbformat } from '@jupyterlab/services/node_modules/@jupyterlab/coreutils';
-import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/concatMap';
 import { createDeferred, Deferred } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
 import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
@@ -43,53 +43,62 @@ export class WidgetManager implements IIPyWidgetManager, IMessageSender {
     }
     public dispose(): void {
         this.proxyKernel.dispose();
-        try {
-            this.postOffice.removeHandler(this);
-        } catch {
-            noop();
-        }
+        // try {
+        //     this.postOffice.removeHandler(this);
+        // } catch {
+        //     noop();
+        // }
     }
     public registerPostOffice(postOffice: PostOffice): void {
         this.postOffice = postOffice;
-        postOffice.addHandler(this);
+        // postOffice.addHandler(this);
+        postOffice.asObservable()
+            .concatMap(async msg => {
+                this.restoreBuffers(msg.payload);
+                await this.proxyKernel.handleMessageAsync(msg.type, msg.payload);
+                await this.handleMessageAsync(msg.type, msg.payload);
+            })
+            .subscribe();
         this.proxyKernel.initialize();
     }
     public async clear(): Promise<void> {
         await this.manager.clear_state();
     }
     // tslint:disable-next-line: member-ordering no-any
-    private pendingMessages: {msg: string; payload?: any}[] = [];
+    // private pendingMessages: {msg: string; payload?: any}[] = [];
     // tslint:disable: member-ordering
-    private busyProcessingMessages: boolean = false;
+    // private busyProcessingMessages: boolean = false;
     // tslint:disable-next-line: no-any
-    public handleMessage(msg: string, payload?: any): boolean {
-        this.pendingMessages.push({msg, payload});
-        setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
-        return true;
-    }
-    private async handleMessagesAsync(){
-        if (this.busyProcessingMessages){
-            return;
-        }
-        this.busyProcessingMessages = true;
-        while (this.pendingMessages.length > 0) {
-            const data = this.pendingMessages.shift()!;
-            try {
-                // tslint:disable-next-line: no-any
-                this.restoreBuffers(data.payload as any);
-                await this.proxyKernel.handleMessageAsync(data.msg, data.payload);
-                await this.handleMessageAsync(data.msg, data.payload);
-            } catch (ex){
-                // tslint:disable-next-line: no-console
-                console.error('Failed to process a message', ex);
-            }
-            break;
-        }
-        this.busyProcessingMessages = false;
-        if (this.pendingMessages.length > 0){
-            setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
-        }
-    }
+    // public handleMessage(msg: string, payload?: any): boolean {
+    //     this.pendingMessages.push({msg, payload});
+    //     setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
+    //     return true;
+    // }
+    // private async handleMessagesAsync(){
+    //     if (this.busyProcessingMessages){
+    //         return;
+    //     }
+    //     this.busyProcessingMessages = true;
+    //     while (this.pendingMessages.length > 0) {
+    //         const data = this.pendingMessages[0];
+    //         try {
+    //             console.error(`msg.type = ${data.msg}`, data.payload);
+    //             // tslint:disable-next-line: no-any
+    //             this.restoreBuffers(data.payload as any);
+    //             await this.proxyKernel.handleMessageAsync(data.msg, data.payload);
+    //             await this.handleMessageAsync(data.msg, data.payload);
+    //         } catch (ex){
+    //             // tslint:disable-next-line: no-console
+    //             console.error('Failed to process a message', ex);
+    //         }
+    //         this.pendingMessages.shift();
+    //         // break;
+    //     }
+    //     this.busyProcessingMessages = false;
+    //     if (this.pendingMessages.length > 0){
+    //         setTimeout(() => this.handleMessagesAsync().ignoreErrors(), 1);
+    //     }
+    // }
     private restoreBuffers(msg: KernelMessage.IIOPubMessage){
         if (!msg || !Array.isArray(msg.buffers) || msg.buffers.length === 0){
             return;

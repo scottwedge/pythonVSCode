@@ -5,7 +5,7 @@
 
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { nbformat } from '@jupyterlab/services/node_modules/@jupyterlab/coreutils';
-import { IMessageHandler, PostOffice } from '../react-common/postOffice';
+import { PostOffice } from '../react-common/postOffice';
 
 export type CommTargetCallback = (comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) => void | PromiseLike<void>;
 
@@ -43,7 +43,8 @@ export interface IHtmlWidgetManager {
     create_view(model: WidgetModel, options: { el: HTMLElement }): Promise<WidgetView>;
 }
 
-export interface IIPyWidgetManager extends IMessageHandler {
+// export interface IIPyWidgetManager extends IMessageHandler {
+export interface IIPyWidgetManager {
     dispose(): void;
     /**
      * To send and listen to messages (communicate with extension/backend).

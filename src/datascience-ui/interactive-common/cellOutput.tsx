@@ -432,10 +432,10 @@ export class CellOutput extends React.Component<ICellOutputProps> {
     }
 
     private renderOutput = (output: nbformat.IOutput, index: number): JSX.Element | null => {
-        // // tslint:disable-next-line: no-any
-        // if (output.data && (output.data as any)['application/vnd.jupyter.widget-view+json']){
-        //     return (null);
-        // }
+        // tslint:disable-next-line: no-any
+        if (output.data && (output.data as any)['application/vnd.jupyter.widget-view+json']){
+            return (null);
+        }
         const transformed = this.transformOutput(output);
         let mimetype = transformed.mimeType;
 

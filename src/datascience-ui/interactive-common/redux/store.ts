@@ -198,6 +198,8 @@ export interface IStore {
     main: IMainState;
     monaco: IMonacoState;
     post: {};
+    // Required only for ipywidgets (to send & receive messages).
+    postOffice: PostOffice;
 }
 
 export function createStore<M>(skipDefault: boolean, baseTheme: string, testMode: boolean, editable: boolean, reducerMap: M) {
@@ -218,7 +220,8 @@ export function createStore<M>(skipDefault: boolean, baseTheme: string, testMode
     const rootReducer = Redux.combineReducers<IStore>({
         main: mainReducer,
         monaco: monacoReducer,
-        post: postOfficeReducer
+        post: postOfficeReducer,
+        postOffice: () => postOffice
     });
 
     // Create our middleware

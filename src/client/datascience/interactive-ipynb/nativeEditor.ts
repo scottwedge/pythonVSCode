@@ -164,7 +164,11 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             editorProvider,
             errorHandler,
             nativeEditorDir,
-            [path.join(nativeEditorDir, 'index_bundle.js')],
+            [
+                path.join(nativeEditorDir, 'require.js'),
+                path.join(nativeEditorDir, 'ipywidgets.js'),
+                path.join(nativeEditorDir, 'index_bundle.js')
+            ],
             localize.DataScience.nativeEditorTitle(),
             ViewColumn.Active
         );

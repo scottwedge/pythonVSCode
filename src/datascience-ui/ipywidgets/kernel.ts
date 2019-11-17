@@ -128,6 +128,7 @@ export class ProxyKernel implements Partial<Kernel.IKernel> {
             try {
                 await this.onCommOpen(commOpenMessage);
             } catch (ex) {
+                // tslint:disable-next-line: no-console
                 console.error('Failed to exec commTargetCallback', ex);
             }
         }

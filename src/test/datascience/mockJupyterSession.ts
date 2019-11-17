@@ -104,10 +104,11 @@ export class MockJupyterSession implements IJupyterSession {
                 version: '1',
                 session: '1',
                 msg_id: '1',
-                msg_type: 'complete'
+                msg_type: 'complete' as any,
+                date: ''
             },
             parent_header: {
-            },
+            } as any,
             metadata: {
             }
         } as any;

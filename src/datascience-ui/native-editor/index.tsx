@@ -7,6 +7,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
+import { WidgetManagerComponent } from '../ipywidgets/container';
 import { IVsCodeApi } from '../react-common/postOffice';
 import { detectBaseTheme } from '../react-common/themeDetector';
 import { getConnectedNativeEditor } from './nativeEditor';
@@ -31,6 +32,7 @@ const ConnectedNativeEditor = getConnectedNativeEditor();
 ReactDOM.render(
     <Provider store={store}>
         <ConnectedNativeEditor/>
+        <WidgetManagerComponent />
     </Provider>,
   document.getElementById('root') as HTMLElement
 );

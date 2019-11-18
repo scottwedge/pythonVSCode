@@ -67,4 +67,5 @@ export function deserializeDataViews(buffers: undefined | (ArrayBuffer | ArrayBu
             newBufferView.push(buffer);
         }
     }
+    return newBufferView;
 }

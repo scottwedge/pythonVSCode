@@ -17,3 +17,4 @@ const limembedAmdRendererFileContents = fs.readFileSync(limembedAmdRendererFile,
 fs.appendFileSync(ipywidgetsFile, `\n\n\n\n\n//(VS Code Python) Injected libembed-amd.js contents\n\n\n${limembedAmdFileContents}`);
 fs.appendFileSync(ipywidgetsFile, `\n\n\n\n\n//(VS Code Python) Injected embed-amd-render.js contents\n\n\n${limembedAmdRendererFileContents}`);
 fs.copyFileSync(path.resolve(__dirname, '..', 'dist', 'ipywidgets', 'ipywidgets.js'), path.resolve(__dirname, '..', '..', '..', 'out', 'datascience-ui', 'native-editor', 'ipywidgets.js'));
+fs.copyFileSync(path.resolve(__dirname, '..', 'dist', 'ipywidgets', 'ipywidgets.js'), path.resolve(__dirname, '..', '..', '..', 'out', 'datascience-ui', 'history-react', 'ipywidgets.js'));

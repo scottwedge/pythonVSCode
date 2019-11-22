@@ -9,7 +9,7 @@ const postcss = require('postcss');
 const path = require('path');
 const version = require(path.join(__dirname, 'node_modules', '@jupyter-widgets', 'html-manager', 'package.json')).version;
 
-const publicPath =  'https://unpkg.com/@jupyter-widgets/html-manager@' + version + '/dist/';
+const publicPath = 'https://unpkg.com/@jupyter-widgets/html-manager@' + version + '/dist/';
 const rules = [
     { test: /\.css$/, use: ['style-loader', 'css-loader'] },
     // jquery-ui loads some images
@@ -17,6 +17,16 @@ const rules = [
     // required to load font-awesome
     {
         test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
+        use: {
+            loader: 'url-loader',
+            options: {
+                limit: 10000,
+                mimetype: 'application/font-woff'
+            }
+        }
+    },
+    {
+        test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
         use: {
             loader: 'url-loader',
             options: {
@@ -142,7 +152,7 @@ module.exports = [
         output: {
             filename: 'embed-amd-render.js',
             path: path.resolve(__dirname, 'dist', 'lib', 'amd'),
-            publicPath: publicPath,
+            publicPath: publicPath
         },
         module: { rules: rules },
         mode: 'production'

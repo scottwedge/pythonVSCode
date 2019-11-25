@@ -31,7 +31,7 @@ import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { concatMultilineStringInput, splitMultilineString } from '../common';
 import { EditorContexts, Identifiers, NativeKeyboardCommandTelemetryLookup, NativeMouseCommandTelemetryLookup, Telemetry } from '../constants';
 import { InteractiveBase } from '../interactive-common/interactiveBase';
-import { IEditCell, IInsertCell, INativeCommand, InteractiveWindowMessages, IRemoveCell, ISaveAll, ISubmitNewCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
+import { IEditCell, IInsertCell, INativeCommand, InteractiveWindowMessages, IPyWidgetMessages, IRemoveCell, ISaveAll, ISubmitNewCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
 import { InvalidNotebookFileError } from '../jupyter/invalidNotebookFileError';
 import { JupyterNotebookBase } from '../jupyter/jupyterNotebook';
 import { JupyterSession } from '../jupyter/jupyterSession';
@@ -259,11 +259,11 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
                 this.handleMessage(message, payload, this.clearAllOutputs);
                 break;
 
-            case InteractiveWindowMessages.IPyWidgets_ShellSend:
+            case IPyWidgetMessages.IPyWidgets_ShellSend:
                 this.handleMessage(message, payload, this.sendIPythonShellMsg);
                 break;
 
-            case InteractiveWindowMessages.IPyWidgets_registerCommTarget:
+            case IPyWidgetMessages.IPyWidgets_registerCommTarget:
                 this.handleMessage(message, payload, this.registerCommTarget);
                 break;
 
@@ -319,7 +319,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
     protected handleOnIOPub(data: {msg: KernelMessage.IIOPubMessage; requestId: string}) {
         if (KernelMessage.isDisplayDataMsg(data.msg)) {
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_display_data_msg, data.msg).catch(ex => console.error('Failed to post oniopub message', ex));
+            this.postMessage(IPyWidgetMessages.IPyWidgets_display_data_msg, data.msg).catch(ex => console.error('Failed to post oniopub message', ex));
         } else if (KernelMessage.isStatusMsg(data.msg)){
             // Do nothing.
         } else if (KernelMessage.isCommOpenMsg(data.msg)){
@@ -327,7 +327,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         } else if (KernelMessage.isCommMsgMsg(data.msg)){
             // tslint:disable-next-line: no-any
             this.serializeDataViews(data.msg as any);
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, data.msg as KernelMessage.ICommMsgMsg)
+            this.postMessage(IPyWidgetMessages.IPyWidgets_comm_msg, data.msg as KernelMessage.ICommMsgMsg)
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         }
     }
@@ -357,7 +357,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
                     // kernel.registerCommTarget('jupyter.widget', (_comm, msg) => {
                     kernel.registerCommTarget(targetName, (_comm, msg) => {
                         this.serializeDataViews(msg as any);
-                        this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
+                        this.postMessage(IPyWidgetMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
                     });
                 });
             }
@@ -372,7 +372,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         kernel.registerCommTarget(targetName, (_comm, msg) => {
             // tslint:disable-next-line: no-any
             this.serializeDataViews(msg as any);
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
+            this.postMessage(IPyWidgetMessages.IPyWidgets_comm_open, msg).catch(ex => console.error('Failed to post oniopub message', ex));
         });
     }
     protected serializeDataViews(msg: KernelMessage.IIOPubMessage){
@@ -470,24 +470,24 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         const requestId = shellMessage.header.msg_id = payload.requestId as any;
         const future = kernel.sendShellMessage(shellMessage, false, true);
         future.done.then(reply => {
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_resolve, {requestId, msg: reply})
+            this.postMessage(IPyWidgetMessages.IPyWidgets_ShellSend_resolve, {requestId, msg: reply})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         }).catch(ex => {
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_reject, {requestId, msg: ex})
+            this.postMessage(IPyWidgetMessages.IPyWidgets_ShellSend_reject, {requestId, msg: ex})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         });
         future.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
             this.serializeDataViews(msg);
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_onIOPub, {requestId, msg})
+            this.postMessage(IPyWidgetMessages.IPyWidgets_ShellSend_onIOPub, {requestId, msg})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
 
             if (KernelMessage.isCommMsgMsg(msg)){
-                this.postMessage(InteractiveWindowMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
+                this.postMessage(IPyWidgetMessages.IPyWidgets_comm_msg, msg as KernelMessage.ICommMsgMsg)
                 .catch(ex => console.error('Failed to post oniopub message for handler', ex));
             }
         };
         future.onReply = (reply: KernelMessage.IShellMessage) => {
-            this.postMessage(InteractiveWindowMessages.IPyWidgets_ShellSend_reply, {requestId, msg: reply})
+            this.postMessage(IPyWidgetMessages.IPyWidgets_ShellSend_reply, {requestId, msg: reply})
             .catch(ex => console.error('Failed to post oniopub message for handler', ex));
         };
     }

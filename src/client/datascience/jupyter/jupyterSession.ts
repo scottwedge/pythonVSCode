@@ -14,13 +14,13 @@ import { traceInfo, traceWarning } from '../../common/logger';
 import { sleep, waitForPromise } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
+import { captureTelemetry } from '../../telemetry';
+import { Telemetry } from '../constants';
 import { IConnection, IJupyterKernelSpec, IJupyterSession } from '../types';
 import { JupyterWaitForIdleError } from './jupyterWaitForIdleError';
 import { JupyterKernelPromiseFailedError } from './kernels/jupyterKernelPromiseFailedError';
 import { KernelSelector } from './kernels/kernelSelector';
 import { LiveKernelModel } from './kernels/types';
-import { captureTelemetry } from '../../telemetry';
-import { Telemetry } from '../constants';
 
 type ISession = (Session.ISession & {
     /**

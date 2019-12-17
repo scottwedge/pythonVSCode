@@ -12,9 +12,7 @@ import { IApplicationShell, ILiveShareApi, IWorkspaceService } from '../../../co
 import { traceInfo } from '../../../common/logger';
 import { IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../../common/types';
 import * as localize from '../../../common/utils/localize';
-import { StopWatch } from '../../../common/utils/stopWatch';
-import { sendTelemetryEvent } from '../../../telemetry';
-import { Identifiers, LiveShare, LiveShareCommands, RegExpValues, Telemetry } from '../../constants';
+import { Identifiers, LiveShare, LiveShareCommands, RegExpValues } from '../../constants';
 import {
     IDataScience,
     IJupyterSession,

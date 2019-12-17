@@ -19,6 +19,8 @@ import { JupyterWaitForIdleError } from './jupyterWaitForIdleError';
 import { JupyterKernelPromiseFailedError } from './kernels/jupyterKernelPromiseFailedError';
 import { KernelSelector } from './kernels/kernelSelector';
 import { LiveKernelModel } from './kernels/types';
+import { captureTelemetry } from '../../telemetry';
+import { Telemetry } from '../constants';
 
 type ISession = (Session.ISession & {
     /**
@@ -244,6 +246,7 @@ export class JupyterSession implements IJupyterSession {
         }
     }
 
+    @captureTelemetry(Telemetry.WaitForIdleJupyter, undefined, true)
     private async waitForIdleOnSession(session: ISession | undefined, timeout: number): Promise<void> {
         if (session && session.kernel) {
             traceInfo(`Waiting for idle on (kernel): ${session.kernel.id} -> ${session.kernel.status}`);

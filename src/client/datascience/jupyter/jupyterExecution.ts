@@ -6,7 +6,7 @@ import { CancellationToken, Event, EventEmitter } from 'vscode';
 
 import { IApplicationShell, ILiveShareApi, IWorkspaceService } from '../../common/application/types';
 import { Cancellation } from '../../common/cancellation';
-import { traceInfo } from '../../common/logger';
+import { traceError, traceInfo } from '../../common/logger';
 import { IConfigurationService, IDisposableRegistry, ILogger, IOutputChannel } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
@@ -163,12 +163,13 @@ export class JupyterExecutionBase implements IJupyterExecution {
                             traceInfo(`Connection complete for ${options ? options.purpose : 'unknown type of'} server`);
                             break;
                         } catch (ex) {
+                            traceError('Failed to connect to server', ex);
                             if (ex instanceof JupyterSessionStartError && isLocalConnection) {
                                 // Keep retrying, until it works or user cancels.
                                 // Sometimes if a bad kernel is selected, starting a session can fail.
                                 // In such cases we need to let the user know about this and prompt them to select another kernel.
                                 const message = localize.DataScience.sessionStartFailedWithKernel().format(launchInfo.kernelSpec?.display_name || launchInfo.kernelSpec?.name || '', Commands.ViewJupyterOutput);
-                                const selectKernel = localize.DataScience.selectKernel();
+                                const selectKernel = localize.DataScience.selectDifferentKernel();
                                 const cancel = localize.Common.cancel();
                                 const selection = await this.appShell.showErrorMessage(message, selectKernel, cancel);
                                 if (selection === selectKernel) {

@@ -1343,7 +1343,7 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
                     // At this point we have a valid jupyter server.
                     const displayName = kernel.kernelSpec?.display_name || kernel.kernelModel?.display_name || kernel.kernelSpec?.name || kernel.kernelModel?.name || '';
                     const message = localize.DataScience.sessionStartFailedWithKernel().format(displayName, Commands.ViewJupyterOutput);
-                    const selectKernel = localize.DataScience.selectKernel();
+                    const selectKernel = localize.DataScience.selectDifferentKernel();
                     const cancel = localize.Common.cancel();
                     const selection = await this.applicationShell.showErrorMessage(message, selectKernel, cancel);
                     if (selection === selectKernel) {

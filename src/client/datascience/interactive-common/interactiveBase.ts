@@ -1307,8 +1307,8 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         const settings = this.configuration.getSettings();
 
         let kernel: KernelSpecInterpreter | undefined;
-
-        if (settings.datascience.jupyterServerURI.toLowerCase() === Settings.JupyterServerLocalLaunch) {
+        const isLocalConnection = this.notebook?.server.getConnectionInfo()?.localLaunch ?? settings.datascience.jupyterServerURI.toLowerCase() === Settings.JupyterServerLocalLaunch;
+        if (isLocalConnection) {
             kernel = await this.dataScience.selectLocalJupyterKernel(this.notebook?.getKernelSpec());
         } else if (this.notebook) {
             const connInfo = this.notebook.server.getConnectionInfo();
@@ -1324,7 +1324,7 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
     }
     private async switchKernelWithRetry(kernel: KernelSpecInterpreter){
         const settings = this.configuration.getSettings();
-        const isLocalConnection = settings.datascience.jupyterServerURI.toLowerCase() === Settings.JupyterServerLocalLaunch;
+        const isLocalConnection = this.notebook?.server.getConnectionInfo()?.localLaunch ?? settings.datascience.jupyterServerURI.toLowerCase() === Settings.JupyterServerLocalLaunch;
         if (!isLocalConnection){
             return this.switchKernel(kernel);
         }

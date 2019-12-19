@@ -167,7 +167,7 @@ export namespace DataScience {
     export const restartingKernelStatus = localize('DataScience.restartingKernelStatus', 'Restarting IPython Kernel');
     export const restartingKernelFailed = localize('DataScience.restartingKernelFailed', 'Kernel restart failed. Jupyter server is hung. Please reload VS code.');
     export const interruptingKernelFailed = localize('DataScience.interruptingKernelFailed', 'Kernel interrupt failed. Jupyter server is hung. Please reload VS code.');
-    export const sessionStartFailedWithKernel = localize('DataScience.sessionStartFailedWithKernel', 'Failed to start a session for the selected kernel \'{0}\'. View Jupyter [logs](command:{1}) for further details.');
+    export const sessionStartFailedWithKernel = localize('DataScience.sessionStartFailedWithKernel', 'Failed to start a session for the Kernel \'{0}\'. \nView Jupyter [log](command:{1}) for further details.');
     export const executingCode = localize('DataScience.executingCode', 'Executing Cell');
     export const collapseAll = localize('DataScience.collapseAll', 'Collapse all cell inputs');
     export const expandAll = localize('DataScience.expandAll', 'Expand all cell inputs');

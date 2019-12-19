@@ -402,5 +402,5 @@
     "DataScience.selectKernel": "Select a Kernel",
     "products.installingModule": "Installing {0}",
     "DataScience.switchingKernelProgress": "Switching kernel to '{0}'",
-    "DataScience.sessionStartFailedWithKernel": "Failed to start a session for the selected kernel '{0}'. View Jupyter [logs](command:{1}) for further details."
+    "DataScience.sessionStartFailedWithKernel": "Failed to start a session for the Kernel '{0}'. \nView Jupyter [log](command:{1}) for further details."
 }

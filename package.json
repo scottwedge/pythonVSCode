@@ -54,7 +54,7 @@
         "onCommand:python.viewLanguageServerOutput",
         "onCommand:python.viewTestOutput",
         "onCommand:python.viewOutput",
-        "onCommand:python.datascience.viewTestOutput",
+        "onCommand:python.datascience.viewJupyterOutput",
         "onCommand:python.selectAndRunTestMethod",
         "onCommand:python.selectAndDebugTestMethod",
         "onCommand:python.selectAndRunTestFile",
@@ -240,8 +240,8 @@
                 }
             },
             {
-                "command": "python.datascience.viewTestOutput",
-                "title": "%python.command.python.datascience.viewTestOutput.title%",
+                "command": "python.datascience.viewJupyterOutput",
+                "title": "%python.command.python.datascience.viewJupyterOutput.title%",
                 "category": "Python"
             },
             {

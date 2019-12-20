@@ -32,8 +32,6 @@ export function handleLinkClick(ev: MouseEvent, linkClick: (href: string) => voi
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onload = () => {
-                // tslint:disable-next-line: no-debugger
-                debugger;
                 if (typeof reader.result === 'string'){
                     linkClick(reader.result);
                 }

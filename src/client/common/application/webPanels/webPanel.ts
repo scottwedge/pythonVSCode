@@ -21,7 +21,7 @@ const RemappedPort = 9890;
 
 export class WebPanel implements IWebPanel {
 
-    private panel: WebviewPanel | undefined;
+    public panel: WebviewPanel;
     private loadPromise: Promise<void>;
     private id = uuid();
 
@@ -30,9 +30,9 @@ export class WebPanel implements IWebPanel {
         private disposableRegistry: IDisposableRegistry,
         private port: number | undefined,
         private token: string | undefined,
-        private options: IWebPanelOptions
+        private options: IWebPanelOptions,
     ) {
-        this.panel = window.createWebviewPanel(
+        this.panel = options.panel || window.createWebviewPanel(
             options.title.toLowerCase().replace(' ', ''),
             options.title,
             { viewColumn: options.viewColumn, preserveFocus: true },
@@ -42,6 +42,11 @@ export class WebPanel implements IWebPanel {
                 localResourceRoots: [Uri.file(this.options.rootPath)],
                 portMapping: port ? [{ webviewPort: RemappedPort, extensionHostPort: port }] : undefined
             });
+        this.panel.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [Uri.file(this.options.rootPath)],
+            portMapping: port ? [{ webviewPort: RemappedPort, extensionHostPort: port }] : undefined
+        };
         this.loadPromise = this.load();
     }
 
@@ -99,7 +104,6 @@ export class WebPanel implements IWebPanel {
 
                 // Reset when the current panel is closed
                 this.disposableRegistry.push(this.panel.onDidDispose(() => {
-                    this.panel = undefined;
                     this.options.listener.dispose().ignoreErrors();
                 }));
 
@@ -127,13 +131,13 @@ export class WebPanel implements IWebPanel {
     private generateLocalReactHtml(webView: Webview) {
         const uriBase = webView.asWebviewUri(Uri.file(this.options.rootPath));
         const uris = this.options.scripts.map(script => webView.asWebviewUri(Uri.file(script)));
-
+        const nonce = Date.now() + '';
         return `<!doctype html>
         <html lang="en">
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
-                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http: blob:;">
+                <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http: blob:; script-src 'nonce-${nonce}' 'unsafe-eval' 'unsafe-inline'; default-src 'unsafe-inline' 'unsafe-eval' vscode-resource: data: https: http: blob:;">
                 <meta name="theme-color" content="#000000">
                 <meta name="theme" content="${Identifiers.GeneratedThemeName}"/>
                 <title>React App</title>
@@ -151,7 +155,7 @@ export class WebPanel implements IWebPanel {
                         return "${uriBase}" + relativePath;
                     }
                 </script>
-                ${uris.map(uri => `<script type="text/javascript" src="${uri}"></script>`).join('\n')}
+                ${uris.map(uri => `<script nonce=${nonce} src="${uri}"></script>`).join('\n')}
             </body>
         </html>`;
     }

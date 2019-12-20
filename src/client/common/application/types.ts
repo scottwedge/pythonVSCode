@@ -54,7 +54,8 @@ import {
     WorkspaceEdit,
     WorkspaceFolder,
     WorkspaceFolderPickOptions,
-    WorkspaceFoldersChangeEvent
+    WorkspaceFoldersChangeEvent,
+    WebviewPanel
 } from 'vscode';
 import * as vsls from 'vsls/vscode';
 
@@ -939,6 +940,7 @@ export type WebPanelMessage = {
 // Wraps the VS Code webview panel
 export const IWebPanel = Symbol('IWebPanel');
 export interface IWebPanel {
+    readonly panel: WebviewPanel;
     setTitle(val: string): void;
     /**
      * Makes the webpanel show up.
@@ -981,6 +983,7 @@ export interface IWebPanelOptions {
     cwd: string;
     // tslint:disable-next-line: no-any
     settings?: any;
+    panel?: WebviewPanel;
 }
 
 // Wraps the VS Code api for creating a web panel

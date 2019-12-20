@@ -8,7 +8,7 @@ import * as detectIndent from 'detect-indent';
 import { inject, injectable, multiInject, named } from 'inversify';
 import * as path from 'path';
 import * as uuid from 'uuid/v4';
-import { Event, EventEmitter, Memento, TextEditor, Uri, ViewColumn } from 'vscode';
+import { Event, EventEmitter, Memento, TextEditor, Uri, ViewColumn, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate, WebviewPanel } from 'vscode';
 
 import {
     IApplicationShell,
@@ -78,6 +78,7 @@ import {
     IStatusProvider,
     IThemeFinder
 } from '../types';
+import { IServiceContainer } from '../../ioc/types';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
@@ -91,6 +92,47 @@ enum AskForSaveResult {
 
 const KeyPrefix = 'notebook-storage-';
 const NotebookTransferKey = 'notebook-transfered';
+
+export type EditType = {};
+
+@injectable()
+export class NativeEditorWebViewProvider implements WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<EditType> {
+    public static readonly viewType = 'NotebookEdtitor.ipynb';
+    public get onEdit(): Event<{ readonly resource: Uri; readonly edit: EditType; }> {
+        return this._onEdit.event;
+    }
+    public editingDelegate?: WebviewCustomEditorEditingDelegate<unknown> | undefined = this;
+    private readonly _onEdit = new EventEmitter<{ readonly resource: Uri; readonly edit: EditType; }>();
+    constructor(
+        @inject(IServiceContainer) private readonly serviceContainer: IServiceContainer,
+        @inject(INotebookEditorProvider) private readonly editorProvider: INotebookEditorProvider,
+        @inject(IFileSystem) private readonly fs: IFileSystem)
+    {
+        console.log('Initialized');
+    }
+    async save(_resource: Uri): Promise<void> {
+        console.error('Saving notebooks not implemented');
+    }
+    async saveAs(_resource: Uri, _targetResource: Uri): Promise<void> {
+        console.error('Saving As notebooks not implemented');
+    }
+    async applyEdits(_resource: Uri, _edits: readonly EditType[]): Promise<void> {
+        console.error('Editing notebooks not implemented');
+    }
+    async undoEdits(_resource: Uri, _edits: readonly EditType[]): Promise<void> {
+        console.error('Undo Editing notebooks not implemented');
+    }
+    async resolveWebviewEditor(resource: Uri, webview: WebviewPanel): Promise<void> {
+        const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+        this.editorProvider.onOpenedEditor!(editor);
+        const contents = await this.fs.readFile(resource.fsPath);
+        (editor as NativeEditor).setWebViewPanel(webview);
+        await editor.load(contents, resource);
+        // this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
+        // this.disposables.push(editor.executed(this.onExecutedEditor.bind(this)));
+        await editor.show();
+    }
+}
 
 @injectable()
 export class NativeEditor extends InteractiveBase implements INotebookEditor {
@@ -198,6 +240,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return this.visibleCells;
     }
 
+    private webviewPanel!: WebviewPanel;
+    public setWebViewPanel(webview: WebviewPanel){
+        this.webviewPanel = webview;
+    }
     public async load(contents: string, file: Uri): Promise<void> {
         // Save our uri
         this._file = file;
@@ -207,7 +253,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
         // Load the web panel using our file path so it can find
         // relative files next to the notebook.
-        await super.loadWebPanel(path.dirname(file.fsPath));
+        await super.loadWebPanel(path.dirname(file.fsPath), this.webviewPanel);
 
         // Update our title to match
         this.setTitle(path.basename(file.fsPath));
@@ -645,7 +691,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             await this.setDirty();
         }
         sendTelemetryEvent(Telemetry.CellCount, undefined, { count: cells.length });
-        return this.postMessage(InteractiveWindowMessages.LoadAllCells, { cells });
+        // return this.postMessage(InteractiveWindowMessages.LoadAllCells, { cells });
     }
 
     private getStorageKey(): string {

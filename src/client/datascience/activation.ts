@@ -13,6 +13,8 @@ import { IInterpreterService } from '../interpreter/contracts';
 import { sendTelemetryEvent } from '../telemetry';
 import { PythonDaemonModule, Telemetry } from './constants';
 import { INotebookEditor, INotebookEditorProvider } from './types';
+import { NativeEditorWebViewProvider } from './interactive-ipynb/nativeEditor';
+import { window } from 'vscode';
 
 @injectable()
 export class Activation implements IExtensionSingleActivationService {
@@ -21,11 +23,13 @@ export class Activation implements IExtensionSingleActivationService {
         @inject(INotebookEditorProvider) private readonly notebookProvider: INotebookEditorProvider,
         @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
         @inject(IPythonExecutionFactory) private readonly factory: IPythonExecutionFactory,
+        @inject(NativeEditorWebViewProvider) private readonly nativeEditorWebViewProvider: NativeEditorWebViewProvider,
         @inject(IDisposableRegistry) private readonly disposables: IDisposableRegistry
     ) { }
     public async activate(): Promise<void> {
         this.disposables.push(this.notebookProvider.onDidOpenNotebookEditor(this.onDidOpenNotebookEditor, this));
         this.disposables.push(this.interpreterService.onDidChangeInterpreter(this.onDidChangeInterpreter, this));
+        this.disposables.push(window.registerWebviewCustomEditorProvider(NativeEditorWebViewProvider.viewType, this.nativeEditorWebViewProvider, {enableFindWidget: true, retainContextWhenHidden: true}));
     }
 
     private onDidOpenNotebookEditor(_: INotebookEditor) {

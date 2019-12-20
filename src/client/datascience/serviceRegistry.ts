@@ -22,7 +22,7 @@ import { IntellisenseProvider } from './interactive-common/intellisense/intellis
 import { LinkProvider } from './interactive-common/linkProvider';
 import { ShowPlotListener } from './interactive-common/showPlotListener';
 import { AutoSaveService } from './interactive-ipynb/autoSaveService';
-import { NativeEditor } from './interactive-ipynb/nativeEditor';
+import { NativeEditor, NativeEditorWebViewProvider } from './interactive-ipynb/nativeEditor';
 import { NativeEditorCommandListener } from './interactive-ipynb/nativeEditorCommandListener';
 import { NativeEditorProvider } from './interactive-ipynb/nativeEditorProvider';
 import { InteractiveWindow } from './interactive-window/interactiveWindow';
@@ -129,4 +129,5 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<NotebookStarter>(NotebookStarter, NotebookStarter);
     serviceManager.addSingleton<KernelSelector>(KernelSelector, KernelSelector);
     serviceManager.addSingleton<KernelSelectionProvider>(KernelSelectionProvider, KernelSelectionProvider);
+    serviceManager.addSingleton<NativeEditorWebViewProvider>(NativeEditorWebViewProvider, NativeEditorWebViewProvider);
 }

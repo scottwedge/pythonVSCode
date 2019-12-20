@@ -52,14 +52,14 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
 
         this.disposables.push(this.documentManager.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditorHandler.bind(this)));
 
-        // Since we may have activated after a document was opened, also run open document for all documents.
-        // This needs to be async though. Iterating over all of these in the .ctor is crashing the extension
-        // host, so postpone till after the ctor is finished.
-        setTimeout(() => {
-            if (this.documentManager.textDocuments && this.documentManager.textDocuments.forEach) {
-                this.documentManager.textDocuments.forEach(doc => this.openNotebookAndCloseEditor(doc, false));
-            }
-        }, 0);
+        // // Since we may have activated after a document was opened, also run open document for all documents.
+        // // This needs to be async though. Iterating over all of these in the .ctor is crashing the extension
+        // // host, so postpone till after the ctor is finished.
+        // setTimeout(() => {
+        //     if (this.documentManager.textDocuments && this.documentManager.textDocuments.forEach) {
+        //         this.documentManager.textDocuments.forEach(doc => this.openNotebookAndCloseEditor(doc, false));
+        //     }
+        // }, 0);
 
         // // Reopen our list of files that were open during shutdown. Actually not doing this for now. The files
         // don't open until the extension loads and all they all steal focus.
@@ -156,7 +156,8 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         if (!editor || this.isEditorPartOfDiffView(editor)) {
             return;
         }
-        this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
+        console.log(this.openNotebookAndCloseEditor);
+        // this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
     }
 
     private async create(file: Uri, contents: string): Promise<INotebookEditor> {
@@ -176,7 +177,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         this.executedEditors.add(e.file.fsPath);
     }
 
-    private onOpenedEditor(e: INotebookEditor) {
+    public onOpenedEditor(e: INotebookEditor) {
         this.activeEditors.set(e.file.fsPath, e);
         this.disposables.push(e.saved(this.onSavedEditor.bind(this, e.file.fsPath)));
         this.openedNotebookCount += 1;

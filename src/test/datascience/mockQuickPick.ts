@@ -4,6 +4,7 @@
 import { Event, EventEmitter, QuickInputButton, QuickPick, QuickPickItem } from 'vscode';
 
 export class MockQuickPick implements QuickPick<QuickPickItem> {
+    public sortByLabel: boolean = false;
     public value: string = '';
     public placeholder: string | undefined;
     public title: string | undefined = 'foo';

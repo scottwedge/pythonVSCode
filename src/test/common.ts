@@ -451,6 +451,10 @@ export async function openFile(file: string): Promise<TextDocument> {
  * An alternative to `sinon.useFakeTimers` (which in turn uses `lolex`, but doesn't expose the `async` methods).
  * Use this class when you have tests with `setTimeout` and which to avoid them for faster tests.
  *
+ * For further information please refer:
+ * - https://www.npmjs.com/package/lolex
+ * - https://sinonjs.org/releases/v1.17.6/fake-timers/
+ *
  * @class FakeClock
  */
 export class FakeClock {

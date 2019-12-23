@@ -11,7 +11,6 @@ import { isString } from 'util';
 import { CancellationToken } from 'vscode';
 
 import { EXTENSION_ROOT_DIR } from '../../client/common/constants';
-import { IDataScienceSettings } from '../../client/common/types';
 import { createDeferred } from '../../client/common/utils/async';
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { IJupyterExecution } from '../../client/datascience/types';

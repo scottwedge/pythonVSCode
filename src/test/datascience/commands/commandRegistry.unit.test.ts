@@ -6,7 +6,7 @@ import { DebugService } from '../../../client/common/application/debugService';
 import { DocumentManager } from '../../../client/common/application/documentManager';
 import { ICommandManager } from '../../../client/common/application/types';
 import { IPythonExtensionBanner } from '../../../client/common/types';
-import { CommandRegistry } from '../../../client/datascience/commands';
+import { CommandRegistry } from '../../../client/datascience/commands/commandRegistry';
 import { KernelSwitcherCommand } from '../../../client/datascience/commands/kernelSwitcher';
 import { JupyterServerSelectorCommand } from '../../../client/datascience/commands/serverSelector';
 import { Commands } from '../../../client/datascience/constants';

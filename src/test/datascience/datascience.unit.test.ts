@@ -12,7 +12,7 @@ import { WorkspaceService } from '../../client/common/application/workspace';
 import { PythonSettings } from '../../client/common/configSettings';
 import { ConfigurationService } from '../../client/common/configuration/service';
 import { IConfigurationService, IPythonSettings } from '../../client/common/types';
-import { CommandRegistry } from '../../client/datascience/commands';
+import { CommandRegistry } from '../../client/datascience/commands/commandRegistry';
 import { DataScience } from '../../client/datascience/datascience';
 import { DataScienceCodeLensProvider } from '../../client/datascience/editor-integration/codelensprovider';
 import { IDataScienceCodeLensProvider } from '../../client/datascience/types';

@@ -12,7 +12,7 @@ import { IConfigurationService, IDisposable, IDisposableRegistry, IExtensionCont
 import { debounceAsync, swallowExceptions } from '../common/utils/decorators';
 import { sendTelemetryEvent } from '../telemetry';
 import { hasCells } from './cellFactory';
-import { CommandRegistry } from './commands';
+import { CommandRegistry } from './commands/commandRegistry';
 import { EditorContexts, Telemetry } from './constants';
 import { IDataScience, IDataScienceCodeLensProvider } from './types';
 

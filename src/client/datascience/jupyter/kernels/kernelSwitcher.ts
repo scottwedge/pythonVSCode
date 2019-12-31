@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { ProgressLocation, ProgressOptions } from 'vscode';
 import { IApplicationShell } from '../../../common/application/types';
 import { IConfigurationService } from '../../../common/types';
@@ -15,6 +15,7 @@ import { JupyterSessionStartError } from '../jupyterSession';
 import { KernelSelector, KernelSpecInterpreter } from './kernelSelector';
 import { LiveKernelModel } from './types';
 
+@injectable()
 export class KernelSwitcher {
     constructor(
         @inject(IConfigurationService) private configService: IConfigurationService,

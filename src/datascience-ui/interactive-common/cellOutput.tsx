@@ -122,33 +122,33 @@ export class CellOutput extends React.Component<ICellOutputProps> {
 
     // tslint:disable-next-line: no-any
     public shouldComponentUpdate(nextProps: Readonly<ICellOutputProps>, _nextState: Readonly<ICellOutputProps>, _nextContext: any): boolean {
-        if (nextProps === this.props){
+        if (nextProps === this.props) {
             return false;
         }
         // If they are the same, then nothing has changed.
         // Note, we're using redux, hence we'll never have the same reference object with different property values.
-        if (nextProps.cellVM === this.props.cellVM){
+        if (nextProps.cellVM === this.props.cellVM) {
             return false;
         }
-        if (nextProps.baseTheme !== this.props.baseTheme){
+        if (nextProps.baseTheme !== this.props.baseTheme) {
             return true;
         }
-        if (nextProps.maxTextSize !== this.props.maxTextSize){
+        if (nextProps.maxTextSize !== this.props.maxTextSize) {
             return true;
         }
-        if (nextProps.themeMatplotlibPlots !== this.props.themeMatplotlibPlots){
+        if (nextProps.themeMatplotlibPlots !== this.props.themeMatplotlibPlots) {
             return true;
         }
-        if (nextProps.cellVM.cell.data.cell_type !== this.props.cellVM.cell.data.cell_type){
+        if (nextProps.cellVM.cell.data.cell_type !== this.props.cellVM.cell.data.cell_type) {
             return true;
         }
-        if (nextProps.cellVM.cell.state !== this.props.cellVM.cell.state){
+        if (nextProps.cellVM.cell.state !== this.props.cellVM.cell.state) {
             return true;
         }
-        if (nextProps.cellVM.cell.data.outputs !== this.props.cellVM.cell.data.outputs){
+        if (nextProps.cellVM.cell.data.outputs !== this.props.cellVM.cell.data.outputs) {
             return true;
         }
-        if (!this.isCodeCell() && nextProps.cellVM.cell.id !== Identifiers.EditCellId && nextProps.cellVM.cell.data.source !== this.props.cellVM.cell.data.source){
+        if (!this.isCodeCell() && nextProps.cellVM.cell.id !== Identifiers.EditCellId && nextProps.cellVM.cell.data.source !== this.props.cellVM.cell.data.source) {
             return true;
         }
 

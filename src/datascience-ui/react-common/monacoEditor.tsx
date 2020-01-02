@@ -304,16 +304,16 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
     }
     // tslint:disable-next-line: no-any
     public shouldComponentUpdate(nextProps: Readonly<IMonacoEditorProps>, nextState: Readonly<IMonacoEditorState>, _nextContext: any): boolean {
-        if (!fastDeepEqual(nextProps, this.props)){
+        if (!fastDeepEqual(nextProps, this.props)) {
             return true;
         }
-        if (nextState === this.state){
+        if (nextState === this.state) {
             return false;
         }
-        if (nextState.visibleLineCount !== this.state.visibleLineCount){
+        if (nextState.visibleLineCount !== this.state.visibleLineCount) {
             return true;
         }
-        if (nextState.model?.id !== this.state.model?.id){
+        if (nextState.model?.id !== this.state.model?.id) {
             return true;
         }
         return false;

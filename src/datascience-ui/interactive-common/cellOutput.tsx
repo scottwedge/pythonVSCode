@@ -125,11 +125,6 @@ export class CellOutput extends React.Component<ICellOutputProps> {
         if (nextProps === this.props) {
             return false;
         }
-        // If they are the same, then nothing has changed.
-        // Note, we're using redux, hence we'll never have the same reference object with different property values.
-        if (nextProps.cellVM === this.props.cellVM) {
-            return false;
-        }
         if (nextProps.baseTheme !== this.props.baseTheme) {
             return true;
         }
@@ -138,6 +133,11 @@ export class CellOutput extends React.Component<ICellOutputProps> {
         }
         if (nextProps.themeMatplotlibPlots !== this.props.themeMatplotlibPlots) {
             return true;
+        }
+        // If they are the same, then nothing has changed.
+        // Note, we're using redux, hence we'll never have the same reference object with different property values.
+        if (nextProps.cellVM === this.props.cellVM) {
+            return false;
         }
         if (nextProps.cellVM.cell.data.cell_type !== this.props.cellVM.cell.data.cell_type) {
             return true;

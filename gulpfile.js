@@ -120,11 +120,11 @@ gulp.task('compile-webviews', async () => {
 gulp.task('webpack', async () => {
     // Build node_modules and DS stuff.
     // Unwrap the array used to build each webpack.
-    await buildWebPack('production', [], {'BUNDLE_INDEX': '0'});
-    await buildWebPack('production', [], {'BUNDLE_INDEX': '1'});
-    await buildWebPack('production', [], {'BUNDLE_INDEX': '2'});
-    await buildWebPack('production', [], {'BUNDLE_INDEX': '3'});
-    await buildWebPack('production', [], {'BUNDLE_INDEX': '4'});
+    await buildWebPack('production', ['--config', './build/webpack/webpack.config.js'], {'BUNDLE_INDEX': '0'});
+    await buildWebPack('production', ['--config', './build/webpack/webpack.config.js'], {'BUNDLE_INDEX': '1'});
+    await buildWebPack('production', ['--config', './build/webpack/webpack.config.js'], {'BUNDLE_INDEX': '2'});
+    await buildWebPack('production', ['--config', './build/webpack/webpack.config.js'], {'BUNDLE_INDEX': '3'});
+    await buildWebPack('production', ['--config', './build/webpack/webpack.config.js'], {'BUNDLE_INDEX': '4'});
     // Run both in parallel, for faster process on CI.
     // Yes, console would print output from both, that's ok, we have a faster CI.
     // If things fail, we can run locally separately.

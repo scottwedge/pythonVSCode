@@ -23,18 +23,18 @@ export class CommandRegistry implements IDisposable {
         @inject(IDataScienceCodeLensProvider) private dataScienceCodeLensProvider: IDataScienceCodeLensProvider,
         @multiInject(IDataScienceCommandListener) @optional() private commandListeners: IDataScienceCommandListener[] | undefined,
         @inject(ICommandManager) private readonly commandManager: ICommandManager,
-        @inject(JupyterServerSelectorCommand) private readonly serverSelectoCommand: JupyterServerSelectorCommand,
+        @inject(JupyterServerSelectorCommand) private readonly serverSelectedCommand: JupyterServerSelectorCommand,
         @inject(KernelSwitcherCommand) private readonly kernelSwitcherCommand: KernelSwitcherCommand,
         @inject(IPythonExtensionBanner) @named(BANNER_NAME_DS_SURVEY) private readonly dataScienceSurveyBanner: IPythonExtensionBanner,
         @inject(INotebookEditorProvider) private notebookProvider: INotebookEditorProvider,
         @inject(IDebugService) private debugService: IDebugService,
         @inject(IOutputChannel) @named(JUPYTER_OUTPUT_CHANNEL) private jupyterOutput: IOutputChannel
     ) {
-        this.disposables.push(this.serverSelectoCommand);
+        this.disposables.push(this.serverSelectedCommand);
         this.disposables.push(this.kernelSwitcherCommand);
     }
     public register() {
-        this.serverSelectoCommand.register();
+        this.serverSelectedCommand.register();
         this.kernelSwitcherCommand.register();
         this.registerCommand(Commands.RunAllCells, this.runAllCells);
         this.registerCommand(Commands.RunCell, this.runCell);

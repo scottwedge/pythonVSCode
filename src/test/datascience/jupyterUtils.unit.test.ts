@@ -11,7 +11,7 @@ import { expandWorkingDir } from '../../client/datascience/jupyter/jupyterUtils'
 suite('Data Science JupyterUtils', () => {
     const workspaceService = mock(WorkspaceService);
     // tslint:disable: no-invalid-template-strings
-    test('expanding file variables', async function () {
+    test('expanding file variables', async function() {
         // tslint:disable-next-line: no-invalid-this
         this.timeout(10000);
         const uri = Uri.file('test/bar');

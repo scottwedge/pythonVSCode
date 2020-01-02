@@ -16,7 +16,24 @@ import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { EditorContexts, Identifiers, Telemetry } from '../constants';
 import { InteractiveBase } from '../interactive-common/interactiveBase';
 import { InteractiveWindowMessages, ISubmitNewCell } from '../interactive-common/interactiveWindowTypes';
-import { ICell, ICodeCssGenerator, IDataScienceErrorHandler, IDataViewerProvider, IInteractiveWindow, IInteractiveWindowInfo, IInteractiveWindowListener, IInteractiveWindowProvider, IJupyterDebugger, IJupyterExecution, IJupyterVariables, INotebookEditorProvider, INotebookExporter, INotebookServerOptions, IStatusProvider, IThemeFinder } from '../types';
+import {
+    ICell,
+    ICodeCssGenerator,
+    IDataScienceErrorHandler,
+    IDataViewerProvider,
+    IInteractiveWindow,
+    IInteractiveWindowInfo,
+    IInteractiveWindowListener,
+    IInteractiveWindowProvider,
+    IJupyterDebugger,
+    IJupyterExecution,
+    IJupyterVariables,
+    INotebookEditorProvider,
+    INotebookExporter,
+    INotebookServerOptions,
+    IStatusProvider,
+    IThemeFinder
+} from '../types';
 
 const historyReactDir = path.join(EXTENSION_ROOT_DIR, 'out', 'datascience-ui', 'history-react');
 

@@ -31,7 +31,7 @@ suite('Data Science - Commands', () => {
         const notebookProvider = mock(NativeEditorProvider);
         const debugService = mock(DebugService);
         const documentManager = mock(DocumentManager);
-        commandManager = mock(CommandManager)
+        commandManager = mock(CommandManager);
 
         commandRegistry = new CommandRegistry(
             documentManager,

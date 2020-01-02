@@ -23,5 +23,4 @@ suite('Data Science CellMatcher', () => {
         assert.equal(matcher2.exec('# %% CODE HERE'), '', 'Should not have a title');
         assert.equal(matcher2.exec('# %% CODE HERE FOO'), 'FOO', 'Should have a title');
     });
-
 });

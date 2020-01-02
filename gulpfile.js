@@ -111,10 +111,10 @@ gulp.task('checkNativeDependencies', done => {
 gulp.task('check-datascience-dependencies', () => checkDatascienceDependencies());
 
 gulp.task('compile-webviews', async () => {
-    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', 'webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '0'});
-    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', 'webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '1'});
-    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', 'webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '2'});
-    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', 'webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '3'});
+    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', './build/webpack/webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '0'});
+    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', './build/webpack/webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '1'});
+    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', './build/webpack/webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '2'});
+    await spawnAsync('npx', ['-n', '--max_old_space_size=9096', 'webpack', '--config', './build/webpack/webpack.config.js', '--mode', 'production'], {'BUNDLE_INDEX': '3'});
 });
 
 gulp.task('webpack', async () => {

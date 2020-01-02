@@ -142,9 +142,6 @@ export class CellOutput extends React.Component<ICellOutputProps> {
         if (nextProps.cellVM.cell.data.cell_type !== this.props.cellVM.cell.data.cell_type){
             return true;
         }
-        if (nextProps.cellVM.cell.data.cell_type !== this.props.cellVM.cell.data.cell_type){
-            return true;
-        }
         if (nextProps.cellVM.cell.state !== this.props.cellVM.cell.state){
             return true;
         }

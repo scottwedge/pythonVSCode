@@ -310,10 +310,10 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
         if (nextState === this.state){
             return false;
         }
-        if (nextState.visibleLineCount === this.state.visibleLineCount){
+        if (nextState.visibleLineCount !== this.state.visibleLineCount){
             return true;
         }
-        if (nextState.model?.id === this.state.model?.id){
+        if (nextState.model?.id !== this.state.model?.id){
             return true;
         }
         return false;

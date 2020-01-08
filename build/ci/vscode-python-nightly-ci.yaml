@@ -15,6 +15,7 @@ schedules:
   branches:
     include:
     - master
+    - dataScience
     - release*
   always: true
 

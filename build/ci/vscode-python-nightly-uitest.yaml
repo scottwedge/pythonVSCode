@@ -9,6 +9,7 @@ schedules:
   branches:
     include:
     - master
+    - dataScience
     - releases*
 
 # Variables that are available for the entire pipeline.

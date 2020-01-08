@@ -17,6 +17,7 @@ schedules:
   branches:
     include:
     - master
+    - dataScience
     - release*
   # False here so we don't run these long tests over and over on release branch if the source isn't changing
   always: false

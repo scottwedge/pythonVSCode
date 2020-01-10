@@ -127,7 +127,7 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
             : {
                   source: source.source,
                   cell_type: target,
-                  metadata: JSON.parse(JSON.stringify(source.metadata))
+                  metadata: cloneDeep(source.metadata)
               };
 
     switch (target) {

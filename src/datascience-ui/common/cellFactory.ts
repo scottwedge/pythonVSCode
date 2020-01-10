@@ -45,8 +45,10 @@ export function createErrorOutput(error: Error): nbformat.IError {
     };
 }
 export function createCodeCell(): nbformat.ICodeCell;
+// tslint:disable-next-line: unified-signatures
 export function createCodeCell(code: string): nbformat.ICodeCell;
 export function createCodeCell(code: string[], outputs: nbformat.IOutput[]): nbformat.ICodeCell;
+// tslint:disable-next-line: unified-signatures
 export function createCodeCell(code: string[], magicCommandsAsComments: boolean): nbformat.ICodeCell;
 export function createCodeCell(code?: string | string[], options?: boolean | nbformat.IOutput[]): nbformat.ICodeCell {
     const magicCommandsAsComments = typeof options === 'boolean' ? options : false;
@@ -74,16 +76,17 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
     // Construct the cell by hand so we drop unwanted/unrecognized properties from cells.
     // This way, the cell contains only the attributes that are valid (supported type).
     const clonedCell = cloneDeep(cell);
-    const source = Array.isArray(cell.source) || typeof cell.source === 'string' ? cell.source : '';
+    const source = Array.isArray(clonedCell.source) || typeof clonedCell.source === 'string' ? clonedCell.source : '';
     switch (cell.cell_type) {
         case 'code': {
             const codeCell: nbformat.ICodeCell = {
                 cell_type: 'code',
                 metadata: clonedCell.metadata ?? {},
-                execution_count: typeof cell.execution_count === 'number' ? cell.execution_count : null,
-                outputs: Array.isArray(cell.outputs) ? (cell.outputs as nbformat.IOutput[]) : [],
+                execution_count: typeof clonedCell.execution_count === 'number' ? clonedCell.execution_count : null,
+                outputs: Array.isArray(clonedCell.outputs) ? (clonedCell.outputs as nbformat.IOutput[]) : [],
                 source
             };
+            // tslint:disable-next-line: no-any
             return (codeCell as any) as T;
         }
         case 'markdown': {
@@ -91,8 +94,10 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
                 cell_type: 'markdown',
                 metadata: clonedCell.metadata ?? {},
                 source,
+                // tslint:disable-next-line: no-any
                 attachments: clonedCell.attachments as any
             };
+            // tslint:disable-next-line: no-any
             return (markdownCell as any) as T;
         }
         case 'raw': {
@@ -100,8 +105,10 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
                 cell_type: 'raw',
                 metadata: clonedCell.metadata ?? {},
                 source,
+                // tslint:disable-next-line: no-any
                 attachments: clonedCell.attachments as any
             };
+            // tslint:disable-next-line: no-any
             return (rawCell as any) as T;
         }
         default: {
@@ -115,7 +122,8 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
     // If we're creating a new cell from the same base type, then ensure we preserve the metadata.
     const baseCell: nbformat.IBaseCell =
         source.cell_type === target
-            ? (cloneCell(source) as any)
+            ? // tslint:disable-next-line: no-any
+              (cloneCell(source) as any)
             : {
                   source: source.source,
                   cell_type: target,
@@ -124,6 +132,7 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
 
     switch (target) {
         case 'code': {
+            // tslint:disable-next-line: no-unnecessary-local-variable
             const codeCell: nbformat.ICodeCell = {
                 ...baseCell,
                 cell_type: 'code',
@@ -133,6 +142,7 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
             return codeCell;
         }
         case 'markdown': {
+            // tslint:disable-next-line: no-unnecessary-local-variable
             const markdownCell: nbformat.IMarkdownCell = {
                 ...baseCell,
                 cell_type: 'markdown'
@@ -140,6 +150,7 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
             return markdownCell;
         }
         case 'raw': {
+            // tslint:disable-next-line: no-unnecessary-local-variable
             const rawCell: nbformat.IRawCell = {
                 ...baseCell,
                 cell_type: 'raw'

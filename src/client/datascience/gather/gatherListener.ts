@@ -1,12 +1,14 @@
 import { inject, injectable } from 'inversify';
 import * as uuid from 'uuid/v4';
 import { Event, EventEmitter, Position, Uri, ViewColumn } from 'vscode';
+import { createMarkdownCell } from '../../../datascience-ui/common/cellFactory';
 import { IApplicationShell, IDocumentManager } from '../../common/application/types';
 import { PYTHON_LANGUAGE } from '../../common/constants';
 import { IFileSystem } from '../../common/platform/types';
 import { IConfigurationService } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
+import { generateCellsFromString } from '../cellFactory';
 import { Identifiers } from '../constants';
 import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../interactive-common/interactiveWindowTypes';
 import {
@@ -20,8 +22,6 @@ import {
     INotebookExporter
 } from '../types';
 import { GatherLogger } from './gatherLogger';
-import { createMarkdownCell } from '../../../datascience-ui/common/cellFactory';
-import { generateCellsFromString } from '../cellFactory';
 
 @injectable()
 export class GatherListener implements IInteractiveWindowListener {

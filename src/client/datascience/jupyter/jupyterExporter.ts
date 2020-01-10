@@ -7,6 +7,8 @@ import * as os from 'os';
 import * as path from 'path';
 import * as uuid from 'uuid/v4';
 
+import { concatMultilineStringInput } from '../../../datascience-ui/common';
+import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
 import { IWorkspaceService } from '../../common/application/types';
 import { IFileSystem, IPlatformService } from '../../common/platform/types';
 import { IConfigurationService } from '../../common/types';
@@ -15,8 +17,6 @@ import { noop } from '../../common/utils/misc';
 import { CellMatcher } from '../cellMatcher';
 import { CodeSnippits, Identifiers } from '../constants';
 import { CellState, ICell, IJupyterExecution, INotebookExporter } from '../types';
-import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
-import { concatMultilineStringInput } from '../../../datascience-ui/common';
 
 @injectable()
 export class JupyterExporter implements INotebookExporter {

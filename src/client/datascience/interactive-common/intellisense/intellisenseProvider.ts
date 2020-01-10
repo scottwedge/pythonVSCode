@@ -9,6 +9,7 @@ import * as path from 'path';
 import * as uuid from 'uuid/v4';
 import { CancellationToken, CancellationTokenSource, Event, EventEmitter, SignatureHelpContext, TextDocumentContentChangeEvent, Uri } from 'vscode';
 
+import { concatMultilineStringInput } from '../../../../datascience-ui/common';
 import { ILanguageServer, ILanguageServerCache } from '../../../activation/types';
 import { IWorkspaceService } from '../../../common/application/types';
 import { CancellationError } from '../../../common/cancellation';
@@ -37,7 +38,6 @@ import {
 } from '../interactiveWindowTypes';
 import { convertStringsToSuggestions, convertToMonacoCompletionList, convertToMonacoHover, convertToMonacoSignatureHelp } from './conversion';
 import { IntellisenseDocument } from './intellisenseDocument';
-import { concatMultilineStringInput } from '../../../../datascience-ui/common';
 
 // tslint:disable:no-any
 @injectable()

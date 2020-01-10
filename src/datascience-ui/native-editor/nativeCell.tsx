@@ -13,6 +13,7 @@ import { OSType } from '../../client/common/utils/platform';
 import { Identifiers } from '../../client/datascience/constants';
 import { NativeCommandType } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CellState } from '../../client/datascience/types';
+import { concatMultilineStringInput } from '../common';
 import { CellInput } from '../interactive-common/cellInput';
 import { CellOutput } from '../interactive-common/cellOutput';
 import { ExecutionCount } from '../interactive-common/executionCount';
@@ -25,7 +26,6 @@ import { ImageButton } from '../react-common/imageButton';
 import { getLocString } from '../react-common/locReactSide';
 import { AddCellLine } from './addCellLine';
 import { actionCreators } from './redux/actions';
-import { concatMultilineStringInput } from '../common';
 
 interface INativeCellBaseProps {
     role?: string;

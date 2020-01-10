@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as uuid from 'uuid/v4';
 import { DebugConfiguration } from 'vscode';
 import * as vsls from 'vsls/vscode';
+import { concatMultilineStringOutput } from '../../../datascience-ui/common';
 import { IApplicationShell, ICommandManager, IDebugService, IWorkspaceService } from '../../common/application/types';
 import { DebugAdapterDescriptorFactory, DebugAdapterNewPtvsd } from '../../common/experimentGroups';
 import { traceError, traceInfo, traceWarning } from '../../common/logger';
@@ -20,7 +21,6 @@ import { CellState, ICell, ICellHashListener, IConnection, IFileHashes, IJupyter
 import { JupyterDebuggerNotInstalledError } from './jupyterDebuggerNotInstalledError';
 import { JupyterDebuggerRemoteNotSupported } from './jupyterDebuggerRemoteNotSupported';
 import { ILiveShareHasRole } from './liveshare/types';
-import { concatMultilineStringOutput } from '../../../datascience-ui/common';
 
 const pythonShellCommand = `_sysexec = sys.executable\r\n_quoted_sysexec = '"' + _sysexec + '"'\r\n!{_quoted_sysexec}`;
 

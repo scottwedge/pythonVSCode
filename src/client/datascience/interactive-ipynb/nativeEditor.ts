@@ -10,6 +10,8 @@ import * as path from 'path';
 import * as uuid from 'uuid/v4';
 import { Event, EventEmitter, Memento, TextEditor, Uri, ViewColumn } from 'vscode';
 
+import { concatMultilineStringInput, splitMultilineString } from '../../../datascience-ui/common';
+import { createCodeCell, createErrorOutput } from '../../../datascience-ui/common/cellFactory';
 import { IApplicationShell, ICommandManager, IDocumentManager, ILiveShareApi, IWebPanelProvider, IWorkspaceService } from '../../common/application/types';
 import { ContextKey } from '../../common/contextKey';
 import { traceError } from '../../common/logger';
@@ -45,8 +47,6 @@ import {
     IStatusProvider,
     IThemeFinder
 } from '../types';
-import { createCodeCell, createErrorOutput } from '../../../datascience-ui/common/cellFactory';
-import { concatMultilineStringInput, splitMultilineString } from '../../../datascience-ui/common';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 const debounce = require('lodash/debounce') as typeof import('lodash/debounce');

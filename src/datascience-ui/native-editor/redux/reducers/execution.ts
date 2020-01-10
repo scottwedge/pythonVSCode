@@ -1,10 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 'use strict';
+// tslint:disable-next-line: no-require-imports
+import cloneDeep = require('lodash/cloneDeep');
 import { CellMatcher } from '../../../../client/datascience/cellMatcher';
 import { InteractiveWindowMessages } from '../../../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CellState } from '../../../../client/datascience/types';
-import { CursorPos, IMainState, ICellViewModel } from '../../../interactive-common/mainState';
+import { concatMultilineStringInput } from '../../../common';
+import { createCellFrom } from '../../../common/cellFactory';
+import { CursorPos, ICellViewModel, IMainState } from '../../../interactive-common/mainState';
 import { createPostableAction } from '../../../interactive-common/redux/postOffice';
 import { Helpers } from '../../../interactive-common/redux/reducers/helpers';
 import { CommonActionType, ICellAction, IChangeCellTypeAction, ICodeAction, IExecuteAction } from '../../../interactive-common/redux/reducers/types';
@@ -12,9 +16,6 @@ import { QueueAnotherFunc } from '../../../react-common/reduxUtils';
 import { NativeEditorReducerArg } from '../mapping';
 import { Creation } from './creation';
 import { Effects } from './effects';
-import cloneDeep = require('lodash/cloneDeep');
-import { concatMultilineStringInput } from '../../../common';
-import { createCellFrom } from '../../../common/cellFactory';
 
 export namespace Execution {
     function executeRange(prevState: IMainState, start: number, end: number, codes: string[], queueAction: QueueAnotherFunc<CommonActionType>): IMainState {

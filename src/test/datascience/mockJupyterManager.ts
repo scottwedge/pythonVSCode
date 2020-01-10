@@ -24,11 +24,11 @@ import { CodeSnippits, Identifiers } from '../../client/datascience/constants';
 import { ICell, IConnection, IJupyterKernel, IJupyterKernelSpec, IJupyterSession, IJupyterSessionManager } from '../../client/datascience/types';
 import { IInterpreterService, PythonInterpreter } from '../../client/interpreter/contracts';
 import { IServiceManager } from '../../client/ioc/types';
+import { concatMultilineStringInput } from '../../datascience-ui/common';
 import { noop, sleep } from '../core';
 import { MockJupyterSession } from './mockJupyterSession';
 import { MockProcessService } from './mockProcessService';
 import { MockPythonService } from './mockPythonService';
-import { concatMultilineStringInput } from '../../datascience-ui/common';
 
 // tslint:disable:no-any no-http-string no-multiline-string max-func-body-length
 

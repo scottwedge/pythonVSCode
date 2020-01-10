@@ -6,12 +6,12 @@ import '../common/extensions';
 import * as uuid from 'uuid/v4';
 import { Range, TextDocument } from 'vscode';
 
+import { parseForComments } from '../../datascience-ui/common';
+import { createCodeCell, createMarkdownCell } from '../../datascience-ui/common/cellFactory';
 import { IDataScienceSettings } from '../common/types';
 import { noop } from '../common/utils/misc';
 import { CellMatcher } from './cellMatcher';
 import { CellState, ICell } from './types';
-import { createCodeCell, createMarkdownCell } from '../../datascience-ui/common/cellFactory';
-import { parseForComments } from '../../datascience-ui/common';
 
 function generateCodeCell(code: string[], file: string, line: number, id: string, magicCommandsAsComments: boolean): ICell {
     // Code cells start out with just source and no outputs.

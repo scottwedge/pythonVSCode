@@ -41,7 +41,7 @@ import { LiveKernelModel } from './kernels/types';
 
 // tslint:disable-next-line: no-require-imports
 import cloneDeep = require('lodash/cloneDeep');
-import { formatStreamText, concatMultilineStringOutput, concatMultilineStringInput } from '../../../datascience-ui/common';
+import { concatMultilineStringInput, concatMultilineStringOutput, formatStreamText } from '../../../datascience-ui/common';
 
 class CellSubscriber {
     private deferred: Deferred<CellState> = createDeferred<CellState>();

@@ -11,9 +11,9 @@ import { IDataScienceSettings } from '../../client/common/types';
 import { CellMatcher } from '../../client/datascience/cellMatcher';
 import { Identifiers } from '../../client/datascience/constants';
 import { CellState, ICell, IDataScienceExtraSettings, IJupyterVariable, IMessageCell } from '../../client/datascience/types';
-import { getDefaultSettings } from '../react-common/settingsReactSide';
+import { concatMultilineStringInput, splitMultilineString } from '../common';
 import { createCodeCell } from '../common/cellFactory';
-import { splitMultilineString, concatMultilineStringInput } from '../common';
+import { getDefaultSettings } from '../react-common/settingsReactSide';
 
 export enum CursorPos {
     Top,

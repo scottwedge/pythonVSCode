@@ -42,6 +42,7 @@ import {
     InterruptResult
 } from '../../client/datascience/types';
 import { IInterpreterService, IKnownSearchPathsForInterpreters, InterpreterType, PythonInterpreter } from '../../client/interpreter/contracts';
+import { concatMultilineStringInput } from '../../datascience-ui/common';
 import { generateTestState, ICellViewModel } from '../../datascience-ui/interactive-common/mainState';
 import { asyncDump } from '../common/asyncDump';
 import { sleep } from '../core';
@@ -49,7 +50,6 @@ import { DataScienceIocContainer } from './dataScienceIocContainer';
 import { getConnectionInfo, getIPConnectionInfo, getNotebookCapableInterpreter } from './jupyterHelpers';
 import { SupportedCommands } from './mockJupyterManager';
 import { MockPythonService } from './mockPythonService';
-import { concatMultilineStringInput } from '../../datascience-ui/common';
 
 // tslint:disable:no-any no-multiline-string max-func-body-length no-console max-classes-per-file trailing-comma
 suite('DataScience notebook tests', () => {

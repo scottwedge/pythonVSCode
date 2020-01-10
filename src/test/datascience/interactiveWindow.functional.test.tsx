@@ -17,6 +17,7 @@ import { generateCellsFromDocument } from '../../client/datascience/cellFactory'
 import { EditorContexts } from '../../client/datascience/constants';
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { InteractiveWindow } from '../../client/datascience/interactive-window/interactiveWindow';
+import { concatMultilineStringInput } from '../../datascience-ui/common';
 import { InteractivePanel } from '../../datascience-ui/history-react/interactivePanel';
 import { ImageButton } from '../../datascience-ui/react-common/imageButton';
 import { DataScienceIocContainer } from './dataScienceIocContainer';
@@ -43,7 +44,6 @@ import {
     waitForMessage,
     waitForMessageResponse
 } from './testHelpers';
-import { concatMultilineStringInput } from '../../datascience-ui/common';
 
 //import { asyncDump } from '../common/asyncDump';
 // tslint:disable:max-func-body-length trailing-comma no-any no-multiline-string

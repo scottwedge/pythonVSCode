@@ -3,10 +3,11 @@
 
 'use strict';
 
-import '../../client/common/extensions';
 import { nbformat } from '@jupyterlab/coreutils';
+// tslint:disable-next-line: no-require-imports
 import cloneDeep = require('lodash/cloneDeep');
-import { generateMarkdownFromCodeLines, appendLineFeed } from './index';
+import '../../client/common/extensions';
+import { appendLineFeed, generateMarkdownFromCodeLines } from './index';
 
 function uncommentMagicCommands(line: string): string {
     // Uncomment lines that are shell assignments (starting with #!),

@@ -5,6 +5,7 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { OSType } from '../../client/common/utils/platform';
 import { NativeCommandType } from '../../client/datascience/interactive-common/interactiveWindowTypes';
+import { concatMultilineStringInput } from '../common';
 import { ContentPanel, IContentPanelProps } from '../interactive-common/contentPanel';
 import { handleLinkClick } from '../interactive-common/handlers';
 import { KernelSelection } from '../interactive-common/kernelSelection';
@@ -21,7 +22,6 @@ import { AddCellLine } from './addCellLine';
 import { getConnectedNativeCell } from './nativeCell';
 import './nativeEditor.less';
 import { actionCreators } from './redux/actions';
-import { concatMultilineStringInput } from '../common';
 
 type INativeEditorProps = IMainState & typeof actionCreators;
 

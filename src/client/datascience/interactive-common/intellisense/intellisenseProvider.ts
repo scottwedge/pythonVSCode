@@ -18,7 +18,6 @@ import { Resource } from '../../../common/types';
 import { createDeferred, Deferred, waitForPromise } from '../../../common/utils/async';
 import { HiddenFileFormatString } from '../../../constants';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
-import { concatMultilineStringInput } from '../../common';
 import { Identifiers, Settings } from '../../constants';
 import { IInteractiveWindowListener, IInteractiveWindowProvider, IJupyterExecution, INotebook } from '../../types';
 import {
@@ -38,6 +37,7 @@ import {
 } from '../interactiveWindowTypes';
 import { convertStringsToSuggestions, convertToMonacoCompletionList, convertToMonacoHover, convertToMonacoSignatureHelp } from './conversion';
 import { IntellisenseDocument } from './intellisenseDocument';
+import { concatMultilineStringInput } from '../../../../datascience-ui/common';
 
 // tslint:disable:no-any
 @injectable()

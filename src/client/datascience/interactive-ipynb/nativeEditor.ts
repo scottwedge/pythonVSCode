@@ -22,7 +22,6 @@ import { StopWatch } from '../../common/utils/stopWatch';
 import { EXTENSION_ROOT_DIR } from '../../constants';
 import { IInterpreterService } from '../../interpreter/contracts';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
-import { concatMultilineStringInput, splitMultilineString } from '../common';
 import { EditorContexts, Identifiers, NativeKeyboardCommandTelemetryLookup, NativeMouseCommandTelemetryLookup, Telemetry } from '../constants';
 import { InteractiveBase } from '../interactive-common/interactiveBase';
 import { IEditCell, IInsertCell, INativeCommand, InteractiveWindowMessages, IRemoveCell, ISaveAll, ISubmitNewCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
@@ -46,6 +45,8 @@ import {
     IStatusProvider,
     IThemeFinder
 } from '../types';
+import { createCodeCell, createErrorOutput } from '../../../datascience-ui/common/cellFactory';
+import { concatMultilineStringInput, splitMultilineString } from '../../../datascience-ui/common';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
@@ -395,18 +396,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             // Make this error our cell output
             this.sendCellsToWebView([
                 {
-                    data: {
-                        source: info.code,
-                        cell_type: 'code',
-                        outputs: [
-                            {
-                                output_type: 'error',
-                                evalue: exc.toString()
-                            }
-                        ],
-                        metadata: {},
-                        execution_count: null
-                    },
+                    data: createCodeCell([info.code], [createErrorOutput(exc)]),
                     id: info.id,
                     file: Identifiers.EmptyFileName,
                     line: 0,
@@ -596,13 +586,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
                 line: 0,
                 file: Identifiers.EmptyFileName,
                 state: CellState.finished,
-                data: {
-                    cell_type: 'code',
-                    outputs: [],
-                    source: [],
-                    metadata: {},
-                    execution_count: null
-                }
+                data: createCodeCell()
             };
             cells.splice(0, 0, defaultCell);
             forceDirty = true;

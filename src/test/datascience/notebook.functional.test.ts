@@ -25,7 +25,6 @@ import { IProcessServiceFactory, IPythonExecutionFactory, Output } from '../../c
 import { createDeferred, waitForPromise } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
 import { Architecture } from '../../client/common/utils/platform';
-import { concatMultilineStringInput } from '../../client/datascience/common';
 import { Identifiers } from '../../client/datascience/constants';
 import { ModuleExistsStatus } from '../../client/datascience/jupyter/interpreter/jupyterCommandFinder';
 import { JupyterExecutionFactory } from '../../client/datascience/jupyter/jupyterExecutionFactory';
@@ -50,6 +49,7 @@ import { DataScienceIocContainer } from './dataScienceIocContainer';
 import { getConnectionInfo, getIPConnectionInfo, getNotebookCapableInterpreter } from './jupyterHelpers';
 import { SupportedCommands } from './mockJupyterManager';
 import { MockPythonService } from './mockPythonService';
+import { concatMultilineStringInput } from '../../datascience-ui/common';
 
 // tslint:disable:no-any no-multiline-string max-func-body-length no-console max-classes-per-file trailing-comma
 suite('DataScience notebook tests', () => {

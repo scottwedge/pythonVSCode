@@ -15,12 +15,12 @@ import { IConfigurationService, IExperimentsManager, Version } from '../../commo
 import * as localize from '../../common/utils/localize';
 import { EXTENSION_ROOT_DIR } from '../../constants';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
-import { concatMultilineStringOutput } from '../common';
 import { Identifiers, Telemetry } from '../constants';
 import { CellState, ICell, ICellHashListener, IConnection, IFileHashes, IJupyterDebugger, INotebook, ISourceMapRequest } from '../types';
 import { JupyterDebuggerNotInstalledError } from './jupyterDebuggerNotInstalledError';
 import { JupyterDebuggerRemoteNotSupported } from './jupyterDebuggerRemoteNotSupported';
 import { ILiveShareHasRole } from './liveshare/types';
+import { concatMultilineStringOutput } from '../../../datascience-ui/common';
 
 const pythonShellCommand = `_sysexec = sys.executable\r\n_quoted_sysexec = '"' + _sysexec + '"'\r\n!{_quoted_sysexec}`;
 

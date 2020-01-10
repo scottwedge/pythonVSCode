@@ -13,9 +13,10 @@ import { IConfigurationService } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
 import { CellMatcher } from '../cellMatcher';
-import { concatMultilineStringInput } from '../common';
 import { CodeSnippits, Identifiers } from '../constants';
 import { CellState, ICell, IJupyterExecution, INotebookExporter } from '../types';
+import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
+import { concatMultilineStringInput } from '../../../datascience-ui/common';
 
 @injectable()
 export class JupyterExporter implements INotebookExporter {
@@ -81,13 +82,7 @@ export class JupyterExporter implements INotebookExporter {
             );
 
             const cell: ICell = {
-                data: {
-                    source: exportChangeDirectory,
-                    cell_type: 'code',
-                    outputs: [],
-                    metadata: {},
-                    execution_count: 0
-                },
+                data: createCodeCell(exportChangeDirectory),
                 id: uuid(),
                 file: Identifiers.EmptyFileName,
                 line: 0,

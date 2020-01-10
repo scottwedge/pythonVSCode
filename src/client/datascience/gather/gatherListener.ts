@@ -7,7 +7,6 @@ import { IFileSystem } from '../../common/platform/types';
 import { IConfigurationService } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
-import { generateCellsFromString } from '../cellFactory';
 import { Identifiers } from '../constants';
 import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../interactive-common/interactiveWindowTypes';
 import {
@@ -21,6 +20,8 @@ import {
     INotebookExporter
 } from '../types';
 import { GatherLogger } from './gatherLogger';
+import { createMarkdownCell } from '../../../datascience-ui/common/cellFactory';
+import { generateCellsFromString } from '../cellFactory';
 
 @injectable()
 export class GatherListener implements IInteractiveWindowListener {
@@ -124,13 +125,11 @@ export class GatherListener implements IInteractiveWindowListener {
                     file: '',
                     line: 0,
                     state: 0,
-                    data: {
-                        cell_type: 'markdown',
-                        source: localize.DataScience.gatheredNotebookDescriptionInMarkdown().format(
+                    data: createMarkdownCell(
+                        localize.DataScience.gatheredNotebookDescriptionInMarkdown().format(
                             cell.file === Identifiers.EmptyFileName && this.notebookUri ? this.notebookUri.fsPath : cell.file
-                        ),
-                        metadata: {}
-                    }
+                        )
+                    )
                 }
             ];
 

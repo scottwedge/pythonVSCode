@@ -9,8 +9,8 @@ import { GLOBAL_MEMENTO, IConfigurationService, IMemento } from '../../common/ty
 import { DataScience } from '../../common/utils/localize';
 import { IMultiStepInput, IMultiStepInputFactory, InputStep, IQuickPickParameters } from '../../common/utils/multiStepInput';
 import { captureTelemetry } from '../../telemetry';
-import { getSavedUriList } from '../common';
 import { Settings, Telemetry } from '../constants';
+import { getSavedUriList } from '../common';
 
 interface ISelectUriQuickPickItem extends QuickPickItem {
     newChoice: boolean;

@@ -2,10 +2,9 @@
 // Licensed under the MIT License.
 'use strict';
 import { CellMatcher } from '../../../../client/datascience/cellMatcher';
-import { concatMultilineStringInput } from '../../../../client/datascience/common';
 import { InteractiveWindowMessages } from '../../../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CellState } from '../../../../client/datascience/types';
-import { CursorPos, IMainState } from '../../../interactive-common/mainState';
+import { CursorPos, IMainState, ICellViewModel } from '../../../interactive-common/mainState';
 import { createPostableAction } from '../../../interactive-common/redux/postOffice';
 import { Helpers } from '../../../interactive-common/redux/reducers/helpers';
 import { CommonActionType, ICellAction, IChangeCellTypeAction, ICodeAction, IExecuteAction } from '../../../interactive-common/redux/reducers/types';
@@ -13,6 +12,9 @@ import { QueueAnotherFunc } from '../../../react-common/reduxUtils';
 import { NativeEditorReducerArg } from '../mapping';
 import { Creation } from './creation';
 import { Effects } from './effects';
+import cloneDeep = require('lodash/cloneDeep');
+import { concatMultilineStringInput } from '../../../common';
+import { createCellFrom } from '../../../common/cellFactory';
 
 export namespace Execution {
     function executeRange(prevState: IMainState, start: number, end: number, codes: string[], queueAction: QueueAnotherFunc<CommonActionType>): IMainState {
@@ -23,19 +25,23 @@ export namespace Execution {
             // noop if the submitted code is just a cell marker
             const matcher = new CellMatcher(prevState.settings);
             if (code && matcher.stripFirstMarker(code).length > 0) {
+                // When cloning cells, preserve the metadata (hence deep clone).
+                const clonedCell = cloneDeep(orig.cell.data);
+                clonedCell.source = code;
                 if (orig.cell.data.cell_type === 'code') {
                     // Update our input cell to be in progress again and clear outputs
+                    clonedCell.outputs = [];
                     newVMs[pos] = Helpers.asCellViewModel({
                         ...orig,
                         inputBlockText: code,
-                        cell: { ...orig.cell, state: CellState.executing, data: { ...orig.cell.data, source: code, outputs: [] } }
+                        cell: { ...orig.cell, state: CellState.executing, data: clonedCell }
                     });
 
                     // Send a message if a code cell
                     queueAction(createPostableAction(InteractiveWindowMessages.ReExecuteCell, { code, id: orig.cell.id }));
                 } else {
                     // Update our input to be our new code
-                    newVMs[pos] = Helpers.asCellViewModel({ ...orig, inputBlockText: code, cell: { ...orig.cell, data: { ...orig.cell.data, source: code } } });
+                    newVMs[pos] = Helpers.asCellViewModel({ ...orig, inputBlockText: code, cell: { ...orig.cell, data: clonedCell } });
                 }
             }
         }
@@ -143,12 +149,14 @@ export namespace Execution {
             const cellVMs = [...arg.prevState.cellVMs];
             const current = arg.prevState.cellVMs[index];
             const newType = current.cell.data.cell_type === 'code' ? 'markdown' : 'code';
-            const newCell = {
+            const newNotebookCell = createCellFrom(current.cell.data, newType);
+            newNotebookCell.source = arg.payload.currentCode;
+            const newCell: ICellViewModel = {
                 ...current,
                 inputBlockText: arg.payload.currentCode,
                 cell: {
                     ...current.cell,
-                    data: { ...current.cell.data, cell_type: newType, source: arg.payload.currentCode }
+                    data: newNotebookCell
                 }
             };
             // tslint:disable-next-line: no-any

@@ -4,9 +4,9 @@ import cloneDeep = require('lodash/cloneDeep');
 import { IConfigurationService } from '../../common/types';
 import { noop } from '../../common/utils/misc';
 import { CellMatcher } from '../cellMatcher';
-import { concatMultilineStringInput } from '../common';
 import { ICell as IVscCell, IGatherExecution, INotebookExecutionLogger } from '../types';
 import { GatherExecution } from './gather';
+import { concatMultilineStringInput } from '../../../datascience-ui/common';
 
 @injectable()
 export class GatherLogger implements INotebookExecutionLogger {

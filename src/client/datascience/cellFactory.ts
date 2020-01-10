@@ -9,37 +9,14 @@ import { Range, TextDocument } from 'vscode';
 import { IDataScienceSettings } from '../common/types';
 import { noop } from '../common/utils/misc';
 import { CellMatcher } from './cellMatcher';
-import { appendLineFeed, generateMarkdownFromCodeLines, parseForComments } from './common';
 import { CellState, ICell } from './types';
-
-function uncommentMagicCommands(line: string): string {
-    // Uncomment lines that are shell assignments (starting with #!),
-    // line magic (starting with #!%) or cell magic (starting with #!%%).
-    if (/^#\s*!/.test(line)) {
-        // If the regex test passes, it's either line or cell magic.
-        // Hence, remove the leading # and ! including possible white space.
-        if (/^#\s*!\s*%%?/.test(line)) {
-            return line.replace(/^#\s*!\s*/, '');
-        }
-        // If the test didn't pass, it's a shell assignment. In this case, only
-        // remove leading # including possible white space.
-        return line.replace(/^#\s*/, '');
-    } else {
-        // If it's regular Python code, just return it.
-        return line;
-    }
-}
+import { createCodeCell, createMarkdownCell } from '../../datascience-ui/common/cellFactory';
+import { parseForComments } from '../../datascience-ui/common';
 
 function generateCodeCell(code: string[], file: string, line: number, id: string, magicCommandsAsComments: boolean): ICell {
     // Code cells start out with just source and no outputs.
     return {
-        data: {
-            source: appendLineFeed(code, magicCommandsAsComments ? uncommentMagicCommands : undefined),
-            cell_type: 'code',
-            outputs: [],
-            metadata: {},
-            execution_count: 0
-        },
+        data: createCodeCell(code, magicCommandsAsComments),
         id: id,
         file: file,
         line: line,
@@ -53,11 +30,7 @@ function generateMarkdownCell(code: string[], file: string, line: number, id: st
         file: file,
         line: line,
         state: CellState.finished,
-        data: {
-            cell_type: 'markdown',
-            source: generateMarkdownFromCodeLines(code),
-            metadata: {}
-        }
+        data: createMarkdownCell(code)
     };
 }
 

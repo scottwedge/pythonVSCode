@@ -14,7 +14,6 @@ import { IDataScienceSettings } from '../../client/common/types';
 import { createDeferred, waitForPromise } from '../../client/common/utils/async';
 import { noop } from '../../client/common/utils/misc';
 import { generateCellsFromDocument } from '../../client/datascience/cellFactory';
-import { concatMultilineStringInput } from '../../client/datascience/common';
 import { EditorContexts } from '../../client/datascience/constants';
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { InteractiveWindow } from '../../client/datascience/interactive-window/interactiveWindow';
@@ -44,6 +43,7 @@ import {
     waitForMessage,
     waitForMessageResponse
 } from './testHelpers';
+import { concatMultilineStringInput } from '../../datascience-ui/common';
 
 //import { asyncDump } from '../common/asyncDump';
 // tslint:disable:max-func-body-length trailing-comma no-any no-multiline-string

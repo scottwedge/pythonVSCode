@@ -25,7 +25,6 @@ import { IInterpreterService, PythonInterpreter } from '../../interpreter/contra
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { generateCellRangesFromDocument } from '../cellFactory';
 import { CellMatcher } from '../cellMatcher';
-import { addToUriList } from '../common';
 import { Commands, Identifiers, Telemetry } from '../constants';
 import { ColumnWarningSize } from '../data-viewing/types';
 import {
@@ -72,6 +71,7 @@ import {
 } from '../types';
 import { WebViewHost } from '../webViewHost';
 import { InteractiveWindowMessageListener } from './interactiveWindowMessageListener';
+import { addToUriList } from '../common';
 
 @injectable()
 export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapping> implements IInteractiveBase {

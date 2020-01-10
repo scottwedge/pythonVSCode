@@ -12,10 +12,10 @@ import { IFileSystem } from '../../common/platform/types';
 import { IConfigurationService } from '../../common/types';
 import { noop } from '../../common/utils/misc';
 import { CellMatcher } from '../cellMatcher';
-import { splitMultilineString } from '../common';
 import { Identifiers } from '../constants';
 import { InteractiveWindowMessages, SysInfoReason } from '../interactive-common/interactiveWindowTypes';
 import { ICell, ICellHash, ICellHashListener, ICellHashProvider, IFileHashes, IInteractiveWindowListener, INotebookExecutionLogger } from '../types';
+import { splitMultilineString } from '../../../datascience-ui/common';
 
 interface IRangedCellHash extends ICellHash {
     code: string;

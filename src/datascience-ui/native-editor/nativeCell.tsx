@@ -10,7 +10,6 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 
 import { OSType } from '../../client/common/utils/platform';
-import { concatMultilineStringInput } from '../../client/datascience/common';
 import { Identifiers } from '../../client/datascience/constants';
 import { NativeCommandType } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CellState } from '../../client/datascience/types';
@@ -26,6 +25,7 @@ import { ImageButton } from '../react-common/imageButton';
 import { getLocString } from '../react-common/locReactSide';
 import { AddCellLine } from './addCellLine';
 import { actionCreators } from './redux/actions';
+import { concatMultilineStringInput } from '../common';
 
 interface INativeCellBaseProps {
     role?: string;

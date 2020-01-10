@@ -7,12 +7,12 @@ import { nbformat } from '@jupyterlab/coreutils';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
 
-import { concatMultilineStringInput } from '../../client/datascience/common';
 import { IKeyboardEvent } from '../react-common/event';
 import { Code } from './code';
 import { InputHistory } from './inputHistory';
 import { ICellViewModel, IFont } from './mainState';
 import { Markdown } from './markdown';
+import { concatMultilineStringInput } from '../common';
 
 // tslint:disable-next-line: no-require-importss
 interface ICellInputProps {

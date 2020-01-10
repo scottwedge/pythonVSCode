@@ -9,12 +9,12 @@ import { ConfigurationService } from '../../../client/common/configuration/servi
 import { DataScience } from '../../../client/common/utils/localize';
 import { noop } from '../../../client/common/utils/misc';
 import { MultiStepInputFactory } from '../../../client/common/utils/multiStepInput';
-import { addToUriList } from '../../../client/datascience/common';
 import { Settings } from '../../../client/datascience/constants';
 import { JupyterServerSelector } from '../../../client/datascience/jupyter/serverSelector';
 import { MockMemento } from '../../mocks/mementos';
 import { MockInputBox } from '../mockInputBox';
 import { MockQuickPick } from '../mockQuickPick';
+import { addToUriList } from '../../../client/datascience/common';
 
 // tslint:disable: max-func-body-length
 suite('Data Science - Jupyter Server URI Selector', () => {

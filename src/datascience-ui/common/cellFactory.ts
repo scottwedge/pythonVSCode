@@ -54,9 +54,11 @@ export function createCodeCell(code?: string | string[], options?: boolean | nbf
     const magicCommandsAsComments = typeof options === 'boolean' ? options : false;
     const outputs = typeof options === 'boolean' ? [] : options || [];
     code = code || '';
-    code = Array.isArray(code) ? code : [code];
+    // If we get a string, then no need to append line feeds. Leave as is (to preserve existing functionality).
+    // If we get an array, the append a linefeed.
+    const source = Array.isArray(code) ? appendLineFeed(code, magicCommandsAsComments ? uncommentMagicCommands : undefined) : code;
     return {
-        source: appendLineFeed(code, magicCommandsAsComments ? uncommentMagicCommands : undefined),
+        source,
         cell_type: 'code',
         outputs,
         metadata: {},

@@ -554,12 +554,10 @@ suite('DataScience notebook tests', () => {
 
         // Make sure we added in our chdir
         if (notebook) {
-            // tslint:disable-next-line:no-string-literal
-            const nbcells = notebook['cells'];
+            const nbcells = notebook.cells;
             if (nbcells) {
-                // tslint:disable-next-line:no-string-literal
-                const firstCellText: string = (nbcells as any)[0]['source'] as string;
-                assert.ok(firstCellText.includes('os.chdir'));
+                const firstCellText: string = nbcells[0].source as string;
+                assert.ok(firstCellText.includes('os.chdir'), `${firstCellText} does not include 'os.chdir`);
             }
         }
 

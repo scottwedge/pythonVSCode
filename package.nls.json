@@ -72,6 +72,7 @@
     "python.command.python.datascience.addcellbelow.title": "Add Empty Cell to File",
     "python.command.python.datascience.scrolltocell.title": "Scroll Cell Into View",
     "python.command.python.datascience.createnewnotebook.title": "Create New Blank Jupyter Notebook",
+    "python.command.python.datascience.selectJupyterInterpreter.title": "Select Interpreter to run Jupyter",
     "python.command.python.analysis.clearCache.title": "Clear Module Analysis Cache",
     "python.snippet.launch.standard.label": "Python: Current File",
     "python.snippet.launch.module.label": "Python: Module",
@@ -411,6 +412,7 @@
     "DataScience.fallBackToPromptToUseActiveInterpreterOrSelectAKernel": "Couldn't find kernel '{0}' that the notebook was created with.",
     "DataScience.selectKernel": "Select a Kernel",
     "DataScience.selectDifferentKernel": "Select a different Kernel",
+    "DataScience.selectDifferentJupyterInterpreter": "Select a different Interpreter",
     "products.installingModule": "Installing {0}",
     "DataScience.switchingKernelProgress": "Switching kernel to '{0}'",
     "DataScience.sessionStartFailedWithKernel": "Failed to start a session for the Kernel '{0}'. \nView Jupyter [log](command:{1}) for further details."

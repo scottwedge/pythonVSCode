@@ -58,11 +58,11 @@ export function createCodeCell(code?: string | string[], options?: boolean | nbf
     // If we get an array, the append a linefeed.
     const source = Array.isArray(code) ? appendLineFeed(code, magicCommandsAsComments ? uncommentMagicCommands : undefined) : code;
     return {
-        source,
         cell_type: 'code',
-        outputs,
+        execution_count: null,
         metadata: {},
-        execution_count: null
+        outputs,
+        source
     };
 }
 /**

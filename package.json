@@ -1482,12 +1482,6 @@
                     "description": "List of experiment to opt out of. If empty, user is assigned the default experiment groups. See https://github.com/microsoft/vscode-python/wiki/Experiments for more details.",
                     "scope": "application"
                 },
-                "python.dataScience.jupyterInterpreter": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Path to Python executable used to launch Jupyter server, you can use a custom version of Python by modifying this setting to include the full path.",
-                    "scope": "machine"
-                },
                 "python.dataScience.allowImportFromNotebook": {
                     "type": "boolean",
                     "default": true,

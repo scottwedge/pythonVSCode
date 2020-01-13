@@ -337,7 +337,6 @@ interface IGatherRule {
 }
 
 export interface IDataScienceSettings {
-    jupyterInterpreter?: string;
     allowImportFromNotebook: boolean;
     enabled: boolean;
     jupyterInterruptTimeout: number;

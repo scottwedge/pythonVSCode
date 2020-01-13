@@ -4,26 +4,27 @@
 'use strict';
 
 import { inject, injectable } from 'inversify';
-import { ConfigurationTarget, Event, EventEmitter } from 'vscode';
-import { IConfigurationService } from '../../../common/types';
+import { Event, EventEmitter } from 'vscode';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
 import { sendTelemetryEvent } from '../../../telemetry';
 import { Telemetry } from '../../constants';
 import { JupyterInterpreterConfigfurationResponse, JupyterInterpreterConfigurationService } from './jupyterInterpreterConfiguration';
 import { JupyterInterpreterSelector } from './jupyterInterpreterSelector';
+import { JupyterInterpreterStateStore } from './jupyterInterpreterStateStore';
 
 @injectable()
 export class JupyterInterpreterService {
+    private _selectedInterpreterPath?: string;
     private _onDidChangeInterpreter = new EventEmitter<PythonInterpreter>();
     public get onDidChangeInterpreter(): Event<PythonInterpreter> {
         return this._onDidChangeInterpreter.event;
     }
 
     constructor(
+        @inject(JupyterInterpreterStateStore) private readonly interpreterSelectionState: JupyterInterpreterStateStore,
         @inject(JupyterInterpreterSelector) private readonly jupyterInterpreterSelector: JupyterInterpreterSelector,
         @inject(JupyterInterpreterConfigurationService) private readonly interpreterConfiguration: JupyterInterpreterConfigurationService,
-        @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
-        @inject(IConfigurationService) private readonly configService: IConfigurationService
+        @inject(IInterpreterService) private readonly interpreterService: IInterpreterService
     ) {}
     /**
      * Gets the selected interpreter configured to run Jupyter.
@@ -32,7 +33,7 @@ export class JupyterInterpreterService {
      * @memberof JupyterInterpreterService
      */
     public async getSelectedInterpreter(): Promise<PythonInterpreter | undefined> {
-        const pythonPath = this.configService.getSettings(undefined).datascience.jupyterInterpreter;
+        const pythonPath = this._selectedInterpreterPath || this.interpreterSelectionState.selectedPythonPath;
         if (!pythonPath) {
             return;
         }
@@ -57,8 +58,8 @@ export class JupyterInterpreterService {
         const result = await this.interpreterConfiguration.configureInterpreter(interpreter);
         switch (result) {
             case JupyterInterpreterConfigfurationResponse.ok: {
-                await this.configService.updateSetting('dataScience.jupyterInterpreter', interpreter.path, undefined, ConfigurationTarget.Global);
                 this._onDidChangeInterpreter.fire(interpreter);
+                this.interpreterSelectionState.updateSelectedPythonPath((this._selectedInterpreterPath = interpreter.path));
                 sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'selected' });
                 return interpreter;
             }

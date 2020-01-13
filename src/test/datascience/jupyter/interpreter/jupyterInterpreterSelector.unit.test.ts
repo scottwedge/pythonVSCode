@@ -9,10 +9,10 @@ import { ApplicationShell } from '../../../../client/common/application/applicat
 import { IApplicationShell, IWorkspaceService } from '../../../../client/common/application/types';
 import { WorkspaceService } from '../../../../client/common/application/workspace';
 import { PythonSettings } from '../../../../client/common/configSettings';
-import { ConfigurationService } from '../../../../client/common/configuration/service';
 import { PathUtils } from '../../../../client/common/platform/pathUtils';
-import { IConfigurationService, IDataScienceSettings, IPathUtils } from '../../../../client/common/types';
+import { IDataScienceSettings, IPathUtils } from '../../../../client/common/types';
 import { JupyterInterpreterSelector } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterSelector';
+import { JupyterInterpreterStateStore } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterStateStore';
 import { InterpreterSelector } from '../../../../client/interpreter/configuration/interpreterSelector';
 import { IInterpreterSelector } from '../../../../client/interpreter/configuration/types';
 
@@ -20,14 +20,14 @@ suite('Data Science - Jupyter Interpreter Picker', () => {
     let picker: JupyterInterpreterSelector;
     let interpreterSelector: IInterpreterSelector;
     let appShell: IApplicationShell;
-    let configService: IConfigurationService;
+    let interpreterSelectionState: JupyterInterpreterStateStore;
     let workspace: IWorkspaceService;
     let pathUtils: IPathUtils;
     let dsSettings: IDataScienceSettings;
 
     setup(() => {
         interpreterSelector = mock(InterpreterSelector);
-        configService = mock(ConfigurationService);
+        interpreterSelectionState = mock(JupyterInterpreterStateStore);
         appShell = mock(ApplicationShell);
         workspace = mock(WorkspaceService);
         pathUtils = mock(PathUtils);
@@ -35,8 +35,7 @@ suite('Data Science - Jupyter Interpreter Picker', () => {
         // tslint:disable-next-line: no-any
         dsSettings = {} as any;
         when(pythonSettings.datascience).thenReturn(dsSettings);
-        when(configService.getSettings(undefined)).thenReturn(instance(pythonSettings));
-        picker = new JupyterInterpreterSelector(instance(interpreterSelector), instance(appShell), instance(configService), instance(workspace), instance(pathUtils));
+        picker = new JupyterInterpreterSelector(instance(interpreterSelector), instance(appShell), instance(interpreterSelectionState), instance(workspace), instance(pathUtils));
     });
 
     test('Should display the list of interpreters', async () => {
@@ -69,8 +68,8 @@ suite('Data Science - Jupyter Interpreter Picker', () => {
         // tslint:disable-next-line: no-any
         const interpreters = ['something'] as any[];
         const displayPath = 'Display Path';
-        dsSettings.jupyterInterpreter = 'jupyter.exe';
-        when(pathUtils.getDisplayName(dsSettings.jupyterInterpreter, anything())).thenReturn(displayPath);
+        when(interpreterSelectionState.selectedPythonPath).thenReturn('jupyter.exe');
+        when(pathUtils.getDisplayName('jupyter.exe', anything())).thenReturn(displayPath);
         when(interpreterSelector.getSuggestions(undefined)).thenResolve(interpreters);
         when(appShell.showQuickPick(anything(), anything())).thenResolve();
 

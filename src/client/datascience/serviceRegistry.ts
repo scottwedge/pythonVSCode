@@ -35,6 +35,7 @@ import { JupyterCommandFactory } from './jupyter/interpreter/jupyterCommand';
 import { JupyterCommandFinder } from './jupyter/interpreter/jupyterCommandFinder';
 import { JupyterInterpreterSelected } from './jupyter/interpreter/jupyterInterpreterSelected';
 import { JupyterInterpreterSelectionCommand } from './jupyter/interpreter/jupyterInterpreterSelectionCommand';
+import { JupyterInterpreterSelector } from './jupyter/interpreter/jupyterInterpreterSelector';
 import { JupyterDebugger } from './jupyter/jupyterDebugger';
 import { JupyterExecutionFactory } from './jupyter/jupyterExecutionFactory';
 import { JupyterExporter } from './jupyter/jupyterExporter';
@@ -87,7 +88,6 @@ import {
     IStatusProvider,
     IThemeFinder
 } from './types';
-import { JupyterInterpreterSelector } from './jupyter/interpreter/jupyterInterpreterSelector';
 
 export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<IDataScienceCodeLensProvider>(IDataScienceCodeLensProvider, DataScienceCodeLensProvider);

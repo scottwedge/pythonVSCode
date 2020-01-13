@@ -50,23 +50,18 @@ suite('Data Science - Jupyter Interpreter Selected', () => {
         await selected.activate();
 
         assert.isOk(selected.interpreterSetAtleastOnce);
-        verify(memento.get(anything(), false)).once();
-        verify(memento.update(anything(), anything())).once();
     });
     test('Interpeter should not be set for fresh installs', async () => {
         when(memento.get(anything(), false)).thenReturn(false);
 
         await selected.activate();
-        assert.isFalse(selected.interpreterSetAtleastOnce);
 
-        verify(memento.get(anything(), false)).atLeast(1);
+        assert.isFalse(selected.interpreterSetAtleastOnce);
     });
     test('If memento is set, return true', async () => {
         when(memento.get(anything(), false)).thenReturn(true);
 
         assert.isOk(selected.interpreterSetAtleastOnce);
-
-        verify(memento.get(anything(), false)).once();
     });
     test('Update state if an interpreter is selected', async () => {
         await selected.activate();
@@ -74,6 +69,5 @@ suite('Data Science - Jupyter Interpreter Selected', () => {
         interpreterSelectedEventEmitter.fire(pythonInterpreter);
 
         assert.isOk(selected.interpreterSetAtleastOnce);
-        verify(memento.update(anything(), anything())).once();
     });
 });

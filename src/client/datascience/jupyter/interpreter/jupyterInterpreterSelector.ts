@@ -7,6 +7,7 @@ import { inject, injectable } from 'inversify';
 import { QuickPickOptions } from 'vscode';
 import { IApplicationShell, IWorkspaceService } from '../../../common/application/types';
 import { IConfigurationService, IPathUtils } from '../../../common/types';
+import { DataScience } from '../../../common/utils/localize';
 import { IInterpreterSelector } from '../../../interpreter/configuration/types';
 import { PythonInterpreter } from '../../../interpreter/contracts';
 
@@ -40,7 +41,7 @@ export class JupyterInterpreterSelector {
         const quickPickOptions: QuickPickOptions = {
             matchOnDetail: true,
             matchOnDescription: true,
-            placeHolder: currentPythonPath ? `current: ${currentPythonPath}` : ''
+            placeHolder: currentPythonPath ? DataScience.currentlySelectedJupyterInterpreterForPlaceholder().format(currentPythonPath) : ''
         };
 
         const selection = await this.applicationShell.showQuickPick(suggestions, quickPickOptions);

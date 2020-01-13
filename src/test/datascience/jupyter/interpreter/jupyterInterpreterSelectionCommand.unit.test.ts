@@ -32,7 +32,6 @@ suite('Data Science - Jupyter Interpreter Command', () => {
         await interpreterCommand.activate();
 
         verify(commandManager.registerCommand('python.datascience.selectJupyterInterpreter', anything())).once();
-        assert.deepEqual(disposableRegistry, [instance(disposable)]);
     });
     test('Command handler must be jupyter interpreter selection', async () => {
         const disposable = mock(Disposable);
@@ -46,7 +45,6 @@ suite('Data Science - Jupyter Interpreter Command', () => {
 
         verify(commandManager.registerCommand('python.datascience.selectJupyterInterpreter', anything())).once();
         assert.isFunction(handler);
-        assert.deepEqual(disposableRegistry, [instance(disposable)]);
 
         // Invoking handler must select jupyter interpreter.
         handler!();

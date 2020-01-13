@@ -72,7 +72,7 @@
     "python.command.python.datascience.addcellbelow.title": "Add Empty Cell to File",
     "python.command.python.datascience.scrolltocell.title": "Scroll Cell Into View",
     "python.command.python.datascience.createnewnotebook.title": "Create New Blank Jupyter Notebook",
-    "python.command.python.datascience.selectJupyterInterpreter.title": "Select Interpreter to run Jupyter",
+    "python.command.python.datascience.selectJupyterInterpreter.title": "Select Interpreter to start Jupyter server",
     "python.command.python.analysis.clearCache.title": "Clear Module Analysis Cache",
     "python.snippet.launch.standard.label": "Python: Current File",
     "python.snippet.launch.module.label": "Python: Module",

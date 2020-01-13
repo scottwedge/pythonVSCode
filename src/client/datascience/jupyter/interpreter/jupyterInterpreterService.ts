@@ -4,93 +4,69 @@
 'use strict';
 
 import { inject, injectable } from 'inversify';
-import { IApplicationShell } from '../../../common/application/types';
-import { ProductNames } from '../../../common/installer/productNames';
-import { IInstaller, InstallerResponse, Product } from '../../../common/types';
-import { Common, DataScience } from '../../../common/utils/localize';
-import { noop } from '../../../common/utils/misc';
-import { PythonInterpreter } from '../../../interpreter/contracts';
-import { JupyterInterpreterPicker } from './jupyterInterpreterPicker';
-
-enum JupyterInstallationResponse {
-    ok,
-    selectAnotherInterpreter,
-    cancel
-}
+import { ConfigurationTarget, Event, EventEmitter } from 'vscode';
+import { IConfigurationService } from '../../../common/types';
+import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
+import { sendTelemetryEvent } from '../../../telemetry';
+import { Telemetry } from '../../constants';
+import { JupyterInterpreterConfigfurationResponse, JupyterInterpreterConfigurationService } from './jupyterInterpreterConfiguration';
+import { JupyterInterpreterSelector } from './jupyterInterpreterSelector';
 
 @injectable()
 export class JupyterInterpreterService {
+    private _onDidChangeInterpreter = new EventEmitter<PythonInterpreter>();
+    public get onDidChangeInterpreter(): Event<PythonInterpreter> {
+        return this._onDidChangeInterpreter.event;
+    }
+
     constructor(
-        @inject(JupyterInterpreterPicker) private readonly picker: JupyterInterpreterPicker,
-        @inject(IApplicationShell) private readonly applicationShell: IApplicationShell,
-        @inject(IInstaller) private readonly installer: IInstaller
+        @inject(JupyterInterpreterSelector) private readonly jupyterInterpreterSelector: JupyterInterpreterSelector,
+        @inject(JupyterInterpreterConfigurationService) private readonly interpreterConfiguration: JupyterInterpreterConfigurationService,
+        @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
+        @inject(IConfigurationService) private readonly configService: IConfigurationService
     ) {}
+    /**
+     * Gets the selected interpreter configured to run Jupyter.
+     *
+     * @returns {(Promise<PythonInterpreter | undefined>)}
+     * @memberof JupyterInterpreterService
+     */
     public async getSelectedInterpreter(): Promise<PythonInterpreter | undefined> {
-        return;
+        const pythonPath = this.configService.getSettings(undefined).datascience.jupyterInterpreter;
+        if (!pythonPath) {
+            return;
+        }
+
+        return this.interpreterService.getInterpreterDetails(pythonPath, undefined);
     }
+    /**
+     * Selects and interpreter to run jupyter server.
+     * Validates and configures the interpreter.
+     * Once completed, the interpreter is stored in settings, else user can select another interpreter.
+     *
+     * @returns {(Promise<PythonInterpreter | undefined>)}
+     * @memberof JupyterInterpreterService
+     */
     public async selectInterpreter(): Promise<PythonInterpreter | undefined> {
-        // tslint:disable-next-line: no-constant-condition
-        while (true) {
-            const interpreter = await this.picker.selectInterpreter(undefined);
-            if (!interpreter) {
+        const interpreter = await this.jupyterInterpreterSelector.selectInterpreter();
+        if (!interpreter) {
+            sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'notSelected' });
+            return;
+        }
+
+        const result = await this.interpreterConfiguration.configureInterpreter(interpreter);
+        switch (result) {
+            case JupyterInterpreterConfigfurationResponse.ok: {
+                await this.configService.updateSetting('dataScience.jupyterInterpreter', interpreter.path, undefined, ConfigurationTarget.Global);
+                this._onDidChangeInterpreter.fire(interpreter);
+                sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'selected' });
+                return interpreter;
+            }
+            case JupyterInterpreterConfigfurationResponse.cancel:
+                sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'installationCancelled' });
                 return;
-            }
-
-            const result = await this.installMissingDependencies(interpreter);
-            switch (result) {
-                case JupyterInstallationResponse.ok:
-                    return interpreter;
-                case JupyterInstallationResponse.cancel:
-                    return;
-                default:
-                    continue;
-            }
-        }
-    }
-
-    private async installMissingDependencies(interpreter: PythonInterpreter): Promise<JupyterInstallationResponse> {
-        const productsToInstall = await this.dependenciesNotInstalled(interpreter);
-        if (productsToInstall.length === 0) {
-            return JupyterInstallationResponse.ok;
-        }
-
-        const names = productsToInstall
-            .map(product => ProductNames.get(product))
-            .filter(name => !!name)
-            .map(name => name as string);
-        const message = DataScience.libraryNotInstalled().format(names.join(' and '));
-
-        const selection = await this.applicationShell.showErrorMessage(message, DataScience.jupyterInstall(), DataScience.selectDifferentJupyterInterpreter(), Common.cancel());
-
-        switch (selection) {
-            case DataScience.jupyterInstall(): {
-                const productToInstall = productsToInstall.shift();
-                while (productToInstall) {
-                    const response = await this.installer.install(productToInstall, interpreter);
-                    if (response === InstallerResponse.Installed) {
-                        continue;
-                    } else {
-                        return JupyterInstallationResponse.ok;
-                    }
-                }
-
-                return JupyterInstallationResponse.cancel;
-            }
-
-            case DataScience.selectDifferentJupyterInterpreter(): {
-                return JupyterInstallationResponse.selectAnotherInterpreter;
-            }
-
             default:
-                return JupyterInstallationResponse.cancel;
+                return this.selectInterpreter();
         }
-    }
-    private async dependenciesNotInstalled(interpreter: PythonInterpreter): Promise<Product[]> {
-        const notInstalled: Product[] = [];
-        await Promise.all([
-            this.installer.isInstalled(Product.jupyter, interpreter).then(installed => (installed ? noop() : notInstalled.push(Product.jupyter))),
-            this.installer.isInstalled(Product.notebook, interpreter).then(installed => (installed ? noop() : notInstalled.push(Product.notebook)))
-        ]);
-        return notInstalled;
     }
 }

@@ -7,6 +7,8 @@ import { inject, injectable } from 'inversify';
 import { IExtensionSingleActivationService } from '../../../activation/types';
 import { ICommandManager } from '../../../common/application/types';
 import { IDisposableRegistry } from '../../../common/types';
+import { sendTelemetryEvent } from '../../../telemetry';
+import { Telemetry } from '../../constants';
 import { JupyterInterpreterService } from './jupyterInterpreterService';
 
 @injectable()
@@ -17,6 +19,11 @@ export class JupyterInterpreterSelectionCommand implements IExtensionSingleActiv
         @inject(IDisposableRegistry) private readonly disposables: IDisposableRegistry
     ) {}
     public async activate(): Promise<void> {
-        this.disposables.push(this.cmdManager.registerCommand('python.datascience.selectJupyterInterpreter', this.service.selectInterpreter, this.service));
+        this.disposables.push(
+            this.cmdManager.registerCommand('python.datascience.selectJupyterInterpreter', () => {
+                sendTelemetryEvent(Telemetry.SelectJupyterInterpreterCommand);
+                this.service.selectInterpreter().ignoreErrors();
+            })
+        );
     }
 }

@@ -6,12 +6,18 @@
 import { inject, injectable } from 'inversify';
 import { QuickPickOptions } from 'vscode';
 import { IApplicationShell, IWorkspaceService } from '../../../common/application/types';
-import { IConfigurationService, IPathUtils, Resource } from '../../../common/types';
+import { IConfigurationService, IPathUtils } from '../../../common/types';
 import { IInterpreterSelector } from '../../../interpreter/configuration/types';
 import { PythonInterpreter } from '../../../interpreter/contracts';
 
+/**
+ * Displays interpreter select and returns the selection to the user.
+ *
+ * @export
+ * @class JupyterInterpreterSelector
+ */
 @injectable()
-export class JupyterInterpreterPicker {
+export class JupyterInterpreterSelector {
     constructor(
         @inject(IInterpreterSelector) private readonly interpreterSelector: IInterpreterSelector,
         @inject(IApplicationShell) private readonly applicationShell: IApplicationShell,
@@ -19,12 +25,18 @@ export class JupyterInterpreterPicker {
         @inject(IWorkspaceService) private readonly workspace: IWorkspaceService,
         @inject(IPathUtils) private readonly pathUtils: IPathUtils
     ) {}
-    public async selectInterpreter(resource: Resource): Promise<PythonInterpreter | undefined> {
-        const currentJupyterInterpreter = this.configService.getSettings(resource).datascience.jupyterInterpreter;
-        const workspace = this.workspace.getWorkspaceFolder(resource);
+    /**
+     * Displays interpreter selector and returns the selection.
+     *
+     * @returns {(Promise<PythonInterpreter | undefined>)}
+     * @memberof JupyterInterpreterSelector
+     */
+    public async selectInterpreter(): Promise<PythonInterpreter | undefined> {
+        const currentJupyterInterpreter = this.configService.getSettings(undefined).datascience.jupyterInterpreter;
+        const workspace = this.workspace.getWorkspaceFolder(undefined);
         const currentPythonPath = currentJupyterInterpreter ? this.pathUtils.getDisplayName(currentJupyterInterpreter, workspace?.uri.fsPath) : undefined;
 
-        const suggestions = await this.interpreterSelector.getSuggestions(resource);
+        const suggestions = await this.interpreterSelector.getSuggestions(undefined);
         const quickPickOptions: QuickPickOptions = {
             matchOnDetail: true,
             matchOnDescription: true,

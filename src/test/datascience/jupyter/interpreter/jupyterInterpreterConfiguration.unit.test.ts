@@ -20,7 +20,7 @@ import {
 } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterConfiguration';
 import { InterpreterType, PythonInterpreter } from '../../../../client/interpreter/contracts';
 
-suite('xData Science - Jupyter Interpreter Configuration', () => {
+suite('Data Science - Jupyter Interpreter Configuration', () => {
     let configuration: JupyterInterpreterConfigurationService;
     let appShell: IApplicationShell;
     let installer: IInstaller;

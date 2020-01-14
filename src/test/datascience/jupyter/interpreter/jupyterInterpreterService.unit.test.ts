@@ -19,7 +19,7 @@ import { IInterpreterService, InterpreterType, PythonInterpreter } from '../../.
 import { InterpreterService } from '../../../../client/interpreter/interpreterService';
 import { MockMemento } from '../../../mocks/mementos';
 
-suite('xData Science - Jupyter Interpreter Service', () => {
+suite('Data Science - Jupyter Interpreter Service', () => {
     let jupyterInterpreterService: JupyterInterpreterService;
     let interpreterSelector: JupyterInterpreterSelector;
     let interpreterConfiguration: JupyterInterpreterConfigurationService;

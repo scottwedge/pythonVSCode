@@ -22,7 +22,6 @@ interface ISyncData {
 
 @injectable()
 export class InteractiveWindowProvider implements IInteractiveWindowProvider, IAsyncDisposable {
-
     public get onDidChangeActiveInteractiveWindow(): Event<IInteractiveWindow | undefined> {
         return this._onDidChangeActiveInteractiveWindow.event;
     }
@@ -118,7 +117,7 @@ export class InteractiveWindowProvider implements IInteractiveWindowProvider, IA
         return this.activeInteractiveWindow;
     }
 
-    private raiseOnDidChangeActiveInteractiveWindow(){
+    private raiseOnDidChangeActiveInteractiveWindow() {
         const currentWindow = this.getActive();
         this._onDidChangeActiveInteractiveWindow.fire(currentWindow?.active && currentWindow.visible ? currentWindow : undefined);
     }
@@ -171,7 +170,7 @@ export class InteractiveWindowProvider implements IInteractiveWindowProvider, IA
             }
         }
         this.raiseOnDidChangeActiveInteractiveWindow();
-    }
+    };
 
     private async synchronizeCreate(): Promise<void> {
         // Create a new pending wait if necessary

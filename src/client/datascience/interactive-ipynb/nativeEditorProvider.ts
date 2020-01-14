@@ -162,7 +162,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     }
 
     private async create(file: Uri, contents: string): Promise<INotebookEditor> {
-    const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+        const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
         await editor.load(contents, file);
         this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
         this.disposables.push(editor.executed(this.onExecutedEditor.bind(this)));

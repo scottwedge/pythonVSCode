@@ -13,6 +13,8 @@ import { IInstaller, InstallerResponse, Product } from '../../../common/types';
 import { Common, DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { PythonInterpreter } from '../../../interpreter/contracts';
+import { sendTelemetryEvent } from '../../../telemetry';
+import { Telemetry } from '../../constants';
 
 export enum JupyterInterpreterConfigurationResponse {
     ok,
@@ -49,8 +51,9 @@ export class JupyterInterpreterConfigurationService {
             return JupyterInterpreterConfigurationResponse.cancel;
         }
         if (productsToInstall.length === 0) {
-            return JupyterInterpreterConfigurationResponse.ok;
+            return this.checkKernelSpecAvailability(interpreter);
         }
+
         const names = productsToInstall
             .map(product => ProductNames.get(product))
             .filter(name => !!name)
@@ -77,10 +80,7 @@ export class JupyterInterpreterConfigurationService {
                     }
                 }
 
-                if (!(await this.isKernelSpecAvailable(interpreter))) {
-                    this.applicationShell.showErrorMessage(DataScience.jupyterKernelSpecModuleNotFound().format(interpreter.path)).then(noop, noop);
-                }
-                return JupyterInterpreterConfigurationResponse.ok;
+                return this.checkKernelSpecAvailability(interpreter);
             }
 
             case DataScience.selectDifferentJupyterInterpreter(): {
@@ -115,11 +115,35 @@ export class JupyterInterpreterConfigurationService {
         return Cancellation.isCanceled(token) ? [] : notInstalled;
     }
 
-    private async isKernelSpecAvailable(interpreter: PythonInterpreter): Promise<boolean> {
+    /**
+     * Even if jupyter module is installed, its possible kernelspec isn't available.
+     * Possible user has an old version of jupyter or something is corrupted.
+     * This is an edge case, and we need to handle this.
+     * Current solution is to get user to select another interpreter or update jupyter/python (we don't know what is wrong).
+     *
+     * @private
+     * @param {PythonInterpreter} interpreter
+     * @returns {Promise<JupyterInterpreterConfigurationResponse>}
+     * @memberof JupyterInterpreterConfigurationService
+     */
+    private async checkKernelSpecAvailability(interpreter: PythonInterpreter): Promise<JupyterInterpreterConfigurationResponse> {
         const execService = await this.pythonExecFactory.createActivatedEnvironment({ interpreter, allowEnvironmentFetchExceptions: true, bypassCondaExecution: true });
-        return execService
+        const installed = await execService
             .execModule('jupyter', ['kernelspec', '--version'], { throwOnStdErr: true })
             .then(() => true)
             .catch(() => false);
+
+        if (installed) {
+            sendTelemetryEvent(Telemetry.JupyterInstalledButNotKernelSpecModule)
+            return JupyterInterpreterConfigurationResponse.ok;
+        }
+        const selectionFromError = await this.applicationShell.showErrorMessage(
+            DataScience.jupyterKernelSpecModuleNotFound().format(interpreter.path),
+            DataScience.selectDifferentJupyterInterpreter(),
+            Common.cancel()
+        );
+        return selectionFromError === DataScience.selectDifferentJupyterInterpreter()
+            ? JupyterInterpreterConfigurationResponse.selectAnotherInterpreter
+            : JupyterInterpreterConfigurationResponse.cancel;
     }
 }

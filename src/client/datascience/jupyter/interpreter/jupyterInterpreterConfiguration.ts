@@ -134,7 +134,7 @@ export class JupyterInterpreterConfigurationService {
             .catch(() => false);
 
         if (installed) {
-            sendTelemetryEvent(Telemetry.JupyterInstalledButNotKernelSpecModule)
+            sendTelemetryEvent(Telemetry.JupyterInstalledButNotKernelSpecModule);
             return JupyterInterpreterConfigurationResponse.ok;
         }
         const selectionFromError = await this.applicationShell.showErrorMessage(

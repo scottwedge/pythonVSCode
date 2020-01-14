@@ -6,7 +6,7 @@
 import { inject, injectable } from 'inversify';
 import { Event, EventEmitter } from 'vscode';
 import { CancellationToken } from 'vscode-jsonrpc';
-import { Cancellation, createPromiseFromCancellation } from '../../../common/cancellation';
+import { createPromiseFromCancellation } from '../../../common/cancellation';
 import '../../../common/extensions';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
 import { sendTelemetryEvent } from '../../../telemetry';

@@ -22,10 +22,11 @@ import { Architecture } from '../../../../client/common/utils/platform';
 import { JupyterCommands } from '../../../../client/datascience/constants';
 import { InterpreterJupyterNotebookCommand } from '../../../../client/datascience/jupyter/interpreter/jupyterCommand';
 import { JupyterCommandFinder, ModuleExistsStatus } from '../../../../client/datascience/jupyter/interpreter/jupyterCommandFinder';
+import { JupyterCommandFinderInterpreterExecutionService } from '../../../../client/datascience/jupyter/interpreter/jupyterCommandInterpreterExecutionService';
 import { JupyterSessionManager } from '../../../../client/datascience/jupyter/jupyterSessionManager';
 import { JupyterKernelSpec } from '../../../../client/datascience/jupyter/kernels/jupyterKernelSpec';
 import { KernelService } from '../../../../client/datascience/jupyter/kernels/kernelService';
-import { IJupyterCommand, IJupyterKernelSpec, IJupyterSessionManager } from '../../../../client/datascience/types';
+import { IJupyterCommand, IJupyterInterpreterExecutionService, IJupyterKernelSpec, IJupyterSessionManager } from '../../../../client/datascience/types';
 import { EnvironmentActivationService } from '../../../../client/interpreter/activation/service';
 import { IEnvironmentActivationService } from '../../../../client/interpreter/activation/types';
 import { IInterpreterService, InterpreterType, PythonInterpreter } from '../../../../client/interpreter/contracts';
@@ -44,6 +45,7 @@ suite('Data Science - KernelService', () => {
     let execService: IPythonExecutionService;
     let activationHelper: IEnvironmentActivationService;
     let installer: IInstaller;
+    let jupyterInterpreterExecutionService: IJupyterInterpreterExecutionService;
 
     function initialize() {
         cmdFinder = mock(JupyterCommandFinder);
@@ -55,12 +57,20 @@ suite('Data Science - KernelService', () => {
         execFactory = mock(PythonExecutionFactory);
         execService = mock(PythonExecutionService);
         installer = mock(ProductInstaller);
+        jupyterInterpreterExecutionService = mock(JupyterCommandFinderInterpreterExecutionService);
         when(execFactory.create(anything())).thenResolve(instance(execService));
         // tslint:disable-next-line: no-any
         (instance(execService) as any).then = undefined;
         when(cmdFinder.findBestCommand(JupyterCommands.KernelSpecCommand)).thenResolve({ status: ModuleExistsStatus.Found, command: instance(kernelSpecCmd) });
 
-        kernelService = new KernelService(instance(cmdFinder), instance(execFactory), instance(interperterService), instance(installer), instance(fs), instance(activationHelper));
+        kernelService = new KernelService(
+            instance(jupyterInterpreterExecutionService),
+            instance(execFactory),
+            instance(interperterService),
+            instance(installer),
+            instance(fs),
+            instance(activationHelper)
+        );
     }
     setup(initialize);
     teardown(() => sinon.restore());

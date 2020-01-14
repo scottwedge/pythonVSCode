@@ -14,7 +14,9 @@ import { IAsyncDisposable, IDataScienceSettings, IDisposable } from '../common/t
 import { StopWatch } from '../common/utils/stopWatch';
 import { PythonInterpreter } from '../interpreter/contracts';
 import { JupyterCommands } from './constants';
+import { JupyterServerInfo } from './jupyter/jupyterConnection';
 import { LiveKernelModel } from './jupyter/kernels/types';
+import { JupyterKernelSpec } from './jupyter/kernels/jupyterKernelSpec';
 
 // Main interface
 export const IDataScience = Symbol('IDataScience');
@@ -600,4 +602,68 @@ export const IDebugLocationTracker = Symbol('IDebugLocationTracker');
 export interface IDebugLocationTracker {
     updated: Event<void>;
     getLocation(debugSession: DebugSession): IDebugLocation | undefined;
+}
+
+export const IJupyterInterpreterExecutionService = Symbol('IJupyterInterpreterExecutionService');
+/**
+ * Responsible for execution of code against the interpreter used to launch jupyter.
+ *
+ * @export
+ * @interface IJupyterInterpreterExecutionService
+ */
+export interface IJupyterInterpreterExecutionService {
+    isNotebookSupported(cancelToken?: CancellationToken): Promise<boolean>;
+    isExportSupported(cancelToken?: CancellationToken): Promise<boolean>;
+    getReasonForJupyterNotebookNotBeingSupported(): Promise<string>;
+    /**
+     * Used to refresh the command finder.
+     *
+     * @returns {Promise<void>}
+     * @memberof IJupyterInterpreterExecutionService
+     */
+    refreshCommands(): Promise<void>;
+    /**
+     * Gets the interpreter to be used for starting of jupyter server.
+     *
+     * @param {CancellationToken} [token]
+     * @returns {(Promise<PythonInterpreter | undefined>)}
+     * @memberof IJupyterInterpreterService
+     */
+    getSelectedInterpreter(token?: CancellationToken): Promise<PythonInterpreter | undefined>;
+    /**
+     * Starts the jupyter notebook server
+     *
+     * @param {string[]} notebookArgs
+     * @param {SpawnOptions} options
+     * @returns {Promise<ObservableExecutionResult<string>>}
+     * @memberof IJupyterInterpreterExecutionService
+     */
+    startNotebook(notebookArgs: string[], options: SpawnOptions): Promise<ObservableExecutionResult<string>>;
+    /**
+     * Gets a list of all locally running jupyter notebook servers.
+     *
+     * @param {CancellationToken} [token]
+     * @returns {(Promise<JupyterServerInfo[] | undefined>)}
+     * @memberof IJupyterInterpreterExecutionService
+     */
+    getRunningJupyterServers(token?: CancellationToken): Promise<JupyterServerInfo[] | undefined>;
+    /**
+     * Exports a given notebook into a python file.
+     *
+     * @param {string} file
+     * @param {string} [template]
+     * @param {CancellationToken} [token]
+     * @returns {Promise<string>}
+     * @memberof IJupyterInterpreterExecutionService
+     */
+    exportNotebookToPython(file: string, template?: string, token?: CancellationToken): Promise<string>;
+    /**
+     * Opens an ipynb file in a new instance of a jupyter notebook server.
+     *
+     * @param {string} notebookFile
+     * @returns {Promise<void>}
+     * @memberof IJupyterInterpreterExecutionService
+     */
+    launchNotebook(notebookFile: string): Promise<void>;
+    getKernelSpecs(token?: CancellationToken): Promise<JupyterKernelSpec[]>;
 }

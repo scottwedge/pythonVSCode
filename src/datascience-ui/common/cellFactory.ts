@@ -83,7 +83,8 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
         case 'code': {
             const codeCell: nbformat.ICodeCell = {
                 cell_type: 'code',
-                metadata: clonedCell.metadata ?? {},
+                // tslint:disable-next-line: no-any
+                metadata: (clonedCell.metadata ?? {}) as any,
                 execution_count: typeof clonedCell.execution_count === 'number' ? clonedCell.execution_count : null,
                 outputs: Array.isArray(clonedCell.outputs) ? (clonedCell.outputs as nbformat.IOutput[]) : [],
                 source
@@ -94,7 +95,8 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
         case 'markdown': {
             const markdownCell: nbformat.IMarkdownCell = {
                 cell_type: 'markdown',
-                metadata: clonedCell.metadata ?? {},
+                // tslint:disable-next-line: no-any
+                metadata: (clonedCell.metadata ?? {}) as any,
                 source,
                 // tslint:disable-next-line: no-any
                 attachments: clonedCell.attachments as any
@@ -105,7 +107,8 @@ export function cloneCell<T extends nbformat.IBaseCell>(cell: T): T {
         case 'raw': {
             const rawCell: nbformat.IRawCell = {
                 cell_type: 'raw',
-                metadata: clonedCell.metadata ?? {},
+                // tslint:disable-next-line: no-any
+                metadata: (clonedCell.metadata ?? {}) as any,
                 source,
                 // tslint:disable-next-line: no-any
                 attachments: clonedCell.attachments as any
@@ -129,35 +132,23 @@ export function createCellFrom(source: nbformat.IBaseCell, target: nbformat.Cell
             : {
                   source: source.source,
                   cell_type: target,
-                  metadata: cloneDeep(source.metadata)
+                  // tslint:disable-next-line: no-any
+                  metadata: cloneDeep(source.metadata) as any
               };
 
     switch (target) {
         case 'code': {
-            // tslint:disable-next-line: no-unnecessary-local-variable
-            const codeCell: nbformat.ICodeCell = {
-                ...baseCell,
-                cell_type: 'code',
-                execution_count: null,
-                outputs: []
-            };
+            // tslint:disable-next-line: no-unnecessary-local-variable no-any
+            const codeCell = (baseCell as any) as nbformat.ICodeCell;
+            codeCell.execution_count = null;
+            codeCell.outputs = [];
             return codeCell;
         }
         case 'markdown': {
-            // tslint:disable-next-line: no-unnecessary-local-variable
-            const markdownCell: nbformat.IMarkdownCell = {
-                ...baseCell,
-                cell_type: 'markdown'
-            };
-            return markdownCell;
+            return baseCell as nbformat.IMarkdownCell;
         }
         case 'raw': {
-            // tslint:disable-next-line: no-unnecessary-local-variable
-            const rawCell: nbformat.IRawCell = {
-                ...baseCell,
-                cell_type: 'raw'
-            };
-            return rawCell;
+            return baseCell as nbformat.IRawCell;
         }
         default: {
             throw new Error(`Unsupported target type, ${target}`);

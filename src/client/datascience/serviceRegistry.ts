@@ -90,6 +90,7 @@ import {
     IStatusProvider,
     IThemeFinder
 } from './types';
+import { JupyterInterpreterOldCacheStateStore } from './jupyter/interpreter/jupyterInterpreterOldCacheStateStore';
 
 export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<IDataScienceCodeLensProvider>(IDataScienceCodeLensProvider, DataScienceCodeLensProvider);
@@ -149,4 +150,5 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<JupyterInterpreterSelector>(JupyterInterpreterSelector, JupyterInterpreterSelector);
     serviceManager.addSingleton<JupyterInterpreterConfigurationService>(JupyterInterpreterConfigurationService, JupyterInterpreterConfigurationService);
     serviceManager.addSingleton<JupyterInterpreterService>(JupyterInterpreterService, JupyterInterpreterService);
+    serviceManager.addSingleton<JupyterInterpreterOldCacheStateStore>(JupyterInterpreterOldCacheStateStore, JupyterInterpreterOldCacheStateStore);
 }

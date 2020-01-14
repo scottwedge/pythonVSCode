@@ -15,8 +15,8 @@ import { StopWatch } from '../common/utils/stopWatch';
 import { PythonInterpreter } from '../interpreter/contracts';
 import { JupyterCommands } from './constants';
 import { JupyterServerInfo } from './jupyter/jupyterConnection';
-import { LiveKernelModel } from './jupyter/kernels/types';
 import { JupyterKernelSpec } from './jupyter/kernels/jupyterKernelSpec';
+import { LiveKernelModel } from './jupyter/kernels/types';
 
 // Main interface
 export const IDataScience = Symbol('IDataScience');
@@ -614,6 +614,12 @@ export const IJupyterInterpreterExecutionService = Symbol('IJupyterInterpreterEx
 export interface IJupyterInterpreterExecutionService {
     isNotebookSupported(cancelToken?: CancellationToken): Promise<boolean>;
     isExportSupported(cancelToken?: CancellationToken): Promise<boolean>;
+    /**
+     * Error message indicating why jupyter notebook isn't supported.
+     *
+     * @returns {Promise<string>}
+     * @memberof IJupyterInterpreterExecutionService
+     */
     getReasonForJupyterNotebookNotBeingSupported(): Promise<string>;
     /**
      * Used to refresh the command finder.

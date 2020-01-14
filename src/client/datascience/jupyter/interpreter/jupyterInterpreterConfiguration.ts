@@ -46,7 +46,7 @@ export class JupyterInterpreterConfigurationService {
      * @memberof JupyterInterpreterConfigurationService
      */
     public async configureInterpreter(interpreter: PythonInterpreter, token?: CancellationToken): Promise<JupyterInterpreterConfigurationResponse> {
-        const productsToInstall = await this.dependenciesNotInstalled(interpreter, token);
+        const productsToInstall = await this.getDependenciesNotInstalled(interpreter, token);
         if (Cancellation.isCanceled(token)) {
             return JupyterInterpreterConfigurationResponse.cancel;
         }
@@ -92,7 +92,7 @@ export class JupyterInterpreterConfigurationService {
         }
     }
     /**
-     * Whether all dependencies required to start jupyter server are available in the provided interpreter.
+     * Whether all dependencies required to start & use a jupyter server are available in the provided interpreter.
      *
      * @param {PythonInterpreter} interpreter
      * @param {CancellationToken} [token]
@@ -100,9 +100,14 @@ export class JupyterInterpreterConfigurationService {
      * @memberof JupyterInterpreterConfigurationService
      */
     public async areDependenciesInstalled(interpreter: PythonInterpreter, token?: CancellationToken): Promise<boolean> {
-        return this.dependenciesNotInstalled(interpreter, token).then(items => items.length === 0);
+        const [productsNotInstalled, kernelspecIsAvailable] = await Promise.all([
+            this.getDependenciesNotInstalled(interpreter, token),
+            this.isKernelSpecAvailable(interpreter, token)
+        ]);
+        return (productsNotInstalled || []).length === 0 && kernelspecIsAvailable;
     }
-    private async dependenciesNotInstalled(interpreter: PythonInterpreter, token?: CancellationToken): Promise<Product[]> {
+
+    private async getDependenciesNotInstalled(interpreter: PythonInterpreter, token?: CancellationToken): Promise<Product[]> {
         const notInstalled: Product[] = [];
         await Promise.race([
             Promise.all([
@@ -116,6 +121,26 @@ export class JupyterInterpreterConfigurationService {
     }
 
     /**
+     * Checks whether the jupyter sub command kernelspec is available.
+     *
+     * @private
+     * @param {PythonInterpreter} interpreter
+     * @param {CancellationToken} [token]
+     * @returns {Promise<boolean>}
+     * @memberof JupyterInterpreterConfigurationService
+     */
+    private async isKernelSpecAvailable(interpreter: PythonInterpreter, token?: CancellationToken): Promise<boolean> {
+        const execService = await this.pythonExecFactory.createActivatedEnvironment({ interpreter, allowEnvironmentFetchExceptions: true, bypassCondaExecution: true });
+        if (Cancellation.isCanceled(token)) {
+            return false;
+        }
+        return execService
+            .execModule('jupyter', ['kernelspec', '--version'], { throwOnStdErr: true })
+            .then(() => true)
+            .catch(() => false);
+    }
+
+    /**
      * Even if jupyter module is installed, its possible kernelspec isn't available.
      * Possible user has an old version of jupyter or something is corrupted.
      * This is an edge case, and we need to handle this.
@@ -123,19 +148,17 @@ export class JupyterInterpreterConfigurationService {
      *
      * @private
      * @param {PythonInterpreter} interpreter
+     * @param {CancellationToken} [token]
      * @returns {Promise<JupyterInterpreterConfigurationResponse>}
      * @memberof JupyterInterpreterConfigurationService
      */
-    private async checkKernelSpecAvailability(interpreter: PythonInterpreter): Promise<JupyterInterpreterConfigurationResponse> {
-        const execService = await this.pythonExecFactory.createActivatedEnvironment({ interpreter, allowEnvironmentFetchExceptions: true, bypassCondaExecution: true });
-        const installed = await execService
-            .execModule('jupyter', ['kernelspec', '--version'], { throwOnStdErr: true })
-            .then(() => true)
-            .catch(() => false);
-
-        if (installed) {
+    private async checkKernelSpecAvailability(interpreter: PythonInterpreter, token?: CancellationToken): Promise<JupyterInterpreterConfigurationResponse> {
+        if (await this.isKernelSpecAvailable(interpreter)) {
             sendTelemetryEvent(Telemetry.JupyterInstalledButNotKernelSpecModule);
             return JupyterInterpreterConfigurationResponse.ok;
+        }
+        if (Cancellation.isCanceled(token)) {
+            return JupyterInterpreterConfigurationResponse.cancel;
         }
         const selectionFromError = await this.applicationShell.showErrorMessage(
             DataScience.jupyterKernelSpecModuleNotFound().format(interpreter.path),

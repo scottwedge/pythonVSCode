@@ -83,9 +83,9 @@ suite('Data Science - Jupyter Interpreter Service', () => {
         assert.equal(selectedInterpreterEventArgs, pythonInterpreter);
 
         // Selected interpreter should be returned.
-        const selectedInterrpeter = await jupyterInterpreterService.selectInterpreter();
+        const selectedInterpreter = await jupyterInterpreterService.selectInterpreter();
 
-        assert.equal(selectedInterrpeter, pythonInterpreter);
+        assert.equal(selectedInterpreter, pythonInterpreter);
     });
     test('Select another interpreter if user opts to not install dependencies', async () => {
         when(interpreterConfiguration.configureInterpreter(pythonInterpreter, anything())).thenResolve(JupyterInterpreterConfigurationResponse.selectAnotherInterpreter);
@@ -107,8 +107,8 @@ suite('Data Science - Jupyter Interpreter Service', () => {
         assert.equal(selectedInterpreterEventArgs, secondPythonInterpreter);
 
         // Selected interpreter should be the second interpreter.
-        const selectedInterrpeter = await jupyterInterpreterService.selectInterpreter();
+        const selectedInterpreter = await jupyterInterpreterService.selectInterpreter();
 
-        assert.equal(selectedInterrpeter, secondPythonInterpreter);
+        assert.equal(selectedInterpreter, secondPythonInterpreter);
     });
 });

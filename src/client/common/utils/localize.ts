@@ -296,7 +296,7 @@ export namespace DataScience {
     export const jupyterKernelSpecNotFound = localize('DataScience.jupyterKernelSpecNotFound', 'Cannot create a IPython kernel spec and none are available for use');
     export const jupyterKernelSpecModuleNotFound = localize(
         'DataScience.jupyterKernelSpecModuleNotFound',
-        "'kernelspec' module not installed in the selected interrpeter ({0}).\n Please re-install or update 'jupyter'."
+        "'kernelspec' module not installed in the selected interpreter ({0}).\n Please re-install or update 'jupyter'."
     );
     export const interruptKernel = localize('DataScience.interruptKernel', 'Interrupt IPython Kernel');
     export const clearAllOutput = localize('DataScience.clearAllOutput', 'Clear All Output');

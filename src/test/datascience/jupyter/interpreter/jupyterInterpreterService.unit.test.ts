@@ -8,7 +8,7 @@ import { anything, instance, mock, verify, when } from 'ts-mockito';
 import { Memento } from 'vscode';
 import { Architecture } from '../../../../client/common/utils/platform';
 import {
-    JupyterInterpreterConfigfurationResponse,
+    JupyterInterpreterConfigurationResponse,
     JupyterInterpreterConfigurationService
 } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterConfiguration';
 import { JupyterInterpreterSelector } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterSelector';
@@ -61,7 +61,7 @@ suite('Data Science - Jupyter Interpreter Service', () => {
     });
 
     test('Cancelling interpreter configuration is same as cancelling selection of an interpreter', async () => {
-        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigfurationResponse.cancel);
+        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigurationResponse.cancel);
 
         const response = await jupyterInterpreterService.selectInterpreter();
 
@@ -70,7 +70,7 @@ suite('Data Science - Jupyter Interpreter Service', () => {
         assert.isUndefined(selectedInterpreterEventArgs);
     });
     test('Once selected interpreter must be stored in settings and event fired', async () => {
-        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigfurationResponse.ok);
+        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigurationResponse.ok);
 
         const response = await jupyterInterpreterService.selectInterpreter();
 
@@ -84,8 +84,8 @@ suite('Data Science - Jupyter Interpreter Service', () => {
         assert.equal(selectedInterrpeter, pythonInterpreter);
     });
     test('Select another interpreter if user opts to not install dependencies', async () => {
-        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigfurationResponse.selectAnotherInterpreter);
-        when(interpreterConfiguration.configureInterpreter(secondPythonInterpreter)).thenResolve(JupyterInterpreterConfigfurationResponse.ok);
+        when(interpreterConfiguration.configureInterpreter(pythonInterpreter)).thenResolve(JupyterInterpreterConfigurationResponse.selectAnotherInterpreter);
+        when(interpreterConfiguration.configureInterpreter(secondPythonInterpreter)).thenResolve(JupyterInterpreterConfigurationResponse.ok);
         let interpreterSelection = 0;
         when(interpreterSelector.selectInterpreter()).thenCall(() => {
             // When selecting intererpter for first time, return first interpreter

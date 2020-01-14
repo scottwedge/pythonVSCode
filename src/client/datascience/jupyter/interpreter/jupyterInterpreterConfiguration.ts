@@ -11,7 +11,7 @@ import { Common, DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { PythonInterpreter } from '../../../interpreter/contracts';
 
-export enum JupyterInterpreterConfigfurationResponse {
+export enum JupyterInterpreterConfigurationResponse {
     ok,
     selectAnotherInterpreter,
     cancel
@@ -32,20 +32,20 @@ export class JupyterInterpreterConfigurationService {
      * If user opts not to isntall they can opt to select another interpreter.
      *
      * @param {PythonInterpreter} interpreter
-     * @returns {Promise<JupyterInterpreterConfigfurationResponse>}
+     * @returns {Promise<JupyterInterpreterConfigurationResponse>}
      * @memberof JupyterInterpreterConfigurationService
      */
-    public async configureInterpreter(interpreter: PythonInterpreter): Promise<JupyterInterpreterConfigfurationResponse> {
+    public async configureInterpreter(interpreter: PythonInterpreter): Promise<JupyterInterpreterConfigurationResponse> {
         const productsToInstall = await this.dependenciesNotInstalled(interpreter);
         if (productsToInstall.length === 0) {
-            return JupyterInterpreterConfigfurationResponse.ok;
+            return JupyterInterpreterConfigurationResponse.ok;
         }
 
         const names = productsToInstall
             .map(product => ProductNames.get(product))
             .filter(name => !!name)
             .map(name => name as string);
-        const message = DataScience.libraryNotInstalled().format(names.join(' and '));
+        const message = DataScience.libraryNotInstalled().format(names.join(` ${Common.and} `));
 
         const selection = await this.applicationShell.showErrorMessage(message, DataScience.jupyterInstall(), DataScience.selectDifferentJupyterInterpreter(), Common.cancel());
 
@@ -58,19 +58,19 @@ export class JupyterInterpreterConfigurationService {
                         productToInstall = productsToInstall.shift();
                         continue;
                     } else {
-                        return JupyterInterpreterConfigfurationResponse.cancel;
+                        return JupyterInterpreterConfigurationResponse.cancel;
                     }
                 }
 
-                return JupyterInterpreterConfigfurationResponse.ok;
+                return JupyterInterpreterConfigurationResponse.ok;
             }
 
             case DataScience.selectDifferentJupyterInterpreter(): {
-                return JupyterInterpreterConfigfurationResponse.selectAnotherInterpreter;
+                return JupyterInterpreterConfigurationResponse.selectAnotherInterpreter;
             }
 
             default:
-                return JupyterInterpreterConfigfurationResponse.cancel;
+                return JupyterInterpreterConfigurationResponse.cancel;
         }
     }
     private async dependenciesNotInstalled(interpreter: PythonInterpreter): Promise<Product[]> {

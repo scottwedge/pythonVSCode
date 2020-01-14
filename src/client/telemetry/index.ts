@@ -1527,7 +1527,7 @@ export interface IEventNamePropertyMapping {
          * selected - An interpreter was selected (and configured to have jupyter and notebook).
          * installationCancelled - Installation of jupyter and/or notebook was cancelled for an interpreter.
          *
-         * @type {('command' | 'icon')}
+         * @type {('notSelected' | 'selected' | 'installationCancelled')}
          */
         result?: 'notSelected' | 'selected' | 'installationCancelled';
     };

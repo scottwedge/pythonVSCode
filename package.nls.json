@@ -135,6 +135,7 @@
     "Common.doNotShowAgain": "Do not show again",
     "Common.reload": "Reload",
     "Common.moreInfo": "More Info",
+    "Common.and": "and",
     "OutputChannelNames.languageServer": "Python Language Server",
     "OutputChannelNames.python": "Python",
     "OutputChannelNames.pythonTest": "Python Test Log",

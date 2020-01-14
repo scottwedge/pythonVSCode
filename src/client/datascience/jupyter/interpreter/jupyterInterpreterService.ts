@@ -8,7 +8,7 @@ import { Event, EventEmitter } from 'vscode';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
 import { sendTelemetryEvent } from '../../../telemetry';
 import { Telemetry } from '../../constants';
-import { JupyterInterpreterConfigfurationResponse, JupyterInterpreterConfigurationService } from './jupyterInterpreterConfiguration';
+import { JupyterInterpreterConfigurationResponse, JupyterInterpreterConfigurationService } from './jupyterInterpreterConfiguration';
 import { JupyterInterpreterSelector } from './jupyterInterpreterSelector';
 import { JupyterInterpreterStateStore } from './jupyterInterpreterStateStore';
 
@@ -57,13 +57,13 @@ export class JupyterInterpreterService {
 
         const result = await this.interpreterConfiguration.configureInterpreter(interpreter);
         switch (result) {
-            case JupyterInterpreterConfigfurationResponse.ok: {
+            case JupyterInterpreterConfigurationResponse.ok: {
                 this._onDidChangeInterpreter.fire(interpreter);
                 this.interpreterSelectionState.updateSelectedPythonPath((this._selectedInterpreterPath = interpreter.path));
                 sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'selected' });
                 return interpreter;
             }
-            case JupyterInterpreterConfigfurationResponse.cancel:
+            case JupyterInterpreterConfigurationResponse.cancel:
                 sendTelemetryEvent(Telemetry.SelectJupyterInterpreter, undefined, { result: 'installationCancelled' });
                 return;
             default:

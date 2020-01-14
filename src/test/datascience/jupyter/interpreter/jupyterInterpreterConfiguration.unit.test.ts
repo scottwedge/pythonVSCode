@@ -12,7 +12,7 @@ import { IInstaller, InstallerResponse, Product } from '../../../../client/commo
 import { Common, DataScience } from '../../../../client/common/utils/localize';
 import { Architecture } from '../../../../client/common/utils/platform';
 import {
-    JupyterInterpreterConfigfurationResponse,
+    JupyterInterpreterConfigurationResponse,
     JupyterInterpreterConfigurationService
 } from '../../../../client/datascience/jupyter/interpreter/jupyterInterpreterConfiguration';
 import { InterpreterType, PythonInterpreter } from '../../../../client/interpreter/contracts';
@@ -45,7 +45,7 @@ suite('Data Science - Jupyter Interpreter Configuration', () => {
 
         const response = await configuration.configureInterpreter(pythonInterpreter);
 
-        assert.equal(response, JupyterInterpreterConfigfurationResponse.ok);
+        assert.equal(response, JupyterInterpreterConfigurationResponse.ok);
     });
     async function testPromptIfModuleNotInstalled(jupyterInstalled: boolean, notebookInstalled: boolean): Promise<void> {
         when(installer.isInstalled(Product.jupyter, pythonInterpreter)).thenResolve(jupyterInstalled);
@@ -55,13 +55,13 @@ suite('Data Science - Jupyter Interpreter Configuration', () => {
         const response = await configuration.configureInterpreter(pythonInterpreter);
 
         verify(appShell.showErrorMessage(anything(), DataScience.jupyterInstall(), DataScience.selectDifferentJupyterInterpreter(), Common.cancel())).once();
-        assert.equal(response, JupyterInterpreterConfigfurationResponse.cancel);
+        assert.equal(response, JupyterInterpreterConfigurationResponse.cancel);
     }
     test('Prompt to install if Jupyter is not installed', async () => testPromptIfModuleNotInstalled(false, true));
     test('Prompt to install if notebook is not installed', async () => testPromptIfModuleNotInstalled(true, false));
     test('Prompt to install if jupyter & notebook is not installed', async () => testPromptIfModuleNotInstalled(false, false));
 
-    async function testInstallationOfJupyter(installerResponse: InstallerResponse, expectedConfigurationReponse: JupyterInterpreterConfigfurationResponse): Promise<void> {
+    async function testInstallationOfJupyter(installerResponse: InstallerResponse, expectedConfigurationReponse: JupyterInterpreterConfigurationResponse): Promise<void> {
         when(installer.isInstalled(Product.jupyter, pythonInterpreter)).thenResolve(false);
         when(installer.isInstalled(Product.notebook, pythonInterpreter)).thenResolve(true);
         // tslint:disable-next-line: no-any
@@ -77,7 +77,7 @@ suite('Data Science - Jupyter Interpreter Configuration', () => {
     async function testInstallationOfJupyterAndNotebook(
         jupyterInstallerResponse: InstallerResponse,
         notebookInstallationResponse: InstallerResponse,
-        expectedConfigurationReponse: JupyterInterpreterConfigfurationResponse
+        expectedConfigurationReponse: JupyterInterpreterConfigurationResponse
     ): Promise<void> {
         when(installer.isInstalled(Product.jupyter, pythonInterpreter)).thenResolve(false);
         when(installer.isInstalled(Product.notebook, pythonInterpreter)).thenResolve(false);
@@ -93,14 +93,13 @@ suite('Data Science - Jupyter Interpreter Configuration', () => {
         verify(installer.install(anything(), anything())).twice();
         assert.equal(response, expectedConfigurationReponse);
     }
-    test('Install Jupyter and return ok if installed successfully', async () =>
-        testInstallationOfJupyter(InstallerResponse.Installed, JupyterInterpreterConfigfurationResponse.ok));
+    test('Install Jupyter and return ok if installed successfully', async () => testInstallationOfJupyter(InstallerResponse.Installed, JupyterInterpreterConfigurationResponse.ok));
     test('Install Jupyter & notebook and return ok if both are installed successfully', async () =>
-        testInstallationOfJupyterAndNotebook(InstallerResponse.Installed, InstallerResponse.Installed, JupyterInterpreterConfigfurationResponse.ok));
+        testInstallationOfJupyterAndNotebook(InstallerResponse.Installed, InstallerResponse.Installed, JupyterInterpreterConfigurationResponse.ok));
     test('Install Jupyter & notebook and return cancel if notebook is not installed', async () =>
-        testInstallationOfJupyterAndNotebook(InstallerResponse.Installed, InstallerResponse.Ignore, JupyterInterpreterConfigfurationResponse.cancel));
+        testInstallationOfJupyterAndNotebook(InstallerResponse.Installed, InstallerResponse.Ignore, JupyterInterpreterConfigurationResponse.cancel));
     test('Install Jupyter and return cancel if installation is disabled', async () =>
-        testInstallationOfJupyter(InstallerResponse.Disabled, JupyterInterpreterConfigfurationResponse.cancel));
+        testInstallationOfJupyter(InstallerResponse.Disabled, JupyterInterpreterConfigurationResponse.cancel));
     test('Install Jupyter and return cancel if installation is ignored', async () =>
-        testInstallationOfJupyter(InstallerResponse.Ignore, JupyterInterpreterConfigfurationResponse.cancel));
+        testInstallationOfJupyter(InstallerResponse.Ignore, JupyterInterpreterConfigurationResponse.cancel));
 });

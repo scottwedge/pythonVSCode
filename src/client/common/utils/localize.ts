@@ -61,6 +61,7 @@ export namespace Common {
     export const doNotShowAgain = localize('Common.doNotShowAgain', 'Do not show again');
     export const reload = localize('Common.reload', 'Reload');
     export const moreInfo = localize('Common.moreInfo', 'More Info');
+    export const and = localize('Common.and', 'and');
 }
 
 export namespace AttachProcess {

@@ -17,6 +17,10 @@ import { IDataScienceErrorHandler, INotebookEditor, INotebookEditorProvider, INo
 
 @injectable()
 export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisposable {
+    public get onDidChangeActiveNotebookEditor(): Event<INotebookEditor | undefined> {
+        return this._onDidChangeActiveNotebookEditor.event;
+    }
+    private readonly _onDidChangeActiveNotebookEditor = new EventEmitter<INotebookEditor | undefined>();
     private activeEditors: Map<string, INotebookEditor> = new Map<string, INotebookEditor>();
     private executedEditors: Set<string> = new Set<string>();
     private _onDidOpenNotebookEditor = new EventEmitter<INotebookEditor>();
@@ -158,7 +162,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
     }
 
     private async create(file: Uri, contents: string): Promise<INotebookEditor> {
-        const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+    const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
         await editor.load(contents, file);
         this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
         this.disposables.push(editor.executed(this.onExecutedEditor.bind(this)));
@@ -179,6 +183,10 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         this.disposables.push(e.saved(this.onSavedEditor.bind(this, e.file.fsPath)));
         this.openedNotebookCount += 1;
         this._onDidOpenNotebookEditor.fire(e);
+        this.disposables.push(e.onDidChangeViewState(this.onDidChangeViewState, this));
+    }
+    private onDidChangeViewState() {
+        this._onDidChangeActiveNotebookEditor.fire(this.activeEditor);
     }
 
     private onSavedEditor(oldPath: string, e: INotebookEditor) {

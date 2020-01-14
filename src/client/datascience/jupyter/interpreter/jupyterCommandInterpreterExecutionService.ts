@@ -17,21 +17,22 @@ import { EXTENSION_ROOT_DIR } from '../../../constants';
 import { PythonInterpreter } from '../../../interpreter/contracts';
 import { InterpreterService } from '../../../interpreter/interpreterService';
 import { JupyterCommands, PythonDaemonModule } from '../../constants';
-import { IJupyterInterpreterExecutionService } from '../../types';
+import { IJupyterSubCommandExecutionService } from '../../types';
 import { JupyterServerInfo } from '../jupyterConnection';
 import { JupyterInstallError } from '../jupyterInstallError';
 import { JupyterKernelSpec } from '../kernels/jupyterKernelSpec';
 import { IFindCommandResult, JupyterCommandFinder } from './jupyterCommandFinder';
 
 /**
- * Responsible for using the command finder for all execution of code against interpreter(s) related to jupyter and the like.
+ * Responsible for execution of jupyter sub commands using the command finder and related classes.
+ * The plan is to deprecate this class in the future along with to JupyterCommandFinder and related classes.
  *
  * @export
  * @class JupyterCommandFinderInterpreterExecutionService
  * @implements {IJupyterInterpreterExecutionService}
  */
 @injectable()
-export class JupyterCommandFinderInterpreterExecutionService implements IJupyterInterpreterExecutionService {
+export class JupyterCommandFinderInterpreterExecutionService implements IJupyterSubCommandExecutionService {
     constructor(
         @inject(JupyterCommandFinder) private readonly commandFinder: JupyterCommandFinder,
         @inject(InterpreterService) private readonly interpreterService: InterpreterService,

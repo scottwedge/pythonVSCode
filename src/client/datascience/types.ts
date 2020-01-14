@@ -604,14 +604,15 @@ export interface IDebugLocationTracker {
     getLocation(debugSession: DebugSession): IDebugLocation | undefined;
 }
 
-export const IJupyterInterpreterExecutionService = Symbol('IJupyterInterpreterExecutionService');
+export const JupyterSubCommandExecutionService = Symbol('IJupyterInterpreterExecutionService');
 /**
- * Responsible for execution of code against the interpreter used to launch jupyter.
+ * Responsible for execution of jupyter subcommands such as `notebook`, `nbconvert`, etc.
+ * The executed code is as follows `python -m jupyter <subcommand>`.
  *
  * @export
  * @interface IJupyterInterpreterExecutionService
  */
-export interface IJupyterInterpreterExecutionService {
+export interface IJupyterSubCommandExecutionService {
     isNotebookSupported(cancelToken?: CancellationToken): Promise<boolean>;
     isExportSupported(cancelToken?: CancellationToken): Promise<boolean>;
     /**

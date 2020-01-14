@@ -18,11 +18,11 @@ import { Commands, Telemetry } from '../constants';
 import {
     IConnection,
     IJupyterExecution,
-    IJupyterInterpreterExecutionService,
     IJupyterSessionManagerFactory,
     INotebookServer,
     INotebookServerLaunchInfo,
-    INotebookServerOptions
+    INotebookServerOptions,
+    JupyterSubCommandExecutionService
 } from '../types';
 import { JupyterSelfCertsError } from './jupyterSelfCertsError';
 import { JupyterSessionStartError } from './jupyterSession';
@@ -49,7 +49,7 @@ export class JupyterExecutionBase implements IJupyterExecution {
         private readonly jupyterOutputChannel: IOutputChannel,
         private readonly serviceContainer: IServiceContainer
     ) {
-        this.jupyterInterpreterService = serviceContainer.get<IJupyterInterpreterExecutionService>(IJupyterInterpreterExecutionService);
+        this.jupyterInterpreterService = serviceContainer.get<IJupyterInterpreterExecutionService>(JupyterSubCommandExecutionService);
         this.disposableRegistry.push(this.interpreterService.onDidChangeInterpreter(() => this.onSettingsChanged()));
         this.disposableRegistry.push(this);
 

@@ -26,7 +26,7 @@ import { JupyterCommandFinderInterpreterExecutionService } from '../../../../cli
 import { JupyterSessionManager } from '../../../../client/datascience/jupyter/jupyterSessionManager';
 import { JupyterKernelSpec } from '../../../../client/datascience/jupyter/kernels/jupyterKernelSpec';
 import { KernelService } from '../../../../client/datascience/jupyter/kernels/kernelService';
-import { IJupyterCommand, IJupyterInterpreterExecutionService, IJupyterKernelSpec, IJupyterSessionManager } from '../../../../client/datascience/types';
+import { IJupyterCommand, IJupyterKernelSpec, IJupyterSessionManager, IJupyterSubCommandExecutionService } from '../../../../client/datascience/types';
 import { EnvironmentActivationService } from '../../../../client/interpreter/activation/service';
 import { IEnvironmentActivationService } from '../../../../client/interpreter/activation/types';
 import { IInterpreterService, InterpreterType, PythonInterpreter } from '../../../../client/interpreter/contracts';
@@ -45,7 +45,7 @@ suite('Data Science - KernelService', () => {
     let execService: IPythonExecutionService;
     let activationHelper: IEnvironmentActivationService;
     let installer: IInstaller;
-    let jupyterInterpreterExecutionService: IJupyterInterpreterExecutionService;
+    let jupyterInterpreterExecutionService: IJupyterSubCommandExecutionService;
 
     function initialize() {
         cmdFinder = mock(JupyterCommandFinder);

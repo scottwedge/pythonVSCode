@@ -18,7 +18,7 @@ import { StopWatch } from '../../common/utils/stopWatch';
 import { IServiceContainer } from '../../ioc/types';
 import { sendTelemetryEvent } from '../../telemetry';
 import { JUPYTER_OUTPUT_CHANNEL, Telemetry } from '../constants';
-import { IConnection, IJupyterInterpreterExecutionService } from '../types';
+import { IConnection, JupyterSubCommandExecutionService } from '../types';
 import { JupyterConnection } from './jupyterConnection';
 
 /**
@@ -33,7 +33,7 @@ import { JupyterConnection } from './jupyterConnection';
 export class NotebookStarter implements Disposable {
     private readonly disposables: IDisposable[] = [];
     constructor(
-        @inject(IJupyterInterpreterExecutionService) private readonly jupyterInterpreterService: IJupyterInterpreterExecutionService,
+        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterService: IJupyterInterpreterExecutionService,
         @inject(IFileSystem) private readonly fileSystem: IFileSystem,
         @inject(IServiceContainer) private readonly serviceContainer: IServiceContainer,
         @inject(IOutputChannel) @named(JUPYTER_OUTPUT_CHANNEL) private readonly jupyterOutputChannel: IOutputChannel

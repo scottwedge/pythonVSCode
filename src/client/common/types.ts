@@ -336,6 +336,12 @@ interface IGatherRule {
     doesNotModify: string[] | number[];
 }
 
+export interface IVariableQuery {
+    language: string;
+    query: string;
+    parseExpr: string;
+}
+
 export interface IDataScienceSettings {
     allowImportFromNotebook: boolean;
     enabled: boolean;
@@ -387,6 +393,7 @@ export interface IDataScienceSettings {
     verboseLogging?: boolean;
     themeMatplotlibPlots?: boolean;
     useWebViewServer?: boolean;
+    variableQueries: IVariableQuery[];
 }
 
 export const IConfigurationService = Symbol('IConfigurationService');

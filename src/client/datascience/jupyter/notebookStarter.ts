@@ -33,7 +33,7 @@ import { JupyterConnection } from './jupyterConnection';
 export class NotebookStarter implements Disposable {
     private readonly disposables: IDisposable[] = [];
     constructor(
-        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterService: IJupyterInterpreterExecutionService,
+        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterService: IJupyterSubCommandExecutionService,
         @inject(IFileSystem) private readonly fileSystem: IFileSystem,
         @inject(IServiceContainer) private readonly serviceContainer: IServiceContainer,
         @inject(IOutputChannel) @named(JUPYTER_OUTPUT_CHANNEL) private readonly jupyterOutputChannel: IOutputChannel

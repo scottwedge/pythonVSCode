@@ -604,13 +604,13 @@ export interface IDebugLocationTracker {
     getLocation(debugSession: DebugSession): IDebugLocation | undefined;
 }
 
-export const JupyterSubCommandExecutionService = Symbol('IJupyterInterpreterExecutionService');
+export const JupyterSubCommandExecutionService = Symbol('IJupyterSubCommandExecutionService');
 /**
  * Responsible for execution of jupyter subcommands such as `notebook`, `nbconvert`, etc.
  * The executed code is as follows `python -m jupyter <subcommand>`.
  *
  * @export
- * @interface IJupyterInterpreterExecutionService
+ * @interface IJupyterSubCommandExecutionService
  */
 export interface IJupyterSubCommandExecutionService {
     isNotebookSupported(cancelToken?: CancellationToken): Promise<boolean>;
@@ -619,14 +619,14 @@ export interface IJupyterSubCommandExecutionService {
      * Error message indicating why jupyter notebook isn't supported.
      *
      * @returns {Promise<string>}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     getReasonForJupyterNotebookNotBeingSupported(): Promise<string>;
     /**
      * Used to refresh the command finder.
      *
      * @returns {Promise<void>}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     refreshCommands(): Promise<void>;
     /**
@@ -643,7 +643,7 @@ export interface IJupyterSubCommandExecutionService {
      * @param {string[]} notebookArgs
      * @param {SpawnOptions} options
      * @returns {Promise<ObservableExecutionResult<string>>}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     startNotebook(notebookArgs: string[], options: SpawnOptions): Promise<ObservableExecutionResult<string>>;
     /**
@@ -651,7 +651,7 @@ export interface IJupyterSubCommandExecutionService {
      *
      * @param {CancellationToken} [token]
      * @returns {(Promise<JupyterServerInfo[] | undefined>)}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     getRunningJupyterServers(token?: CancellationToken): Promise<JupyterServerInfo[] | undefined>;
     /**
@@ -661,7 +661,7 @@ export interface IJupyterSubCommandExecutionService {
      * @param {string} [template]
      * @param {CancellationToken} [token]
      * @returns {Promise<string>}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     exportNotebookToPython(file: string, template?: string, token?: CancellationToken): Promise<string>;
     /**
@@ -669,7 +669,7 @@ export interface IJupyterSubCommandExecutionService {
      *
      * @param {string} notebookFile
      * @returns {Promise<void>}
-     * @memberof IJupyterInterpreterExecutionService
+     * @memberof IJupyterSubCommandExecutionService
      */
     launchNotebook(notebookFile: string): Promise<void>;
     getKernelSpecs(token?: CancellationToken): Promise<JupyterKernelSpec[]>;

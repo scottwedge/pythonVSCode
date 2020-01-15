@@ -29,7 +29,7 @@ import { IFindCommandResult, JupyterCommandFinder } from './jupyterCommandFinder
  *
  * @export
  * @class JupyterCommandFinderInterpreterExecutionService
- * @implements {IJupyterInterpreterExecutionService}
+ * @implements {IJupyterSubCommandExecutionService}
  */
 @injectable()
 export class JupyterCommandFinderInterpreterExecutionService implements IJupyterSubCommandExecutionService {

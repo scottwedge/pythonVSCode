@@ -35,7 +35,7 @@ export class JupyterExecutionBase implements IJupyterExecution {
     private usablePythonInterpreter: PythonInterpreter | undefined;
     private eventEmitter: EventEmitter<void> = new EventEmitter<void>();
     private disposed: boolean = false;
-    private readonly jupyterInterpreterService: IJupyterInterpreterExecutionService;
+    private readonly jupyterInterpreterService: IJupyterSubCommandExecutionService;
 
     constructor(
         _liveShare: ILiveShareApi,
@@ -49,7 +49,7 @@ export class JupyterExecutionBase implements IJupyterExecution {
         private readonly jupyterOutputChannel: IOutputChannel,
         private readonly serviceContainer: IServiceContainer
     ) {
-        this.jupyterInterpreterService = serviceContainer.get<IJupyterInterpreterExecutionService>(JupyterSubCommandExecutionService);
+        this.jupyterInterpreterService = serviceContainer.get<IJupyterSubCommandExecutionService>(JupyterSubCommandExecutionService);
         this.disposableRegistry.push(this.interpreterService.onDidChangeInterpreter(() => this.onSettingsChanged()));
         this.disposableRegistry.push(this);
 

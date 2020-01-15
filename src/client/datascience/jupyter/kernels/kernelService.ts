@@ -51,7 +51,7 @@ function isInterpreter(item: nbformat.IKernelspecMetadata | PythonInterpreter): 
 @injectable()
 export class KernelService {
     constructor(
-        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterExecService: IJupyterInterpreterExecutionService,
+        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterExecService: IJupyterSubCommandExecutionService,
         @inject(IPythonExecutionFactory) private readonly execFactory: IPythonExecutionFactory,
         @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
         @inject(IInstaller) private readonly installer: IInstaller,

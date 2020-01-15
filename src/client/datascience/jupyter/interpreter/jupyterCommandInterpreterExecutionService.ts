@@ -14,8 +14,7 @@ import { IPythonExecutionFactory, ObservableExecutionResult, SpawnOptions } from
 import { DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { EXTENSION_ROOT_DIR } from '../../../constants';
-import { PythonInterpreter } from '../../../interpreter/contracts';
-import { InterpreterService } from '../../../interpreter/interpreterService';
+import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
 import { JupyterCommands, PythonDaemonModule } from '../../constants';
 import { IJupyterSubCommandExecutionService } from '../../types';
 import { JupyterServerInfo } from '../jupyterConnection';
@@ -35,7 +34,7 @@ import { IFindCommandResult, JupyterCommandFinder } from './jupyterCommandFinder
 export class JupyterCommandFinderInterpreterExecutionService implements IJupyterSubCommandExecutionService {
     constructor(
         @inject(JupyterCommandFinder) private readonly commandFinder: JupyterCommandFinder,
-        @inject(InterpreterService) private readonly interpreterService: InterpreterService,
+        @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
         @inject(IFileSystem) private readonly fs: IFileSystem,
         @inject(IPythonExecutionFactory) private readonly pythonExecutionFactory: IPythonExecutionFactory
     ) {}

@@ -34,8 +34,9 @@ import { InteractiveWindowCommandListener } from './interactive-window/interacti
 import { InteractiveWindowProvider } from './interactive-window/interactiveWindowProvider';
 import { JupyterCommandFactory } from './jupyter/interpreter/jupyterCommand';
 import { JupyterCommandFinder } from './jupyter/interpreter/jupyterCommandFinder';
+import { JupyterCommandInterpreterDependencyService } from './jupyter/interpreter/jupyterCommandInterpreterDependencyService';
 import { JupyterCommandFinderInterpreterExecutionService } from './jupyter/interpreter/jupyterCommandInterpreterExecutionService';
-import { JupyterInterpreterConfigurationService } from './jupyter/interpreter/jupyterInterpreterConfiguration';
+import { JupyterInterpreterDependencyService } from './jupyter/interpreter/jupyterInterpreterDependencyService';
 import { JupyterInterpreterOldCacheStateStore } from './jupyter/interpreter/jupyterInterpreterOldCacheStateStore';
 import { JupyterInterpreterSelectionCommand } from './jupyter/interpreter/jupyterInterpreterSelectionCommand';
 import { JupyterInterpreterSelector } from './jupyter/interpreter/jupyterInterpreterSelector';
@@ -79,6 +80,7 @@ import {
     IJupyterCommandFactory,
     IJupyterDebugger,
     IJupyterExecution,
+    IJupyterInterpreterDependencyManager,
     IJupyterPasswordConnect,
     IJupyterSessionManagerFactory,
     IJupyterSubCommandExecutionService,
@@ -151,9 +153,10 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<JupyterInterpreterStateStore>(JupyterInterpreterStateStore, JupyterInterpreterStateStore);
     serviceManager.addSingleton<IExtensionSingleActivationService>(IExtensionSingleActivationService, JupyterInterpreterSelectionCommand);
     serviceManager.addSingleton<JupyterInterpreterSelector>(JupyterInterpreterSelector, JupyterInterpreterSelector);
-    serviceManager.addSingleton<JupyterInterpreterConfigurationService>(JupyterInterpreterConfigurationService, JupyterInterpreterConfigurationService);
+    serviceManager.addSingleton<JupyterInterpreterDependencyService>(JupyterInterpreterDependencyService, JupyterInterpreterDependencyService);
     serviceManager.addSingleton<JupyterInterpreterService>(JupyterInterpreterService, JupyterInterpreterService);
     serviceManager.addSingleton<JupyterInterpreterOldCacheStateStore>(JupyterInterpreterOldCacheStateStore, JupyterInterpreterOldCacheStateStore);
     serviceManager.addSingleton<ActiveEditorContextService>(ActiveEditorContextService, ActiveEditorContextService);
     serviceManager.addSingleton<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService, JupyterCommandFinderInterpreterExecutionService);
+    serviceManager.addSingleton<IJupyterInterpreterDependencyManager>(IJupyterInterpreterDependencyManager, JupyterCommandInterpreterDependencyService);
 }

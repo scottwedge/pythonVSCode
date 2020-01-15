@@ -53,6 +53,7 @@ import {
     ICell,
     IConnection,
     IJupyterKernelSpec,
+    IJupyterSubCommandExecutionService,
     INotebook,
     INotebookCompletion,
     INotebookExecutionLogger,
@@ -847,6 +848,7 @@ suite('Jupyter Execution', async () => {
             instance(fileSystem),
             instance(executionFactory)
         );
+        when(serviceContainer.get<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService)).thenReturn(jupyterCmdExecutionService);
         notebookStarter = new NotebookStarter(jupyterCmdExecutionService, instance(fileSystem), instance(serviceContainer), instance(jupyterOutputChannel));
         when(serviceContainer.get<KernelSelector>(KernelSelector)).thenReturn(instance(kernelSelector));
         when(serviceContainer.get<NotebookStarter>(NotebookStarter)).thenReturn(notebookStarter);

@@ -344,7 +344,7 @@ export class KernelService {
      * @memberof KernelService
      */
     public async getKernelSpecs(sessionManager?: IJupyterSessionManager, cancelToken?: CancellationToken): Promise<IJupyterKernelSpec[]> {
-        const enumerator = sessionManager ? sessionManager.getKernelSpecs() : this.enumerateSpecs(cancelToken);
+        const enumerator = sessionManager ? sessionManager.getKernelSpecs() : this.jupyterInterpreterExecService.getKernelSpecs(cancelToken);
         if (Cancellation.isCanceled(cancelToken)) {
             return [];
         }
@@ -402,9 +402,5 @@ export class KernelService {
         const kernelModel = JSON.parse(await this.fileSystem.readFile(specFile));
         kernelModel.name = groups.name;
         return new JupyterKernelSpec(kernelModel as Kernel.ISpecModel, specFile);
-    }
-
-    private async enumerateSpecs(cancelToken?: CancellationToken): Promise<JupyterKernelSpec[]> {
-        return this.jupyterInterpreterExecService.getKernelSpecs(cancelToken);
     }
 }

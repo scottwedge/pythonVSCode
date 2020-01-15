@@ -22,7 +22,7 @@ import { IEnvironmentActivationService } from '../../../interpreter/activation/t
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
 import { captureTelemetry, sendTelemetryEvent } from '../../../telemetry';
 import { Telemetry } from '../../constants';
-import { IJupyterKernelSpec, IJupyterSessionManager, JupyterSubCommandExecutionService } from '../../types';
+import { IJupyterKernelSpec, IJupyterSessionManager, IJupyterSubCommandExecutionService } from '../../types';
 import { JupyterKernelSpec } from './jupyterKernelSpec';
 import { LiveKernelModel } from './types';
 
@@ -51,7 +51,7 @@ function isInterpreter(item: nbformat.IKernelspecMetadata | PythonInterpreter): 
 @injectable()
 export class KernelService {
     constructor(
-        @inject(JupyterSubCommandExecutionService) private readonly jupyterInterpreterExecService: IJupyterSubCommandExecutionService,
+        @inject(IJupyterSubCommandExecutionService) private readonly jupyterInterpreterExecService: IJupyterSubCommandExecutionService,
         @inject(IPythonExecutionFactory) private readonly execFactory: IPythonExecutionFactory,
         @inject(IInterpreterService) private readonly interpreterService: IInterpreterService,
         @inject(IInstaller) private readonly installer: IInstaller,

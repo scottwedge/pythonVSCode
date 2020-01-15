@@ -604,7 +604,7 @@ export interface IDebugLocationTracker {
     getLocation(debugSession: DebugSession): IDebugLocation | undefined;
 }
 
-export const JupyterSubCommandExecutionService = Symbol('IJupyterSubCommandExecutionService');
+export const IJupyterSubCommandExecutionService = Symbol('IJupyterSubCommandExecutionService');
 /**
  * Responsible for execution of jupyter subcommands such as `notebook`, `nbconvert`, etc.
  * The executed code is as follows `python -m jupyter <subcommand>`.

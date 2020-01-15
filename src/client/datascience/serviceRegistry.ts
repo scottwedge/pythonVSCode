@@ -79,9 +79,9 @@ import {
     IJupyterCommandFactory,
     IJupyterDebugger,
     IJupyterExecution,
-    IJupyterInterpreterExecutionService,
     IJupyterPasswordConnect,
     IJupyterSessionManagerFactory,
+    IJupyterSubCommandExecutionService,
     IJupyterVariables,
     INotebookEditor,
     INotebookEditorProvider,
@@ -155,5 +155,5 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<JupyterInterpreterService>(JupyterInterpreterService, JupyterInterpreterService);
     serviceManager.addSingleton<JupyterInterpreterOldCacheStateStore>(JupyterInterpreterOldCacheStateStore, JupyterInterpreterOldCacheStateStore);
     serviceManager.addSingleton<ActiveEditorContextService>(ActiveEditorContextService, ActiveEditorContextService);
-    serviceManager.addSingleton<IJupyterInterpreterExecutionService>(IJupyterInterpreterExecutionService, JupyterCommandFinderInterpreterExecutionService);
+    serviceManager.addSingleton<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService, JupyterCommandFinderInterpreterExecutionService);
 }

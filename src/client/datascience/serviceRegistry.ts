@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 'use strict';
 import { IExtensionSingleActivationService } from '../activation/types';
+import { IWorkspaceService } from '../common/application/types';
 import { IServiceManager } from '../ioc/types';
 import { Activation } from './activation';
 import { CodeCssGenerator } from './codeCssGenerator';
@@ -42,6 +43,7 @@ import { JupyterInterpreterSelectionCommand } from './jupyter/interpreter/jupyte
 import { JupyterInterpreterSelector } from './jupyter/interpreter/jupyterInterpreterSelector';
 import { JupyterInterpreterService } from './jupyter/interpreter/jupyterInterpreterService';
 import { JupyterInterpreterStateStore } from './jupyter/interpreter/jupyterInterpreterStateStore';
+import { JupyterInterpreterSubCommandExecutionService } from './jupyter/interpreter/jupyterInterpreterSubCommandExecutionService';
 import { JupyterDebugger } from './jupyter/jupyterDebugger';
 import { JupyterExecutionFactory } from './jupyter/jupyterExecutionFactory';
 import { JupyterExporter } from './jupyter/jupyterExporter';
@@ -157,6 +159,15 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addSingleton<JupyterInterpreterService>(JupyterInterpreterService, JupyterInterpreterService);
     serviceManager.addSingleton<JupyterInterpreterOldCacheStateStore>(JupyterInterpreterOldCacheStateStore, JupyterInterpreterOldCacheStateStore);
     serviceManager.addSingleton<ActiveEditorContextService>(ActiveEditorContextService, ActiveEditorContextService);
-    serviceManager.addSingleton<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService, JupyterCommandFinderInterpreterExecutionService);
-    serviceManager.addSingleton<IJupyterInterpreterDependencyManager>(IJupyterInterpreterDependencyManager, JupyterCommandInterpreterDependencyService);
+
+    // Temporary code, to allow users to revert to the old behavior.
+    // Also temporarily set to `true` untill this is turned on.
+    const cfg = serviceManager.get<IWorkspaceService>(IWorkspaceService).getConfiguration('python.dataScience', undefined);
+    if (cfg.get<boolean>('useOldJupyterServer', true)) {
+        serviceManager.addSingleton<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService, JupyterCommandFinderInterpreterExecutionService);
+        serviceManager.addSingleton<IJupyterInterpreterDependencyManager>(IJupyterInterpreterDependencyManager, JupyterCommandInterpreterDependencyService);
+    } else {
+        serviceManager.addSingleton<IJupyterSubCommandExecutionService>(IJupyterSubCommandExecutionService, JupyterInterpreterSubCommandExecutionService);
+        serviceManager.addSingleton<IJupyterInterpreterDependencyManager>(IJupyterInterpreterDependencyManager, JupyterInterpreterSubCommandExecutionService);
+    }
 }

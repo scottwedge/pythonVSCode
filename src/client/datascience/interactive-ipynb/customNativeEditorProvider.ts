@@ -15,14 +15,10 @@ import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { Identifiers, Settings, Telemetry } from '../constants';
 import { IDataScienceErrorHandler, INotebookEditor, INotebookEditorProvider, INotebookServerOptions } from '../types';
 
-interface IEdit {
-    readonly value: string;
-}
-
-export class CustomNativeEditorProvider implements INotebookEditorProvider, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<IEdit> {
+export class CustomNativeEditorProvider implements INotebookEditorProvider, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<INotebookEdit> {
     public static readonly customEditorViewType = 'NativeEditorProvider.ipynb';
     private readonly _onDidChangeActiveNotebookEditor = new EventEmitter<INotebookEditor | undefined>();
-    private readonly _editEventEmitter = new EventEmitter<{ readonly resource: Uri; readonly edit: IEdit }>();
+    private readonly _editEventEmitter = new EventEmitter<{ readonly resource: Uri; readonly edit: INotebookEdit }>();
     private activeEditors: Map<string, Set<INotebookEditor>> = new Map<string, Set<INotebookEditor>>();
     private _onDidOpenNotebookEditor = new EventEmitter<INotebookEditor>();
     constructor(
@@ -49,13 +45,13 @@ export class CustomNativeEditorProvider implements INotebookEditorProvider, Webv
     public saveAs(resource: Uri, targetResource: Uri): Thenable<void> {
         throw new Error('Method not implemented.');
     }
-    public get onEdit(): Event<{ readonly resource: Uri; readonly edit: IEdit }> {
+    public get onEdit(): Event<{ readonly resource: Uri; readonly edit: INotebookEdit }> {
         return this._editEventEmitter.event;
     }
-    public applyEdits(resource: Uri, edits: readonly IEdit[]): Thenable<void> {
+    public applyEdits(resource: Uri, edits: readonly INotebookEdit[]): Thenable<void> {
         throw new Error('Method not implemented.');
     }
-    public undoEdits(resource: Uri, edits: readonly IEdit[]): Thenable<void> {
+    public undoEdits(resource: Uri, edits: readonly INotebookEdit[]): Thenable<void> {
         throw new Error('Method not implemented.');
     }
     public resolveWebviewEditor(resource: Uri, webview: WebviewPanel): Thenable<void> {

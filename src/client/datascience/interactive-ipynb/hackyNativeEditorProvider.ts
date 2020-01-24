@@ -11,7 +11,7 @@ import { IConfigurationService, IDisposableRegistry } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry } from '../../telemetry';
-import { Identifiers, Settings, Telemetry } from '../constants';
+import { Commands, Identifiers, Settings, Telemetry } from '../constants';
 import { IDataScienceErrorHandler, INotebookEditor, INotebookEditorProvider, INotebookServerOptions } from '../types';
 
 export class HackyNativeEditorProvider implements INotebookEditorProvider {
@@ -55,6 +55,9 @@ export class HackyNativeEditorProvider implements INotebookEditorProvider {
         //         this.fileSystem.readFile(u.fsPath).then(c => this.open(u, c).ignoreErrors()).ignoreErrors();
         //     });
         // }
+
+        // Signup for the notebook commands
+        this.cmdManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, this.;
     }
 
     public get activeEditor(): INotebookEditor | undefined {

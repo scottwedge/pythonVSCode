@@ -320,7 +320,6 @@ export interface INotebookEditor extends IInteractiveBase {
     readonly executed: Event<INotebookEditor>;
     readonly modified: Event<INotebookEditor>;
     readonly saved: Event<INotebookEditor>;
-    readonly metadataUpdated: Event<INotebookEditor>;
     /**
      * Is this notebook representing an untitled file which has never been saved yet.
      */
@@ -332,7 +331,7 @@ export interface INotebookEditor extends IInteractiveBase {
     readonly file: Uri;
     readonly visible: boolean;
     readonly active: boolean;
-    load(contents: string, file: Uri): Promise<void>;
+    load(storage: INotebookStorage): Promise<void>;
     runAllCells(): void;
     runSelectedCell(): void;
     addCellBelow(): void;
@@ -729,5 +728,12 @@ export interface IJupyterInterpreterDependencyManager {
 
 export interface INotebookStorage {
     readonly file: Uri;
-    save(): Promise<void>;
+    readonly isDirty: boolean;
+    readonly changed: Event<void>;
+    getCells(): Promise<ICell[]>;
+    getJson(): Promise<Partial<nbformat.INotebookContent>>;
+}
+
+export interface INotebookEdit {
+    readonly changedCells: ICell[];
 }

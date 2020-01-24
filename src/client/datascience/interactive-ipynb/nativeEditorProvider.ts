@@ -2,14 +2,11 @@
 // Licensed under the MIT License.
 'use strict';
 import { inject, injectable } from 'inversify';
-import * as path from 'path';
-import { Event, EventEmitter, TextDocument, TextEditor, Uri, WebviewCustomEditorProvider } from 'vscode';
+import { Event, Uri } from 'vscode';
 
 import { ICommandManager, ICustomEditorService, IDocumentManager, IWorkspaceService } from '../../common/application/types';
-import { JUPYTER_LANGUAGE } from '../../common/constants';
 import { IFileSystem } from '../../common/platform/types';
 import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
-import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { Identifiers, Settings, Telemetry } from '../constants';
@@ -47,7 +44,6 @@ export class NativeEditorProvider implements INotebookEditorProvider, IAsyncDisp
         if (customEditorService.supportsCustomEditors) {
             this.realProvider = new CustomNativeEditorProvider(
                 serviceContainer,
-                asyncRegistry,
                 disposables,
                 workspace,
                 configuration,

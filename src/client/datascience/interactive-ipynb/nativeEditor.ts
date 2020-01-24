@@ -111,7 +111,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         @inject(ICommandManager) commandManager: ICommandManager,
         @inject(INotebookExporter) jupyterExporter: INotebookExporter,
         @inject(IWorkspaceService) workspaceService: IWorkspaceService,
-        @inject(INotebookEditorProvider) editorProvider: INotebookEditorProvider,
+        @inject(INotebookEditorProvider) private editorProvider: INotebookEditorProvider,
         @inject(IDataViewerProvider) dataExplorerProvider: IDataViewerProvider,
         @inject(IJupyterVariables) jupyterVariables: IJupyterVariables,
         @inject(IJupyterDebugger) jupyterDebugger: IJupyterDebugger,
@@ -143,7 +143,6 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             dataExplorerProvider,
             jupyterVariables,
             jupyterDebugger,
-            editorProvider,
             errorHandler,
             commandManager,
             globalStorage,
@@ -183,7 +182,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return this.visibleCells;
     }
 
-    public async load(contents: string, file: Uri): Promise<void> {
+    public async load(storage: INativeEditorStorage): Promise<void> {
         // Save our uri
         this._file = file;
 
@@ -296,7 +295,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     public async getNotebookOptions(): Promise<INotebookServerOptions> {
-        const options = await this.ipynbProvider.getNotebookOptions();
+        const options = await this.editorProvider.getNotebookOptions();
         const metadata = this.notebookJson.metadata;
         return {
             ...options,
@@ -373,7 +372,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         if (info && info.code && info.id) {
             try {
                 // Activate the other side, and send as if came from a file
-                this.ipynbProvider
+                this.editorProvider
                     .show(this.file)
                     .then(_v => {
                         this.shareMessage(InteractiveWindowMessages.RemoteAddCode, {
@@ -407,7 +406,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
                 await this.submitCode(info.code, Identifiers.EmptyFileName, 0, info.id);
 
                 // Activate the other side, and send as if came from a file
-                await this.ipynbProvider.show(this.file);
+                await this.editorProvider.show(this.file);
                 this.shareMessage(InteractiveWindowMessages.RemoteReexecuteCode, {
                     code: info.code,
                     file: Identifiers.EmptyFileName,

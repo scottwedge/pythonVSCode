@@ -254,6 +254,7 @@ export interface INotebookImporter extends Disposable {
 export const INotebookExporter = Symbol('INotebookExporter');
 export interface INotebookExporter extends Disposable {
     translateToNotebook(cells: ICell[], directoryChange?: string): Promise<nbformat.INotebookContent | undefined>;
+    exportToFile(cells: ICell[], file: string): Promise<void>;
 }
 
 export const IInteractiveWindowProvider = Symbol('IInteractiveWindowProvider');
@@ -724,4 +725,9 @@ export interface IJupyterInterpreterDependencyManager {
      * @memberof IJupyterInterpreterDependencyManager
      */
     installMissingDependencies(err?: JupyterInstallError): Promise<void>;
+}
+
+export interface INotebookStorage {
+    readonly file: Uri;
+    save(): Promise<void>;
 }

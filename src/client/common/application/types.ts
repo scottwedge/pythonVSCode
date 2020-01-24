@@ -49,6 +49,8 @@ import {
     TreeViewOptions,
     Uri,
     ViewColumn,
+    WebviewCustomEditorProvider,
+    WebviewPanelOptions,
     WindowState,
     WorkspaceConfiguration,
     WorkspaceEdit,
@@ -1041,4 +1043,22 @@ export type Channel = 'stable' | 'insiders';
 export const IActiveResourceService = Symbol('IActiveResourceService');
 export interface IActiveResourceService {
     getActiveResource(): Resource;
+}
+
+export const ICustomEditorService = Symbol('ICustomEditorService');
+export interface ICustomEditorService {
+    /**
+     * Returns a boolean indicating if custom editors are supported or not.
+     */
+    readonly supportsCustomEditors: boolean;
+    /**
+     * Register a new provider for webview editors of a given type.
+     *
+     * @param viewType  Type of the webview editor provider.
+     * @param provider Resolves webview editors.
+     * @param options Content settings for a webview panels the provider is given.
+     *
+     * @return Disposable that unregisters the `WebviewCustomEditorProvider`.
+     */
+    registerWebviewCustomEditorProvider(viewType: string, provider: WebviewCustomEditorProvider, options?: WebviewPanelOptions): Disposable;
 }

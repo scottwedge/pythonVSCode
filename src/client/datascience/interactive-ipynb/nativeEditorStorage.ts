@@ -4,35 +4,31 @@ import * as uuid from 'uuid/v4';
 import { Event, EventEmitter, Memento, Uri } from 'vscode';
 import { concatMultilineStringInput, splitMultilineString } from '../../../datascience-ui/common';
 import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
-import { IApplicationShell, IWorkspaceService } from '../../common/application/types';
+import { ICommandManager, IWorkspaceService } from '../../common/application/types';
 import { traceError } from '../../common/logger';
 import { IFileSystem } from '../../common/platform/types';
-import { ICryptoUtils, IExtensionContext } from '../../common/types';
+import { GLOBAL_MEMENTO, ICryptoUtils, IExtensionContext, IMemento, WORKSPACE_MEMENTO } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
 import { PythonInterpreter } from '../../interpreter/contracts';
-import { captureTelemetry } from '../../telemetry';
-import { Identifiers, Telemetry } from '../constants';
-import { IEditCell, IInsertCell, IRemoveCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
+import { Commands, Identifiers } from '../constants';
+import { IEditCell, IInsertCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
 import { InvalidNotebookFileError } from '../jupyter/invalidNotebookFileError';
 import { LiveKernelModel } from '../jupyter/kernels/types';
-import { CellState, ICell, IJupyterExecution, IJupyterKernelSpec, INotebookEditorProvider, INotebookStorage } from '../types';
+import { CellState, ICell, IJupyterExecution, IJupyterKernelSpec, ILoadableNotebookStorage, INotebookStorage } from '../types';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 import detectIndent = require('detect-indent');
-
-enum AskForSaveResult {
-    Yes,
-    No,
-    Cancel
-}
+import { inject, injectable, named } from 'inversify';
 
 const KeyPrefix = 'notebook-storage-';
 const NotebookTransferKey = 'notebook-transfered';
-export class HackyNativeEditorStorage implements INotebookStorage {
+
+@injectable()
+export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookStorage {
     public get isDirty(): boolean {
         return this._isDirty;
     }
@@ -47,37 +43,202 @@ export class HackyNativeEditorStorage implements INotebookStorage {
         const baseName = path.basename(this.file.fsPath);
         return baseName.includes(localize.DataScience.untitledNotebookFileName());
     }
+    private static signedUpForCommands = false;
+
+    private static storageMap = new Map<string, NativeEditorStorage>();
     private _changedEmitter = new EventEmitter<void>();
     private _cells: ICell[] = [];
     private _loadPromise: Promise<ICell[]> | undefined;
     private _loaded = false;
-    private _file: Uri;
+    private _file: Uri = Uri.file('');
     private _isDirty: boolean = false;
     private indentAmount: string = ' ';
     private notebookJson: Partial<nbformat.INotebookContent> = {};
-    private isPromptingToSaveToDisc = false;
     private debouncedWriteToStorage = debounce(this.writeToStorage.bind(this), 250);
 
     constructor(
-        file: Uri,
-        private initialContents: string,
-        private workspaceService: IWorkspaceService,
-        private jupyterExecution: IJupyterExecution,
-        private fileSystem: IFileSystem,
-        private crypto: ICryptoUtils,
-        private context: IExtensionContext,
-        private applicationShell: IApplicationShell,
-        private provider: INotebookEditorProvider,
-        private globalStorage: Memento,
-        private localStorage: Memento
+        @inject(IWorkspaceService) private workspaceService: IWorkspaceService,
+        @inject(IJupyterExecution) private jupyterExecution: IJupyterExecution,
+        @inject(IFileSystem) private fileSystem: IFileSystem,
+        @inject(ICryptoUtils) private crypto: ICryptoUtils,
+        @inject(IExtensionContext) private context: IExtensionContext,
+        @inject(IMemento) @named(GLOBAL_MEMENTO) private globalStorage: Memento,
+        @inject(IMemento) @named(WORKSPACE_MEMENTO) private localStorage: Memento,
+        @inject(ICommandManager) cmdManager: ICommandManager
     ) {
-        this._file = file;
-    }
-    public getCells(): Promise<ICell[]> {
-        if (!this._loadPromise) {
-            this._loadPromise = this.load();
+        // Sign up for commands if this is the first storage created.
+        if (!NativeEditorStorage.signedUpForCommands) {
+            NativeEditorStorage.registerCommands(cmdManager);
         }
-        if (!this._loaded) {
+    }
+
+    private static registerCommands(commandManager: ICommandManager): void {
+        NativeEditorStorage.signedUpForCommands = true;
+        commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, NativeEditorStorage.handleClearAllOutputs);
+        commandManager.registerCommand(Commands.NotebookStorage_Close, NativeEditorStorage.handleClose);
+        commandManager.registerCommand(Commands.NotebookStorage_DeleteAllCells, NativeEditorStorage.handleDeleteAllCells);
+        commandManager.registerCommand(Commands.NotebookStorage_EditCell, NativeEditorStorage.handleEdit);
+        commandManager.registerCommand(Commands.NotebookStorage_InsertCell, NativeEditorStorage.handleInsert);
+        commandManager.registerCommand(Commands.NotebookStorage_ModifyCells, NativeEditorStorage.handleModifyCells);
+        commandManager.registerCommand(Commands.NotebookStorage_RemoveCell, NativeEditorStorage.handleRemoveCell);
+        commandManager.registerCommand(Commands.NotebookStorage_SwapCells, NativeEditorStorage.handleSwapCells);
+        commandManager.registerCommand(Commands.NotebookStorage_Save, NativeEditorStorage.handleSave);
+        commandManager.registerCommand(Commands.NotebookStorage_SaveAs, NativeEditorStorage.handleSaveAs);
+        commandManager.registerCommand(Commands.NotebookStorage_UpdateVersion, NativeEditorStorage.handleUpdateVersionInfo);
+    }
+
+    private static async getStorage(resource: Uri): Promise<NativeEditorStorage | undefined> {
+        const storage = NativeEditorStorage.storageMap.get(resource.fsPath);
+        if (storage && storage._loadPromise) {
+            await storage._loadPromise;
+            return storage;
+        }
+        return undefined;
+    }
+
+    private static handleCallback(resource: Uri, callback: (storage: NativeEditorStorage) => Promise<void>): Promise<void> {
+        return NativeEditorStorage.getStorage(resource).then(s => {
+            if (s) {
+                return callback(s);
+            }
+        });
+    }
+
+    private static async handleEdit(resource: Uri, request: IEditCell): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            // Apply the changes to the visible cell list. We won't get an update until
+            // submission otherwise
+            if (request.changes && request.changes.length) {
+                const change = request.changes[0];
+                const normalized = change.text.replace(/\r/g, '');
+
+                // Figure out which cell we're editing.
+                const cell = s._cells.find(c => c.id === request.id);
+                if (cell) {
+                    // This is an actual edit.
+                    const contents = concatMultilineStringInput(cell.data.source);
+                    const before = contents.substr(0, change.rangeOffset);
+                    const after = contents.substr(change.rangeOffset + change.rangeLength);
+                    const newContents = `${before}${normalized}${after}`;
+                    if (contents !== newContents) {
+                        cell.data.source = newContents;
+                        return s.setDirty();
+                    }
+                }
+            }
+        });
+    }
+
+    private static async handleInsert(resource: Uri, request: IInsertCell): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            // Insert a cell into our visible list based on the index. They should be in sync
+            s._cells.splice(request.index, 0, request.cell);
+            return s.setDirty();
+        });
+    }
+
+    private static async handleRemoveCell(resource: Uri, id: string): Promise<void> {
+        // Filter our list
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            s._cells = s._cells.filter(v => v.id !== id);
+            return s.setDirty();
+        });
+    }
+
+    private static async handleSwapCells(resource: Uri, request: ISwapCells): Promise<void> {
+        // Swap two cells in our list
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            const first = s._cells.findIndex(v => v.id === request.firstCellId);
+            const second = s._cells.findIndex(v => v.id === request.secondCellId);
+            if (first >= 0 && second >= 0) {
+                const temp = { ...s._cells[first] };
+                s._cells[first] = s._cells[second];
+                s._cells[second] = temp;
+                return s.setDirty();
+            }
+        });
+    }
+
+    private static handleDeleteAllCells(resource: Uri): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            s._cells = [];
+            return s.setDirty();
+        });
+    }
+
+    private static handleClearAllOutputs(resource: Uri): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            s._cells.forEach(cell => {
+                cell.data.execution_count = null;
+                cell.data.outputs = [];
+            });
+            return s.setDirty();
+        });
+    }
+
+    private static async handleModifyCells(resource: Uri, cells: ICell[]): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            // Update these cells in our list
+            cells.forEach(c => {
+                const index = s._cells.findIndex(v => v.id === c.id);
+                s._cells[index] = c;
+            });
+
+            // Indicate dirty
+            return s.setDirty();
+        });
+    }
+
+    private static async handleSave(resource: Uri, cells: ICell[] | undefined): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            return NativeEditorStorage.handleSaveAs(s._file, s._file, cells);
+        });
+    }
+
+    private static async handleSaveAs(resource: Uri, newFile: Uri, cells: ICell[] | undefined): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            const actualCells = cells ? cells : s._cells;
+            return s.fileSystem.writeFile(newFile.fsPath, await s.generateNotebookContent(actualCells), { encoding: 'utf-8' });
+        });
+    }
+
+    private static async handleClose(_resource: Uri): Promise<void> {
+        // Don't care about close (used to)
+    }
+
+    private static async handleUpdateVersionInfo(
+        resource: Uri,
+        interpreter: PythonInterpreter | undefined,
+        kernelSpec: IJupyterKernelSpec | LiveKernelModel | undefined
+    ): Promise<void> {
+        return NativeEditorStorage.handleCallback(resource, async s => {
+            // Get our kernel_info and language_info from the current notebook
+            if (interpreter && interpreter.version && s.notebookJson.metadata && s.notebookJson.metadata.language_info) {
+                s.notebookJson.metadata.language_info.version = interpreter.version.raw;
+            }
+
+            if (kernelSpec && s.notebookJson.metadata && !s.notebookJson.metadata.kernelspec) {
+                // Add a new spec in this case
+                s.notebookJson.metadata.kernelspec = {
+                    name: kernelSpec.name || kernelSpec.display_name || '',
+                    display_name: kernelSpec.display_name || kernelSpec.name || ''
+                };
+            } else if (kernelSpec && s.notebookJson.metadata && s.notebookJson.metadata.kernelspec) {
+                // Spec exists, just update name and display_name
+                s.notebookJson.metadata.kernelspec.name = kernelSpec.name || kernelSpec.display_name || '';
+                s.notebookJson.metadata.kernelspec.display_name = kernelSpec.display_name || kernelSpec.name || '';
+            }
+        });
+    }
+    public async load(file: Uri): Promise<void> {
+        // Reset the load promise and reload our cells
+        this._loaded = false;
+        this._loadPromise = this.loadFromFile(file);
+        await this._loadPromise;
+    }
+
+    public getCells(): Promise<ICell[]> {
+        if (!this._loaded && this._loadPromise) {
             return this._loadPromise;
         }
 
@@ -90,116 +251,13 @@ export class HackyNativeEditorStorage implements INotebookStorage {
         return this.notebookJson;
     }
 
-    public async handleEdit(request: IEditCell): Promise<void> {
-        // Apply the changes to the visible cell list. We won't get an update until
-        // submission otherwise
-        if (request.changes && request.changes.length) {
-            const change = request.changes[0];
-            const normalized = change.text.replace(/\r/g, '');
+    private async loadFromFile(file: Uri): Promise<ICell[]> {
+        // Save file
+        this._file = file;
 
-            // Figure out which cell we're editing.
-            const cell = this._cells.find(c => c.id === request.id);
-            if (cell) {
-                // This is an actual edit.
-                const contents = concatMultilineStringInput(cell.data.source);
-                const before = contents.substr(0, change.rangeOffset);
-                const after = contents.substr(change.rangeOffset + change.rangeLength);
-                const newContents = `${before}${normalized}${after}`;
-                if (contents !== newContents) {
-                    cell.data.source = newContents;
-                    return this.setDirty();
-                }
-            }
-        }
-    }
+        // Attempt to read the contents
+        const contents = await this.fileSystem.readFile(this._file.fsPath);
 
-    public async handleInsert(request: IInsertCell): Promise<void> {
-        // Insert a cell into our visible list based on the index. They should be in sync
-        this._cells.splice(request.index, 0, request.cell);
-        return this.setDirty();
-    }
-
-    public async handleRemoveCell(request: IRemoveCell): Promise<void> {
-        // Filter our list
-        this._cells = this._cells.filter(v => v.id !== request.id);
-        return this.setDirty();
-    }
-
-    public async handleSwapCells(request: ISwapCells): Promise<void> {
-        // Swap two cells in our list
-        const first = this._cells.findIndex(v => v.id === request.firstCellId);
-        const second = this._cells.findIndex(v => v.id === request.secondCellId);
-        if (first >= 0 && second >= 0) {
-            const temp = { ...this._cells[first] };
-            this._cells[first] = this._cells[second];
-            this._cells[second] = temp;
-            return this.setDirty();
-        }
-    }
-
-    public async handleDeleteAllCells(): Promise<void> {
-        this._cells = [];
-        return this.setDirty();
-    }
-
-    public async handleModifyCells(cells: ICell[]): Promise<void> {
-        // Update these cells in our list
-        cells.forEach(c => {
-            const index = this._cells.findIndex(v => v.id === c.id);
-            this._cells[index] = c;
-        });
-
-        // Indicate dirty
-        return this.setDirty();
-    }
-
-    public async handleSaveAs(newFile: Uri, cells: ICell[]): Promise<void> {
-        return this.fileSystem.writeFile(newFile.fsPath, await this.generateNotebookContent(cells), { encoding: 'utf-8' });
-    }
-
-    public async handleClose(): Promise<void> {
-        // Ask user if they want to save. It seems hotExit has no bearing on
-        // whether or not we should ask
-        if (this.isDirty) {
-            const askResult = await this.askForSave();
-            switch (askResult) {
-                case AskForSaveResult.Yes:
-                    // Save the file
-                    await this.saveToDisk();
-                    break;
-
-                case AskForSaveResult.No:
-                    // Mark as not dirty, so we update our storage
-                    await this.setClean();
-                    break;
-
-                default:
-                    // Reopen
-                    await this.provider.open(this.file, await this.generateNotebookContent(this._cells));
-                    break;
-            }
-        }
-    }
-
-    public async handleUpdateVersionInfo(interpreter: PythonInterpreter | undefined, kernelSpec: IJupyterKernelSpec | LiveKernelModel | undefined): Promise<void> {
-        // Get our kernel_info and language_info from the current notebook
-        if (interpreter && interpreter.version && this.notebookJson.metadata && this.notebookJson.metadata.language_info) {
-            this.notebookJson.metadata.language_info.version = interpreter.version.raw;
-        }
-
-        if (kernelSpec && this.notebookJson.metadata && !this.notebookJson.metadata.kernelspec) {
-            // Add a new spec in this case
-            this.notebookJson.metadata.kernelspec = {
-                name: kernelSpec.name || kernelSpec.display_name || '',
-                display_name: kernelSpec.display_name || kernelSpec.name || ''
-            };
-        } else if (kernelSpec && this.notebookJson.metadata && this.notebookJson.metadata.kernelspec) {
-            // Spec exists, just update name and display_name
-            this.notebookJson.metadata.kernelspec.name = kernelSpec.name || kernelSpec.display_name || '';
-            this.notebookJson.metadata.kernelspec.display_name = kernelSpec.display_name || kernelSpec.name || '';
-        }
-    }
-    private async load(): Promise<ICell[]> {
         // Clear out old global storage the first time somebody opens
         // a notebook
         if (!this.globalStorage.get(NotebookTransferKey)) {
@@ -213,7 +271,7 @@ export class HackyNativeEditorStorage implements INotebookStorage {
             return this.loadContents(dirtyContents, true);
         } else {
             // Load without setting dirty
-            return this.loadContents(this.initialContents, false);
+            return this.loadContents(contents, false);
         }
     }
 
@@ -528,74 +586,5 @@ export class HackyNativeEditorStorage implements INotebookStorage {
     private getHashedFileName(key: string): string {
         const file = `${this.crypto.createHash(key, 'string')}.ipynb`;
         return path.join(this.context.globalStoragePath, file);
-    }
-
-    private async setClean(): Promise<void> {
-        // Always update storage
-        this.storeContents(undefined).catch(ex => traceError('Failed to clear notebook store', ex));
-
-        if (this._isDirty) {
-            this._isDirty = false;
-            this._changedEmitter.fire();
-        }
-    }
-
-    private async askForSave(): Promise<AskForSaveResult> {
-        const message1 = localize.DataScience.dirtyNotebookMessage1().format(`${path.basename(this.file.fsPath)}`);
-        const message2 = localize.DataScience.dirtyNotebookMessage2();
-        const yes = localize.DataScience.dirtyNotebookYes();
-        const no = localize.DataScience.dirtyNotebookNo();
-        // tslint:disable-next-line: messages-must-be-localized
-        const result = await this.applicationShell.showInformationMessage(`${message1}\n${message2}`, { modal: true }, yes, no);
-        switch (result) {
-            case yes:
-                return AskForSaveResult.Yes;
-
-            case no:
-                return AskForSaveResult.No;
-
-            default:
-                return AskForSaveResult.Cancel;
-        }
-    }
-
-    @captureTelemetry(Telemetry.Save, undefined, true)
-    private async saveToDisk(): Promise<void> {
-        // If we're already in the middle of prompting the user to save, then get out of here.
-        // We could add a debounce decorator, unfortunately that slows saving (by waiting for no more save events to get sent).
-        if (this.isPromptingToSaveToDisc && this.isUntitled) {
-            return;
-        }
-        try {
-            let fileToSaveTo: Uri | undefined = this.file;
-            let isDirty = this._isDirty;
-
-            // Ask user for a save as dialog if no title
-            if (this.isUntitled) {
-                this.isPromptingToSaveToDisc = true;
-                const filtersKey = localize.DataScience.dirtyNotebookDialogFilter();
-                const filtersObject: { [name: string]: string[] } = {};
-                filtersObject[filtersKey] = ['ipynb'];
-                isDirty = true;
-
-                fileToSaveTo = await this.applicationShell.showSaveDialog({
-                    saveLabel: localize.DataScience.dirtyNotebookDialogTitle(),
-                    filters: filtersObject
-                });
-            }
-
-            if (fileToSaveTo && isDirty) {
-                // Write out our visible cells
-                await this.fileSystem.writeFile(fileToSaveTo.fsPath, await this.generateNotebookContent(this._cells));
-
-                // Update our file name and dirty state
-                this._file = fileToSaveTo;
-                await this.setClean();
-            }
-        } catch (e) {
-            traceError(e);
-        } finally {
-            this.isPromptingToSaveToDisc = false;
-        }
     }
 }

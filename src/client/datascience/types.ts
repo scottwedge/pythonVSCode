@@ -6,7 +6,7 @@ import { Session } from '@jupyterlab/services';
 import { Kernel, KernelMessage } from '@jupyterlab/services/lib/kernel';
 import { JSONObject } from '@phosphor/coreutils';
 import { Observable } from 'rxjs/Observable';
-import { CancellationToken, CodeLens, CodeLensProvider, DebugSession, Disposable, Event, Range, TextDocument, TextEditor, Uri } from 'vscode';
+import { CancellationToken, CodeLens, CodeLensProvider, DebugSession, Disposable, Event, Range, TextDocument, TextEditor, Uri, WebviewPanel } from 'vscode';
 import { ServerStatus } from '../../datascience-ui/interactive-common/mainState';
 import { ICommandManager } from '../common/application/types';
 import { ExecutionResult, ObservableExecutionResult, SpawnOptions } from '../common/process/types';
@@ -305,8 +305,7 @@ export interface INotebookEditorProvider {
     readonly activeEditor: INotebookEditor | undefined;
     readonly editors: INotebookEditor[];
     readonly onDidOpenNotebookEditor: Event<INotebookEditor>;
-    readonly onDidChangeActiveNotebookEditor: Event<INotebookEditor | undefined>;
-    open(file: Uri, contents: string): Promise<INotebookEditor>;
+    open(file: Uri): Promise<INotebookEditor>;
     show(file: Uri): Promise<INotebookEditor | undefined>;
     createNew(contents?: string): Promise<INotebookEditor>;
     getNotebookOptions(): Promise<INotebookServerOptions>;
@@ -331,7 +330,7 @@ export interface INotebookEditor extends IInteractiveBase {
     readonly file: Uri;
     readonly visible: boolean;
     readonly active: boolean;
-    load(storage: INotebookStorage): Promise<void>;
+    load(storage: INotebookStorage, webViewPanel: WebviewPanel): Promise<void>;
     runAllCells(): void;
     runSelectedCell(): void;
     addCellBelow(): void;
@@ -726,6 +725,10 @@ export interface IJupyterInterpreterDependencyManager {
     installMissingDependencies(err?: JupyterInstallError): Promise<void>;
 }
 
+export interface INotebookEdit {
+    readonly contents: ICell[];
+}
+
 export interface INotebookStorage {
     readonly file: Uri;
     readonly isDirty: boolean;
@@ -734,6 +737,8 @@ export interface INotebookStorage {
     getJson(): Promise<Partial<nbformat.INotebookContent>>;
 }
 
-export interface INotebookEdit {
-    readonly changedCells: ICell[];
+export const ILoadableNotebookStorage = Symbol('ILoadableNotebookStorage');
+
+export interface ILoadableNotebookStorage extends INotebookStorage {
+    load(file: Uri): Promise<void>;
 }

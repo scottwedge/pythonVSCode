@@ -4,7 +4,7 @@
 import '../common/extensions';
 
 import { injectable, unmanaged } from 'inversify';
-import { ConfigurationChangeEvent, ViewColumn, WorkspaceConfiguration } from 'vscode';
+import { ConfigurationChangeEvent, ViewColumn, WebviewPanel, WorkspaceConfiguration } from 'vscode';
 
 import { IWebPanel, IWebPanelMessageListener, IWebPanelProvider, IWorkspaceService } from '../common/application/types';
 import { traceInfo } from '../common/logger';
@@ -200,7 +200,7 @@ export class WebViewHost<IMapping> implements IDisposable {
         return this.themeIsDarkPromise ? this.themeIsDarkPromise.promise : Promise.resolve(false);
     }
 
-    protected async loadWebPanel(cwd: string) {
+    protected async loadWebPanel(cwd: string, webViewPanel?: WebviewPanel) {
         // Make not disposed anymore
         this.disposed = false;
 
@@ -238,7 +238,8 @@ export class WebViewHost<IMapping> implements IDisposable {
                 scripts: this.scripts,
                 settings,
                 startHttpServer,
-                cwd
+                cwd,
+                webViewPanel
             });
 
             traceInfo('Web view created.');

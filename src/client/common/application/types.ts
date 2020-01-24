@@ -50,6 +50,7 @@ import {
     Uri,
     ViewColumn,
     WebviewCustomEditorProvider,
+    WebviewPanel,
     WebviewPanelOptions,
     WindowState,
     WorkspaceConfiguration,
@@ -985,6 +986,8 @@ export interface IWebPanelOptions {
     cwd: string;
     // tslint:disable-next-line: no-any
     settings?: any;
+    // Web panel to use if supplied by VS code instead
+    webViewPanel?: WebviewPanel;
 }
 
 // Wraps the VS Code api for creating a web panel

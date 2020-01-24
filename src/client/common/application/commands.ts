@@ -6,10 +6,10 @@
 import { CancellationToken, Position, TextDocument, Uri } from 'vscode';
 import { Commands as LSCommands } from '../../activation/languageServer/constants';
 import { Commands as DSCommands } from '../../datascience/constants';
-import type { IEditCell, IInsertCell, ISaveAll, ISwapCells } from '../../datascience/interactive-common/interactiveWindowTypes';
-import type { LiveKernelModel } from '../../datascience/jupyter/kernels/types';
+import { IEditCell, IInsertCell, ISwapCells } from '../../datascience/interactive-common/interactiveWindowTypes';
+import { LiveKernelModel } from '../../datascience/jupyter/kernels/types';
 import { ICell, IJupyterKernelSpec, INotebook } from '../../datascience/types';
-import type { PythonInterpreter } from '../../interpreter/contracts';
+import { PythonInterpreter } from '../../interpreter/contracts';
 import { CommandSource } from '../../testing/common/constants';
 import { TestFunction, TestsToRun } from '../../testing/common/types';
 import { TestDataItem, TestWorkspaceFolder } from '../../testing/types';
@@ -90,6 +90,7 @@ export interface ICommandNameArgumentTypeMapping extends ICommandNameWithoutArgu
     ['python._loadLanguageServerExtension']: {}[];
     ['python.SelectAndInsertDebugConfiguration']: [TextDocument, Position, CancellationToken];
     ['python.viewLanguageServerOutput']: [];
+    ['vscode.open']: [Uri];
     [Commands.Build_Workspace_Symbols]: [boolean, CancellationToken];
     [Commands.Sort_Imports]: [undefined, Uri];
     [Commands.Exec_In_Terminal]: [undefined, Uri];
@@ -152,8 +153,8 @@ export interface ICommandNameArgumentTypeMapping extends ICommandNameWithoutArgu
     [DSCommands.NotebookStorage_InsertCell]: [Uri, IInsertCell];
     [DSCommands.NotebookStorage_RemoveCell]: [Uri, string];
     [DSCommands.NotebookStorage_SwapCells]: [Uri, ISwapCells];
-    [DSCommands.NotebookStorage_Save]: [Uri, ISaveAll];
+    [DSCommands.NotebookStorage_Save]: [Uri, ICell[] | undefined];
     [DSCommands.NotebookStorage_ClearCellOutputs]: [Uri];
-    [DSCommands.NotebookStorage_SaveAs]: [Uri, Uri, ICell[]];
+    [DSCommands.NotebookStorage_SaveAs]: [Uri, Uri, ICell[] | undefined];
     [DSCommands.NotebookStorage_UpdateVersion]: [Uri, PythonInterpreter | undefined, IJupyterKernelSpec | LiveKernelModel | undefined];
 }

@@ -62,7 +62,6 @@ import {
     IJupyterVariablesResponse,
     IMessageCell,
     INotebook,
-    INotebookEditorProvider,
     INotebookExporter,
     INotebookServer,
     INotebookServerOptions,

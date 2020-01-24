@@ -31,18 +31,20 @@ export class WebPanel implements IWebPanel {
         private token: string | undefined,
         private options: IWebPanelOptions
     ) {
-        this.panel = window.createWebviewPanel(
-            options.title.toLowerCase().replace(' ', ''),
-            options.title,
-            { viewColumn: options.viewColumn, preserveFocus: true },
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: [Uri.file(this.options.rootPath), Uri.file(this.options.cwd)],
-                enableFindWidget: true,
-                portMapping: port ? [{ webviewPort: RemappedPort, extensionHostPort: port }] : undefined
-            }
-        );
+        this.panel = options.webViewPanel
+            ? options.webViewPanel
+            : window.createWebviewPanel(
+                  options.title.toLowerCase().replace(' ', ''),
+                  options.title,
+                  { viewColumn: options.viewColumn, preserveFocus: true },
+                  {
+                      enableScripts: true,
+                      retainContextWhenHidden: true,
+                      localResourceRoots: [Uri.file(this.options.rootPath), Uri.file(this.options.cwd)],
+                      enableFindWidget: true,
+                      portMapping: port ? [{ webviewPort: RemappedPort, extensionHostPort: port }] : undefined
+                  }
+              );
         this.loadPromise = this.load();
     }
 

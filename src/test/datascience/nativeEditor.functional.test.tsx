@@ -1637,9 +1637,7 @@ for _ in range(50):
                 const editor = notebookProvider.editors[0];
                 assert.ok(editor, 'No editor when saving');
                 const savedPromise = createDeferred();
-                const metadataUpdatedPromise = createDeferred();
                 const disposeSaved = editor.saved(() => savedPromise.resolve());
-                const disposeMetadataUpdated = editor.metadataUpdated(() => metadataUpdatedPromise.resolve());
 
                 // add cells, run them and save
                 await addCell(wrapper, ioc, 'a=1\na');
@@ -1647,10 +1645,6 @@ for _ in range(50):
                 const threeCellsUpdated = waitForMessage(ioc, InteractiveWindowMessages.ExecutionRendered, { numberOfTimes: 3 });
                 await waitForMessageResponse(ioc, () => runAllButton!.simulate('click'));
                 await threeCellsUpdated;
-
-                // Make sure metadata has updated before we save
-                await metadataUpdatedPromise.promise;
-                disposeMetadataUpdated.dispose();
 
                 simulateKeyPressOnCell(1, { code: 's', ctrlKey: true });
 

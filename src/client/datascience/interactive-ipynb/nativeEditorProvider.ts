@@ -6,7 +6,7 @@ import { Disposable, Event, EventEmitter, Uri, WebviewCustomEditorEditingDelegat
 
 import { ICommandManager, ICustomEditorService, IWorkspaceService } from '../../common/application/types';
 import { IFileSystem } from '../../common/platform/types';
-import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService } from '../../common/types';
+import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
 import { createDeferred } from '../../common/utils/async';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
@@ -16,6 +16,10 @@ import { ILoadableNotebookStorage, INotebookEdit, INotebookEditor, INotebookEdit
 @injectable()
 export class NativeEditorProvider implements INotebookEditorProvider, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<INotebookEdit>, IAsyncDisposable {
     public static readonly customEditorViewType = 'NativeEditorProvider.ipynb';
+    public get onDidChangeActiveNotebookEditor(): Event<INotebookEditor | undefined> {
+        return this._onDidChangeActiveNotebookEditor.event;
+    }
+    private readonly _onDidChangeActiveNotebookEditor = new EventEmitter<INotebookEditor | undefined>();
     private readonly _editEventEmitter = new EventEmitter<{ readonly resource: Uri; readonly edit: INotebookEdit }>();
     private openedEditors: Set<INotebookEditor> = new Set<INotebookEditor>();
     private storage: Map<string, Promise<ILoadableNotebookStorage>> = new Map<string, Promise<ILoadableNotebookStorage>>();
@@ -27,11 +31,12 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     constructor(
         @inject(IServiceContainer) private serviceContainer: IServiceContainer,
         @inject(IAsyncDisposableRegistry) asyncRegistry: IAsyncDisposableRegistry,
+        @inject(IDisposableRegistry) private disposables: IDisposableRegistry,
         @inject(IWorkspaceService) workspace: IWorkspaceService,
         @inject(IConfigurationService) private configuration: IConfigurationService,
         @inject(IFileSystem) private fileSystem: IFileSystem,
         @inject(ICommandManager) private cmdManager: ICommandManager,
-        @inject(ICustomEditorService) customEditorService: ICustomEditorService
+        @inject(ICustomEditorService) private customEditorService: ICustomEditorService
     ) {
         asyncRegistry.push(this);
 
@@ -120,7 +125,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         disposable = this.onDidOpenNotebookEditor(handler);
 
         // Send an open command.
-        this.cmdManager.executeCommand('vscode.open', file);
+        this.customEditorService.openEditor(file);
 
         // Promise should resolve when the file opens.
         return deferred.promise;
@@ -169,9 +174,14 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         if (!this.executedEditors.has(editor.file.fsPath)) {
             editor.executed(this.onExecuted.bind(this));
         }
+        this.disposables.push(editor.onDidChangeViewState(this.onChangedViewState, this));
         this.openedEditors.add(editor);
         editor.closed.bind(this.closedEditor.bind(this));
         this._onDidOpenNotebookEditor.fire(editor);
+    }
+
+    private onChangedViewState(): void {
+        this._onDidChangeActiveNotebookEditor.fire(this.activeEditor);
     }
 
     private onExecuted(editor: INotebookEditor): void {

@@ -58,7 +58,7 @@ export class JupyterExporter implements INotebookExporter {
                         // If the user wants to, open the notebook they just generated.
                         await this.jupyterExecution.spawnNotebook(file);
                     } else if (str === openQuestion1) {
-                        await this.ipynbProvider.open(Uri.file(file), contents);
+                        await this.ipynbProvider.open(Uri.file(file));
                     }
                 } catch (e) {
                     await this.errorHandler.handleError(e);

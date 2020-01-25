@@ -1064,4 +1064,8 @@ export interface ICustomEditorService {
      * @return Disposable that unregisters the `WebviewCustomEditorProvider`.
      */
     registerWebviewCustomEditorProvider(viewType: string, provider: WebviewCustomEditorProvider, options?: WebviewPanelOptions): Disposable;
+    /**
+     * Opens a file with a custom editor
+     */
+    openEditor(file: Uri): Thenable<void | undefined>;
 }

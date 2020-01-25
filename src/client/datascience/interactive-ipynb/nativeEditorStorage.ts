@@ -1,10 +1,11 @@
 import { nbformat } from '@jupyterlab/coreutils';
+import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as uuid from 'uuid/v4';
 import { Event, EventEmitter, Memento, Uri } from 'vscode';
 import { concatMultilineStringInput, splitMultilineString } from '../../../datascience-ui/common';
 import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
-import { ICommandManager, IWorkspaceService } from '../../common/application/types';
+import { ICommandManager } from '../../common/application/types';
 import { traceError } from '../../common/logger';
 import { IFileSystem } from '../../common/platform/types';
 import { GLOBAL_MEMENTO, ICryptoUtils, IExtensionContext, IMemento, WORKSPACE_MEMENTO } from '../../common/types';
@@ -18,11 +19,7 @@ import { LiveKernelModel } from '../jupyter/kernels/types';
 import { CellState, ICell, IJupyterExecution, IJupyterKernelSpec, ILoadableNotebookStorage, INotebookStorage } from '../types';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
-const debounce = require('lodash/debounce') as typeof import('lodash/debounce');
-
-// tslint:disable-next-line:no-require-imports no-var-requires
 import detectIndent = require('detect-indent');
-import { inject, injectable, named } from 'inversify';
 
 const KeyPrefix = 'notebook-storage-';
 const NotebookTransferKey = 'notebook-transfered';
@@ -54,10 +51,8 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     private _isDirty: boolean = false;
     private indentAmount: string = ' ';
     private notebookJson: Partial<nbformat.INotebookContent> = {};
-    private debouncedWriteToStorage = debounce(this.writeToStorage.bind(this), 250);
 
     constructor(
-        @inject(IWorkspaceService) private workspaceService: IWorkspaceService,
         @inject(IJupyterExecution) private jupyterExecution: IJupyterExecution,
         @inject(IFileSystem) private fileSystem: IFileSystem,
         @inject(ICryptoUtils) private crypto: ICryptoUtils,
@@ -406,14 +401,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     }
 
     private async setDirty(): Promise<void> {
-        // Update storage if not untitled. Don't wait for results.
-        if (!this.isUntitled) {
-            this.generateNotebookContent(this._cells)
-                .then(c => this.storeContents(c).catch(ex => traceError('Failed to generate notebook content to store in state', ex)))
-                .ignoreErrors();
-        }
-
-        // Then update dirty flag.
+        // Update dirty flag.
         if (!this._isDirty) {
             this._isDirty = true;
 
@@ -421,12 +409,13 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
             this._changedEmitter.fire();
         }
     }
+
     private getStorageKey(): string {
         return `${KeyPrefix}${this._file.toString()}`;
     }
 
     /**
-     * Gets any unsaved changes to the notebook file.
+     * Gets any unsaved changes to the notebook file from the old locations.
      * If the file has been modified since the uncommitted changes were stored, then ignore the uncommitted changes.
      *
      * @private
@@ -499,10 +488,6 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
             // Make sure to clear so we don't use this again.
             this.localStorage.update(key, undefined);
 
-            // Transfer this to a file so we use that next time instead.
-            const filePath = this.getHashedFileName(key);
-            await this.writeToStorage(filePath, workspaceData);
-
             return workspaceData;
         }
     }
@@ -522,14 +507,6 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
                 const keys = Object.keys((this.globalStorage as any)._value);
                 [...keys].forEach((k: string) => {
                     if (k.startsWith(KeyPrefix)) {
-                        // Write each pair to our alternate storage, but don't bother waiting for each
-                        // to finish.
-                        const filePath = this.getHashedFileName(k);
-                        const contents = this.globalStorage.get(k);
-                        if (contents) {
-                            this.writeToStorage(filePath, JSON.stringify(contents)).ignoreErrors();
-                        }
-
                         // Remove from the map so that global storage does not have this anymore.
                         // Use the real API here as we don't know how the map really gets updated.
                         promises.push(this.globalStorage.update(k, undefined));
@@ -541,46 +518,6 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         }
 
         return Promise.all(promises);
-    }
-
-    /**
-     * Stores the uncommitted notebook changes into a temporary location.
-     * Also keep track of the current time. This way we can check whether changes were
-     * made to the file since the last time uncommitted changes were stored.
-     *
-     * @private
-     * @param {string} [contents]
-     * @returns {Promise<void>}
-     * @memberof NativeEditor
-     */
-    private async storeContents(contents?: string): Promise<void> {
-        // Skip doing this if auto save is enabled.
-        const filesConfig = this.workspaceService.getConfiguration('files', this.file);
-        const autoSave = filesConfig.get('autoSave', 'off');
-        if (autoSave === 'off') {
-            const key = this.getStorageKey();
-            const filePath = this.getHashedFileName(key);
-
-            // Keep track of the time when this data was saved.
-            // This way when we retrieve the data we can compare it against last modified date of the file.
-            const specialContents = contents ? JSON.stringify({ contents, lastModifiedTimeMs: Date.now() }) : undefined;
-
-            // Write but debounced (wait at least 250 ms)
-            return this.debouncedWriteToStorage(filePath, specialContents);
-        }
-    }
-
-    private async writeToStorage(filePath: string, contents?: string): Promise<void> {
-        try {
-            if (contents) {
-                await this.fileSystem.createDirectory(path.dirname(filePath));
-                return this.fileSystem.writeFile(filePath, contents);
-            } else {
-                return this.fileSystem.deleteFile(filePath);
-            }
-        } catch (exc) {
-            traceError(`Error writing storage for ${filePath}: `, exc);
-        }
     }
 
     private getHashedFileName(key: string): string {

@@ -288,6 +288,8 @@ export class WebViewHost<IMapping> implements IDisposable {
 
             // Resolve our started promise. This means the webpanel is ready to go.
             this.webPanelInit.resolve();
+
+            traceInfo('Web view react rendered');
         }
     }
 

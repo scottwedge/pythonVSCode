@@ -10,6 +10,7 @@ import { Event, EventEmitter, Memento, Uri, ViewColumn, WebviewPanel } from 'vsc
 import { createCodeCell, createErrorOutput } from '../../../datascience-ui/common/cellFactory';
 import { IApplicationShell, ICommandManager, IDocumentManager, ILiveShareApi, IWebPanelProvider, IWorkspaceService } from '../../common/application/types';
 import { ContextKey } from '../../common/contextKey';
+import { traceError } from '../../common/logger';
 import { IFileSystem, TemporaryFile } from '../../common/platform/types';
 import { GLOBAL_MEMENTO, IConfigurationService, IDisposableRegistry, IMemento } from '../../common/types';
 import { createDeferred, Deferred } from '../../common/utils/async';
@@ -160,17 +161,11 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // relative files next to the notebook.
         await super.loadWebPanel(path.dirname(this.file.fsPath), webViewPanel);
 
-        // Update our title to match
-        this.setTitle(path.basename(this.file.fsPath));
-
-        // Show ourselves
-        await this.show();
-
         // Sign up for dirty events
         storage.changed(this.contentsChanged.bind(this));
 
-        // Load our cells
-        await this.loadCells(await storage.getCells());
+        // Load our cells, but don't wait for this to finish, otherwise the window won't load.
+        this.loadCells(await storage.getCells()).catch(exc => traceError('Error loading cells: ', exc));
     }
 
     public get closed(): Event<INotebookEditor> {

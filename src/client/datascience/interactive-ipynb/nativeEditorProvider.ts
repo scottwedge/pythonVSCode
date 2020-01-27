@@ -66,18 +66,20 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     public undoEdits(_resource: Uri, _edits: readonly INotebookEdit[]): Thenable<void> {
         throw new Error('Method not implemented.');
     }
-    public resolveWebviewEditor(resource: Uri, webview: WebviewPanel): Thenable<void> {
+    public async resolveWebviewEditor(resource: Uri, panel: WebviewPanel) {
         // Get the storage
-        return this.getStorage(resource).then(s => {
-            // Create a new editor
-            const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+        const storage = await this.getStorage(resource);
 
-            // Indicate opened
-            this.openedEditor(editor);
+        panel.webview.html = '<head>Test</head><body><span>Here is some text</span></body>';
 
-            // Load it (should already be visible)
-            return editor.load(s, webview);
-        });
+        // Create a new editor
+        const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+
+        // // Indicate opened
+        this.openedEditor(editor);
+
+        // // Load it (should already be visible)
+        return editor.load(storage, panel);
     }
     public get editingDelegate(): WebviewCustomEditorEditingDelegate<unknown> | undefined {
         return this;

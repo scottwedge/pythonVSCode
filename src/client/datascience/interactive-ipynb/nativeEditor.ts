@@ -50,6 +50,7 @@ import {
     INotebookImporter,
     INotebookServerOptions,
     INotebookStorage,
+    INotebookStorageChange,
     IStatusProvider,
     IThemeFinder
 } from '../types';
@@ -142,8 +143,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     public get isUntitled(): boolean {
-        const baseName = path.basename(this.file.fsPath);
-        return baseName.includes(localize.DataScience.untitledNotebookFileName());
+        return this._storage ? this._storage.isUntitled : false;
     }
     public dispose(): Promise<void> {
         super.dispose();
@@ -165,7 +165,14 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         storage.changed(this.contentsChanged.bind(this));
 
         // Load our cells, but don't wait for this to finish, otherwise the window won't load.
-        this.loadCells(await storage.getCells()).catch(exc => traceError('Error loading cells: ', exc));
+        this.loadCells(await storage.getCells())
+            .then(() => {
+                // May alread be dirty, if so send a message
+                if (storage.isDirty) {
+                    this.postMessage(InteractiveWindowMessages.NotebookDirty).ignoreErrors();
+                }
+            })
+            .catch(exc => traceError('Error loading cells: ', exc));
     }
 
     public get closed(): Event<INotebookEditor> {
@@ -419,13 +426,15 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // Actually don't close, just let the error bubble out
     }
 
-    private contentsChanged(): Promise<void> {
-        this.modifiedEvent.fire();
-        const dirty = !this._storage || this._storage.isDirty;
-        if (dirty) {
-            return this.postMessage(InteractiveWindowMessages.NotebookDirty);
-        } else {
-            return this.postMessage(InteractiveWindowMessages.NotebookClean);
+    private contentsChanged(change: INotebookStorageChange) {
+        if (change.isDirty !== undefined) {
+            this.modifiedEvent.fire();
+            const dirty = !this._storage || this._storage.isDirty;
+            if (dirty) {
+                return this.postMessage(InteractiveWindowMessages.NotebookDirty);
+            } else {
+                return this.postMessage(InteractiveWindowMessages.NotebookClean);
+            }
         }
     }
 
@@ -480,7 +489,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             tempFile = await this.fileSystem.createTemporaryFile('.ipynb');
 
             // Translate the cells into a notebook
-            await this.commandManager.executeCommand(Commands.NotebookStorage_SaveAs, this.file, Uri.file(tempFile.filePath), cells);
+            const content = this._storage ? await this._storage.getContent(cells) : '';
+            await this.fileSystem.writeFile(tempFile.filePath, content, 'utf-8');
 
             // Import this file and show it
             const contents = await this.importer.importFromFile(tempFile.filePath, this.file.fsPath);
@@ -502,8 +512,13 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         await this.documentManager.showTextDocument(doc, ViewColumn.One);
     }
 
-    private saveAll(args: ISaveAll) {
-        this.commandManager.executeCommand(Commands.NotebookStorage_Save, this.file, args.cells);
+    private async saveAll(_args: ISaveAll) {
+        // Ask user for a save as dialog if no title
+        if (this.isUntitled) {
+            this.commandManager.executeCommand('workbench.action.files.saveAs', this.file);
+        } else {
+            this.commandManager.executeCommand('workbench.action.files.save', this.file);
+        }
     }
 
     private logNativeCommand(args: INativeCommand) {

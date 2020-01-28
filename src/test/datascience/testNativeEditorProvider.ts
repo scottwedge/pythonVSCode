@@ -4,8 +4,7 @@
 import { inject, injectable } from 'inversify';
 import { Event, Uri } from 'vscode';
 
-import { ICommandManager, ICustomEditorService, IWorkspaceService } from '../../client/common/application/types';
-import { IFileSystem } from '../../client/common/platform/types';
+import { ICustomEditorService, IWorkspaceService } from '../../client/common/application/types';
 import { IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../client/common/types';
 import { InteractiveWindowMessageListener } from '../../client/datascience/interactive-common/interactiveWindowMessageListener';
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
@@ -30,11 +29,9 @@ export class TestNativeEditorProvider implements INotebookEditorProvider {
         @inject(IDisposableRegistry) disposables: IDisposableRegistry,
         @inject(IWorkspaceService) workspace: IWorkspaceService,
         @inject(IConfigurationService) configuration: IConfigurationService,
-        @inject(IFileSystem) fileSystem: IFileSystem,
-        @inject(ICommandManager) cmdManager: ICommandManager,
         @inject(ICustomEditorService) customEditorService: ICustomEditorService
     ) {
-        this.realProvider = new NativeEditorProvider(serviceContainer, asyncRegistry, disposables, workspace, configuration, fileSystem, cmdManager, customEditorService);
+        this.realProvider = new NativeEditorProvider(serviceContainer, asyncRegistry, disposables, workspace, configuration, customEditorService);
     }
 
     public get activeEditor(): INotebookEditor | undefined {

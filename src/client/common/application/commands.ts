@@ -91,6 +91,8 @@ export interface ICommandNameArgumentTypeMapping extends ICommandNameWithoutArgu
     ['python.SelectAndInsertDebugConfiguration']: [TextDocument, Position, CancellationToken];
     ['python.viewLanguageServerOutput']: [];
     ['vscode.open']: [Uri];
+    ['workbench.action.files.saveAs']: [Uri];
+    ['workbench.action.files.save']: [Uri];
     [Commands.Build_Workspace_Symbols]: [boolean, CancellationToken];
     [Commands.Sort_Imports]: [undefined, Uri];
     [Commands.Exec_In_Terminal]: [undefined, Uri];
@@ -153,8 +155,6 @@ export interface ICommandNameArgumentTypeMapping extends ICommandNameWithoutArgu
     [DSCommands.NotebookStorage_InsertCell]: [Uri, IInsertCell];
     [DSCommands.NotebookStorage_RemoveCell]: [Uri, string];
     [DSCommands.NotebookStorage_SwapCells]: [Uri, ISwapCells];
-    [DSCommands.NotebookStorage_Save]: [Uri, ICell[] | undefined];
     [DSCommands.NotebookStorage_ClearCellOutputs]: [Uri];
-    [DSCommands.NotebookStorage_SaveAs]: [Uri, Uri, ICell[] | undefined];
     [DSCommands.NotebookStorage_UpdateVersion]: [Uri, PythonInterpreter | undefined, IJupyterKernelSpec | LiveKernelModel | undefined];
 }

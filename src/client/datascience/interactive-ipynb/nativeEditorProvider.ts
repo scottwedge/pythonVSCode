@@ -4,14 +4,14 @@
 import { inject, injectable } from 'inversify';
 import { Disposable, Event, EventEmitter, Uri, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider, WebviewPanel } from 'vscode';
 
-import { ICommandManager, ICustomEditorService, IWorkspaceService } from '../../common/application/types';
-import { IFileSystem } from '../../common/platform/types';
+import { ICustomEditorService, IWorkspaceService } from '../../common/application/types';
 import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
 import { createDeferred } from '../../common/utils/async';
+import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
-import { Commands, Identifiers, Settings, Telemetry } from '../constants';
-import { ILoadableNotebookStorage, INotebookEdit, INotebookEditor, INotebookEditorProvider, INotebookServerOptions } from '../types';
+import { Identifiers, Settings, Telemetry } from '../constants';
+import { ILoadableNotebookStorage, INotebookEdit, INotebookEditor, INotebookEditorProvider, INotebookServerOptions, INotebookStorageChange } from '../types';
 
 @injectable()
 export class NativeEditorProvider implements INotebookEditorProvider, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<INotebookEdit>, IAsyncDisposable {
@@ -34,8 +34,6 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         @inject(IDisposableRegistry) private disposables: IDisposableRegistry,
         @inject(IWorkspaceService) workspace: IWorkspaceService,
         @inject(IConfigurationService) private configuration: IConfigurationService,
-        @inject(IFileSystem) private fileSystem: IFileSystem,
-        @inject(ICommandManager) private cmdManager: ICommandManager,
         @inject(ICustomEditorService) private customEditorService: ICustomEditorService
     ) {
         asyncRegistry.push(this);
@@ -52,33 +50,39 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     }
 
     public save(resource: Uri): Thenable<void> {
-        return this.cmdManager.executeCommand(Commands.NotebookStorage_Save, resource, undefined);
+        return this.getStorage(resource).then(async s => {
+            if (s) {
+                await s.save();
+            }
+        });
     }
     public saveAs(resource: Uri, targetResource: Uri): Thenable<void> {
-        return this.cmdManager.executeCommand(Commands.NotebookStorage_SaveAs, resource, targetResource, undefined);
+        return this.getStorage(resource).then(async s => {
+            if (s) {
+                await s.saveAs(targetResource);
+            }
+        });
     }
     public get onEdit(): Event<{ readonly resource: Uri; readonly edit: INotebookEdit }> {
         return this._editEventEmitter.event;
     }
     public applyEdits(_resource: Uri, _edits: readonly INotebookEdit[]): Thenable<void> {
-        throw new Error('Method not implemented.');
+        return Promise.resolve();
     }
     public undoEdits(_resource: Uri, _edits: readonly INotebookEdit[]): Thenable<void> {
-        throw new Error('Method not implemented.');
+        return Promise.resolve();
     }
     public async resolveWebviewEditor(resource: Uri, panel: WebviewPanel) {
         // Get the storage
         const storage = await this.getStorage(resource);
 
-        panel.webview.html = '<head>Test</head><body><span>Here is some text</span></body>';
-
         // Create a new editor
         const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
 
-        // // Indicate opened
+        // Indicate opened
         this.openedEditor(editor);
 
-        // // Load it (should already be visible)
+        // Load it (should already be visible)
         return editor.load(storage, panel);
     }
     public get editingDelegate(): WebviewCustomEditorEditingDelegate<unknown> | undefined {
@@ -139,14 +143,16 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
 
     @captureTelemetry(Telemetry.CreateNewNotebook, undefined, false)
     public async createNew(contents?: string): Promise<INotebookEditor> {
-        // Create a temporary file on disk to hold the contents
-        const tempFile = await this.fileSystem.createTemporaryFile('ipynb');
-        if (contents) {
-            await this.fileSystem.writeFile(tempFile.filePath, contents, 'utf-8');
-        }
+        // Create a new URI for the dummy file using our root workspace path
+        const uri = await this.getNextNewNotebookUri();
 
-        // Use an 'untitled' URI
-        return this.open(Uri.parse(`untitled://${tempFile.filePath}`));
+        // Update number of notebooks in the workspace
+        this.notebookCount += 1;
+
+        // Set these contents into the storage before the file opens
+        await this.getStorage(uri, contents);
+
+        return this.open(uri);
     }
 
     public async getNotebookOptions(): Promise<INotebookServerOptions> {
@@ -192,24 +198,45 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         }
     }
 
-    private async storageChanged(file: Uri): Promise<void> {
-        // When the storage changes, tell VS code about the edit
-        const storage = await this.getStorage(file);
-        const cells = await storage.getCells();
-        this._editEventEmitter.fire({ resource: file, edit: { contents: cells } });
+    private async storageChanged(file: Uri, change: INotebookStorageChange): Promise<void> {
+        // If the file changes, update our storage
+        if (change.oldFile && change.newFile) {
+            this.storage.delete(change.oldFile.toString());
+            this.storage.set(change.newFile.toString(), Promise.resolve(change.storage as ILoadableNotebookStorage));
+        }
+        // If the cells change, tell VS code about it
+        if (change.newCells && change.isDirty) {
+            this._editEventEmitter.fire({ resource: file, edit: { contents: change.newCells } });
+        }
     }
 
-    private getStorage(file: Uri): Promise<ILoadableNotebookStorage> {
-        let storagePromise = this.storage.get(file.fsPath);
+    private getStorage(file: Uri, contents?: string): Promise<ILoadableNotebookStorage> {
+        const key = file.toString();
+        let storagePromise = this.storage.get(key);
         if (!storagePromise) {
             const storage = this.serviceContainer.get<ILoadableNotebookStorage>(ILoadableNotebookStorage);
-            storagePromise = storage.load(file).then(_v => {
-                this.storageChangedHandlers.set(file.fsPath, storage.changed(this.storageChanged.bind(this, file)));
+            if (!this.storageChangedHandlers.has(key)) {
+                this.storageChangedHandlers.set(key, storage.changed(this.storageChanged.bind(this, file)));
+            }
+            storagePromise = storage.load(file, contents).then(_v => {
                 return storage;
             });
 
-            this.storage.set(file.fsPath, storagePromise);
+            this.storage.set(key, storagePromise);
         }
         return storagePromise;
+    }
+
+    private async getNextNewNotebookUri(): Promise<Uri> {
+        // See if we have any untitled storage already
+        const untitledStorage = [...this.storage.keys()].filter(k => Uri.parse(k).scheme === 'untitled');
+
+        // Just use the length (don't bother trying to fill in holes). We never remove storage objects from
+        // our map, so we'll keep creating new untitled notebooks.
+        const fileName = `${localize.DataScience.untitledNotebookFileName()}-${untitledStorage.length + 1}.ipynb`;
+        const fileUri = Uri.file(fileName);
+
+        // Turn this back into an untitled
+        return fileUri.with({ scheme: 'untitled', path: fileName });
     }
 }

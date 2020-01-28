@@ -730,16 +730,30 @@ export interface INotebookEdit {
     readonly contents: ICell[];
 }
 
+export interface INotebookStorageChange {
+    storage: INotebookStorage;
+    newFile?: Uri;
+    oldFile?: Uri;
+    isDirty?: boolean;
+    isUntitled?: boolean;
+    newCells?: ICell[];
+    oldCells?: ICell[];
+}
+
 export interface INotebookStorage {
     readonly file: Uri;
     readonly isDirty: boolean;
-    readonly changed: Event<void>;
+    readonly isUntitled: boolean;
+    readonly changed: Event<INotebookStorageChange>;
     getCells(): Promise<ICell[]>;
     getJson(): Promise<Partial<nbformat.INotebookContent>>;
+    getContent(cells?: ICell[]): Promise<string>;
 }
 
 export const ILoadableNotebookStorage = Symbol('ILoadableNotebookStorage');
 
 export interface ILoadableNotebookStorage extends INotebookStorage {
-    load(file: Uri): Promise<void>;
+    load(file: Uri, contents?: string): Promise<void>;
+    save(): Promise<void>;
+    saveAs(file: Uri): Promise<void>;
 }

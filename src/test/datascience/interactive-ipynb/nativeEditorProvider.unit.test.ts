@@ -16,8 +16,6 @@ import { ICommandManager, ICustomEditorService, IDocumentManager, IWorkspaceServ
 import { WorkspaceService } from '../../../client/common/application/workspace';
 import { AsyncDisposableRegistry } from '../../../client/common/asyncDisposableRegistry';
 import { ConfigurationService } from '../../../client/common/configuration/service';
-import { FileSystem } from '../../../client/common/platform/fileSystem';
-import { IFileSystem } from '../../../client/common/platform/types';
 import { IConfigurationService } from '../../../client/common/types';
 import { NativeEditorProvider } from '../../../client/datascience/interactive-ipynb/nativeEditorProvider';
 import { INotebookEditor } from '../../../client/datascience/types';
@@ -28,7 +26,6 @@ import { IServiceContainer } from '../../../client/ioc/types';
 suite('Data Science - Native Editor Provider', () => {
     let workspace: IWorkspaceService;
     let configService: IConfigurationService;
-    let fileSystem: IFileSystem;
     let docManager: IDocumentManager;
     let cmdManager: ICommandManager;
     let svcContainer: IServiceContainer;
@@ -40,7 +37,6 @@ suite('Data Science - Native Editor Provider', () => {
     setup(() => {
         svcContainer = mock(ServiceContainer);
         configService = mock(ConfigurationService);
-        fileSystem = mock(FileSystem);
         docManager = mock(DocumentManager);
         cmdManager = mock(CommandManager);
         workspace = mock(WorkspaceService);
@@ -79,8 +75,6 @@ suite('Data Science - Native Editor Provider', () => {
             [],
             instance(workspace),
             instance(configService),
-            instance(fileSystem),
-            instance(cmdManager),
             instance(customEditorService)
         );
     }

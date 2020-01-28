@@ -19,7 +19,7 @@ import { PythonSettings } from '../../../client/common/configSettings';
 import { ConfigurationService } from '../../../client/common/configuration/service';
 import { CryptoUtils } from '../../../client/common/crypto';
 import { IFileSystem } from '../../../client/common/platform/types';
-import { IConfigurationService, ICryptoUtils, IExtensionContext } from '../../../client/common/types';
+import { IConfigurationService, ICryptoUtils, IDisposable, IExtensionContext } from '../../../client/common/types';
 import { EXTENSION_ROOT_DIR } from '../../../client/constants';
 import { Commands } from '../../../client/datascience/constants';
 import { InteractiveWindowMessages } from '../../../client/datascience/interactive-common/interactiveWindowTypes';
@@ -80,6 +80,7 @@ suite('Data Science - Native Editor Storage', () => {
     let filesConfig: MockWorkspaceConfiguration | undefined;
     let testIndex = 0;
     let storage: NativeEditorStorage;
+    const disposables: IDisposable[] = [];
     const baseUri = Uri.parse('file:///foo.ipynb');
     const baseFile = `{
  "cells": [
@@ -327,6 +328,7 @@ suite('Data Science - Native Editor Storage', () => {
             });
 
         storage = new NativeEditorStorage(
+            disposables,
             instance(executionProvider),
             fileSystem.object, // Use typemoq so can save values in returns
             instance(crypto),
@@ -340,7 +342,7 @@ suite('Data Science - Native Editor Storage', () => {
     teardown(() => {
         globalMemento.clear();
         sinon.reset();
-        NativeEditorStorage.unregister();
+        disposables.forEach(d => d.dispose());
     });
 
     function executeCommand<E extends keyof ICommandNameArgumentTypeMapping, U extends ICommandNameArgumentTypeMapping[E]>(command: E, ...rest: U) {

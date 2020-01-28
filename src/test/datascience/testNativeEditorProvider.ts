@@ -18,6 +18,9 @@ export class TestNativeEditorProvider implements INotebookEditorProvider {
     public get onDidChangeActiveNotebookEditor() {
         return this.realProvider.onDidChangeActiveNotebookEditor;
     }
+    public get onDidCloseNotebookEditor() {
+        return this.realProvider.onDidCloseNotebookEditor;
+    }
     private realProvider: NativeEditorProvider;
     public get onDidOpenNotebookEditor(): Event<INotebookEditor> {
         return this.realProvider.onDidOpenNotebookEditor;

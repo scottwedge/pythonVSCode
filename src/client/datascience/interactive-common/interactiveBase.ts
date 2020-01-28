@@ -433,6 +433,7 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
     protected abstract closeBecauseOfFailure(exc: Error): Promise<void>;
 
     protected async clearResult(id: string): Promise<void> {
+        await this.ensureServerAndNotebook();
         if (this._notebook) {
             this._notebook.clear(id);
         }

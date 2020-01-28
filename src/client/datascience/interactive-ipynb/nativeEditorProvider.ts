@@ -21,7 +21,11 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     public get onDidChangeActiveNotebookEditor(): Event<INotebookEditor | undefined> {
         return this._onDidChangeActiveNotebookEditor.event;
     }
+    public get onDidCloseNotebookEditor(): Event<INotebookEditor> {
+        return this._onDidCloseNotebookEditor.event;
+    }
     private readonly _onDidChangeActiveNotebookEditor = new EventEmitter<INotebookEditor | undefined>();
+    private readonly _onDidCloseNotebookEditor = new EventEmitter<INotebookEditor>();
     private readonly _editEventEmitter = new EventEmitter<{ readonly resource: Uri; readonly edit: INotebookEdit }>();
     private openedEditors: Set<INotebookEditor> = new Set<INotebookEditor>();
     private storage: Map<string, Promise<ILoadableNotebookStorage>> = new Map<string, Promise<ILoadableNotebookStorage>>();
@@ -176,6 +180,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
 
     private closedEditor(editor: INotebookEditor): void {
         this.openedEditors.delete(editor);
+        this._onDidCloseNotebookEditor.fire(editor);
     }
 
     private openedEditor(editor: INotebookEditor): void {
@@ -185,7 +190,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         }
         this.disposables.push(editor.onDidChangeViewState(this.onChangedViewState, this));
         this.openedEditors.add(editor);
-        editor.closed.bind(this.closedEditor.bind(this));
+        editor.closed(this.closedEditor.bind(this));
         this._onDidOpenNotebookEditor.fire(editor);
     }
 

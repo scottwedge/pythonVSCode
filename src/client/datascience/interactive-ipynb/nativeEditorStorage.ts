@@ -9,7 +9,7 @@ import { createCodeCell } from '../../../datascience-ui/common/cellFactory';
 import { ICommandManager } from '../../common/application/types';
 import { traceError } from '../../common/logger';
 import { IFileSystem } from '../../common/platform/types';
-import { GLOBAL_MEMENTO, ICryptoUtils, IExtensionContext, IMemento, WORKSPACE_MEMENTO } from '../../common/types';
+import { GLOBAL_MEMENTO, ICryptoUtils, IDisposable, IDisposableRegistry, IExtensionContext, IMemento, WORKSPACE_MEMENTO } from '../../common/types';
 import { noop } from '../../common/utils/misc';
 import { PythonInterpreter } from '../../interpreter/contracts';
 import { Commands, Identifiers } from '../constants';
@@ -32,7 +32,7 @@ interface INativeEditorStorageState {
 }
 
 @injectable()
-export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookStorage {
+export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookStorage, IDisposable {
     public get isDirty(): boolean {
         return this._state.isDirty;
     }
@@ -56,6 +56,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     private indentAmount: string = ' ';
 
     constructor(
+        @inject(IDisposableRegistry) disposables: IDisposableRegistry,
         @inject(IJupyterExecution) private jupyterExecution: IJupyterExecution,
         @inject(IFileSystem) private fileSystem: IFileSystem,
         @inject(ICryptoUtils) private crypto: ICryptoUtils,
@@ -66,25 +67,27 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     ) {
         // Sign up for commands if this is the first storage created.
         if (!NativeEditorStorage.signedUpForCommands) {
-            NativeEditorStorage.registerCommands(cmdManager);
+            NativeEditorStorage.registerCommands(cmdManager, disposables);
         }
+        disposables.push(this);
     }
 
-    public static unregister(): void {
-        NativeEditorStorage.signedUpForCommands = false;
-    }
-
-    private static registerCommands(commandManager: ICommandManager): void {
+    private static registerCommands(commandManager: ICommandManager, disposableRegistry: IDisposableRegistry): void {
         NativeEditorStorage.signedUpForCommands = true;
-        commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, NativeEditorStorage.handleClearAllOutputs);
-        commandManager.registerCommand(Commands.NotebookStorage_Close, NativeEditorStorage.handleClose);
-        commandManager.registerCommand(Commands.NotebookStorage_DeleteAllCells, NativeEditorStorage.handleDeleteAllCells);
-        commandManager.registerCommand(Commands.NotebookStorage_EditCell, NativeEditorStorage.handleEdit);
-        commandManager.registerCommand(Commands.NotebookStorage_InsertCell, NativeEditorStorage.handleInsert);
-        commandManager.registerCommand(Commands.NotebookStorage_ModifyCells, NativeEditorStorage.handleModifyCells);
-        commandManager.registerCommand(Commands.NotebookStorage_RemoveCell, NativeEditorStorage.handleRemoveCell);
-        commandManager.registerCommand(Commands.NotebookStorage_SwapCells, NativeEditorStorage.handleSwapCells);
-        commandManager.registerCommand(Commands.NotebookStorage_UpdateVersion, NativeEditorStorage.handleUpdateVersionInfo);
+        disposableRegistry.push({
+            dispose: () => {
+                NativeEditorStorage.signedUpForCommands = false;
+            }
+        });
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, NativeEditorStorage.handleClearAllOutputs));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_Close, NativeEditorStorage.handleClose));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_DeleteAllCells, NativeEditorStorage.handleDeleteAllCells));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_EditCell, NativeEditorStorage.handleEdit));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_InsertCell, NativeEditorStorage.handleInsert));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_ModifyCells, NativeEditorStorage.handleModifyCells));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_RemoveCell, NativeEditorStorage.handleRemoveCell));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_SwapCells, NativeEditorStorage.handleSwapCells));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_UpdateVersion, NativeEditorStorage.handleUpdateVersionInfo));
     }
 
     private static async getStorage(resource: Uri): Promise<NativeEditorStorage | undefined> {
@@ -220,6 +223,11 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
             }
         });
     }
+
+    public dispose(): void {
+        NativeEditorStorage.storageMap.delete(this.file.toString());
+    }
+
     public async load(file: Uri, possibleContents?: string): Promise<void> {
         // Reset the load promise and reload our cells
         this._loaded = false;

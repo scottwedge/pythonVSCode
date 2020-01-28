@@ -433,6 +433,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             if (dirty) {
                 return this.postMessage(InteractiveWindowMessages.NotebookDirty);
             } else {
+                // Going clean should only happen on a save (for now. Undo might do this too)
+                this.savedEvent.fire(this);
+
+                // Then tell the UI
                 return this.postMessage(InteractiveWindowMessages.NotebookClean);
             }
         }

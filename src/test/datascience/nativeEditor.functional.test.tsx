@@ -369,7 +369,6 @@ for _ in range(50):
                         return;
                     }
                 };
-                let saveCalled = false;
                 const appShell = TypeMoq.Mock.ofType<IApplicationShell>();
                 appShell
                     .setup(a => a.showErrorMessage(TypeMoq.It.isAnyString()))
@@ -380,20 +379,23 @@ for _ in range(50):
                 appShell
                     .setup(a => a.showSaveDialog(TypeMoq.It.isAny()))
                     .returns(() => {
-                        saveCalled = true;
                         return Promise.resolve(undefined);
                     });
                 appShell.setup(a => a.setStatusBarMessage(TypeMoq.It.isAny())).returns(() => dummyDisposable);
                 ioc.serviceManager.rebindInstance<IApplicationShell>(IApplicationShell, appShell.object);
 
                 // Make sure to create the interactive window after the rebind or it gets the wrong application shell.
-                await createNewEditor(ioc);
+                const saveCalled = createDeferred<boolean>();
+                const editor = await createNewEditor(ioc);
+                editor.saved(() => {
+                    saveCalled.resolve(true);
+                });
                 await addCell(wrapper, ioc, 'a=1\na');
 
                 // Export should cause exportCalled to change to true
                 const saveButton = findButton(wrapper, NativeEditor, 8);
                 await waitForMessageResponse(ioc, () => saveButton!.simulate('click'));
-                assert.equal(saveCalled, true, 'Save should have been called');
+                await waitForPromise(saveCalled.promise, 5_000);
 
                 // Click export and wait for a document to change
                 const activeTextEditorChange = createDeferred();
@@ -473,9 +475,10 @@ for _ in range(50):
                 let editor = await openEditor(ioc, JSON.stringify(notebook));
 
                 // Run everything
+                let renderAll = waitForMessage(ioc, InteractiveWindowMessages.ExecutionRendered, { numberOfTimes: 3 });
                 let runAllButton = findButton(wrapper, NativeEditor, 0);
                 await waitForMessageResponse(ioc, () => runAllButton!.simulate('click'));
-                await waitForUpdate(wrapper, NativeEditor, 15);
+                await renderAll;
 
                 // Close editor. Should still have the server up
                 await closeNotebook(editor, wrapper);
@@ -489,8 +492,9 @@ for _ in range(50):
                 assert.ok(newWrapper, 'Could not mount a second time');
                 editor = await openEditor(ioc, JSON.stringify(notebook));
                 runAllButton = findButton(newWrapper!, NativeEditor, 0);
+                renderAll = waitForMessage(ioc, InteractiveWindowMessages.ExecutionRendered, { numberOfTimes: 3 });
                 await waitForMessageResponse(ioc, () => runAllButton!.simulate('click'));
-                await waitForUpdate(newWrapper!, NativeEditor, 15);
+                await renderAll;
                 verifyHtmlOnCell(newWrapper!, 'NativeCell', `1`, 0);
             },
             () => {

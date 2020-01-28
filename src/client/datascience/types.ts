@@ -306,6 +306,7 @@ export interface INotebookEditorProvider {
     readonly editors: INotebookEditor[];
     readonly onDidOpenNotebookEditor: Event<INotebookEditor>;
     readonly onDidChangeActiveNotebookEditor: Event<INotebookEditor | undefined>;
+    readonly onDidCloseNotebookEditor: Event<INotebookEditor>;
     open(file: Uri): Promise<INotebookEditor>;
     show(file: Uri): Promise<INotebookEditor | undefined>;
     createNew(contents?: string): Promise<INotebookEditor>;

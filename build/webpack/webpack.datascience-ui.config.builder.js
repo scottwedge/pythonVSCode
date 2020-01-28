@@ -6,6 +6,7 @@
 // Note to editors, if you change this file you have to restart compile-webviews.
 // It doesn't reload the config otherwise.
 
+const common = require('./common');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const FixDefaultImportPlugin = require('webpack-fix-default-import-plugin');
@@ -35,41 +36,44 @@ function getPlugins(folderName) {
 }
 
 function buildConfiguration(folderName, supportsChunks) {
-    const output = supportsChunks
-        ? {
-              path: path.join(constants.ExtensionRootDir, 'out'),
-              filename: `datascience-ui/${folderName}/index_chunked_bundle.js`,
-              chunkFilename: `datascience-ui/${folderName}/[name]_chunk_bundle.js`,
-              publicPath: './'
-          }
-        : {
-              path: path.join(constants.ExtensionRootDir, 'out'),
-              filename: `datascience-ui/${folderName}/index_bundle.js`,
-              publicPath: './'
-          };
-    const maxChunks = supportsChunks ? 1000 : 1; // Could do this a different way but this is simpler
     return {
         context: constants.ExtensionRootDir,
-        entry: ['babel-polyfill', `./src/datascience-ui/${folderName}/index.tsx`],
-        output,
+        entry: {
+            // nativeEditor: ['babel-polyfill', `./src/datascience-ui/native-editor/index.tsx`],
+            // interactiveWindow: ['babel-polyfill', `./src/datascience-ui/history-react/index.tsx`],
+            plotViewer: ['babel-polyfill', `./src/datascience-ui/plot/index.tsx`],
+            dataExplorer: ['babel-polyfill', `./src/datascience-ui/data-explorer/index.tsx`]
+        },
+        // entry: ['babel-polyfill', './src/datascience-ui/native-editor/index.tsx'],
+        output: {
+            path: path.join(constants.ExtensionRootDir, 'out', 'datascience-ui'),
+            // filename: 'index_bundle.js',
+            chunkFilename: `[name].js`
+        },
         mode: 'development', // Leave as is, we'll need to see stack traces when there are errors.
         // Use 'eval' for release and `eval-source-map` for development.
         // We need to use one where source is embedded, due to webviews (they restrict resources to specific schemes,
         //  this seems to prevent chrome from downloading the source maps)
-        devtool: 'eval-source-map',
+        devtool: 'source-map',
         optimization: {
-            minimizer: [new TerserPlugin({ sourceMap: true })]
+            // minimize: false,
+            minimize: true,
+            minimizer: [new TerserPlugin({ sourceMap: true })],
+            splitChunks: {
+                chunks: 'all'
+            },
+            chunkIds: 'named'
         },
         node: {
             fs: 'empty'
         },
         plugins: [
-            new HtmlWebpackPlugin({
-                template: `src/datascience-ui/${folderName}/index.html`,
-                imageBaseUrl: `${constants.ExtensionRootDir.replace(/\\/g, '/')}/out/datascience-ui/${folderName}`,
-                indexUrl: `${constants.ExtensionRootDir}/out/1`,
-                filename: `./datascience-ui/${folderName}/index.html`
-            }),
+            // new HtmlWebpackPlugin({
+            //     template: `src/datascience-ui/${folderName}/index.html`,
+            //     imageBaseUrl: `${constants.ExtensionRootDir.replace(/\\/g, '/')}/out/datascience-ui/${folderName}`,
+            //     indexUrl: `${constants.ExtensionRootDir}/out/1`,
+            //     filename: `./datascience-ui/${folderName}/index.html`
+            // }),
             new FixDefaultImportPlugin(),
             new CopyWebpackPlugin(
                 [
@@ -81,9 +85,10 @@ function buildConfiguration(folderName, supportsChunks) {
                 { context: 'src' }
             ),
             new webpack.optimize.LimitChunkCountPlugin({
-                maxChunks
+                maxChunks: 1
             }),
-            ...getPlugins(folderName)
+            ...getPlugins(folderName),
+            ...common.getDefaultPlugins('dsUI')
         ],
         resolve: {
             // Add '.ts' and '.tsx' as resolvable extensions.
@@ -142,12 +147,12 @@ function buildConfiguration(folderName, supportsChunks) {
     };
 }
 
-exports.interactiveWindowConfigChunked = buildConfiguration('history-react', true);
-exports.nativeEditorConfigChunked = buildConfiguration('native-editor', true);
-exports.dataExplorerConfigChunked = buildConfiguration('data-explorer', true);
-exports.plotViewerConfigChunked = buildConfiguration('plot', true);
+// exports.interactiveWindowConfigChunked = buildConfiguration('history-react', true);
+// exports.nativeEditorConfigChunked = buildConfiguration('native-editor', true);
+// exports.dataExplorerConfigChunked = buildConfiguration('data-explorer', true);
+// exports.plotViewerConfigChunked = buildConfiguration('plot', true);
 
-exports.interactiveWindowConfig = buildConfiguration('history-react', false);
+// exports.interactiveWindowConfig = buildConfiguration('history-react', false);
 exports.nativeEditorConfig = buildConfiguration('native-editor', false);
-exports.dataExplorerConfig = buildConfiguration('data-explorer', false);
-exports.plotViewerConfig = buildConfiguration('plot', false);
+// exports.dataExplorerConfig = buildConfiguration('data-explorer', false);
+// exports.plotViewerConfig = buildConfiguration('plot', false);

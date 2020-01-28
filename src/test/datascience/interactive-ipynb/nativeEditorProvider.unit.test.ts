@@ -8,17 +8,15 @@
 import { expect } from 'chai';
 import { instance, mock, when } from 'ts-mockito';
 import * as typemoq from 'typemoq';
-import { EventEmitter, TextEditor, Uri } from 'vscode';
-import { CommandManager } from '../../../client/common/application/commandManager';
-import { CustomEditorService } from '../../../client/common/application/customEditorService';
-import { DocumentManager } from '../../../client/common/application/documentManager';
-import { ICommandManager, ICustomEditorService, IDocumentManager, IWorkspaceService } from '../../../client/common/application/types';
+import { EventEmitter, Uri, WebviewPanel } from 'vscode';
+import { ICustomEditorService, IWorkspaceService } from '../../../client/common/application/types';
 import { WorkspaceService } from '../../../client/common/application/workspace';
 import { AsyncDisposableRegistry } from '../../../client/common/asyncDisposableRegistry';
 import { ConfigurationService } from '../../../client/common/configuration/service';
 import { IConfigurationService } from '../../../client/common/types';
+import { noop } from '../../../client/common/utils/misc';
 import { NativeEditorProvider } from '../../../client/datascience/interactive-ipynb/nativeEditorProvider';
-import { INotebookEditor } from '../../../client/datascience/types';
+import { ILoadableNotebookStorage, INotebookEditor } from '../../../client/datascience/types';
 import { ServiceContainer } from '../../../client/ioc/container';
 import { IServiceContainer } from '../../../client/ioc/types';
 
@@ -26,61 +24,82 @@ import { IServiceContainer } from '../../../client/ioc/types';
 suite('Data Science - Native Editor Provider', () => {
     let workspace: IWorkspaceService;
     let configService: IConfigurationService;
-    let docManager: IDocumentManager;
-    let cmdManager: ICommandManager;
     let svcContainer: IServiceContainer;
-    let changeActiveTextEditorEventEmitter: EventEmitter<TextEditor>;
     let editor: typemoq.IMock<INotebookEditor>;
-    let customEditorService: ICustomEditorService;
+    let storage: typemoq.IMock<ILoadableNotebookStorage>;
+    let customEditorService: typemoq.IMock<ICustomEditorService>;
     let file: Uri;
+    let storageFile: Uri;
+    let registeredProvider: NativeEditorProvider;
+    let panel: typemoq.IMock<WebviewPanel>;
 
     setup(() => {
         svcContainer = mock(ServiceContainer);
         configService = mock(ConfigurationService);
-        docManager = mock(DocumentManager);
-        cmdManager = mock(CommandManager);
         workspace = mock(WorkspaceService);
-        changeActiveTextEditorEventEmitter = new EventEmitter<TextEditor>();
-        customEditorService = mock(CustomEditorService);
+        customEditorService = typemoq.Mock.ofType<ICustomEditorService>();
+        panel = typemoq.Mock.ofType<WebviewPanel>();
+        panel.setup(e => (e as any).then).returns(() => undefined);
     });
 
-    function createNotebookProvider(shouldOpenNotebookEditor: boolean) {
+    function createNotebookProvider() {
         editor = typemoq.Mock.ofType<INotebookEditor>();
+        storage = typemoq.Mock.ofType<ILoadableNotebookStorage>();
         when(configService.getSettings()).thenReturn({ datascience: { useNotebookEditor: true } } as any);
-        when(docManager.onDidChangeActiveTextEditor).thenReturn(changeActiveTextEditorEventEmitter.event);
-        when(docManager.visibleTextEditors).thenReturn([]);
         editor.setup(e => e.closed).returns(() => new EventEmitter<INotebookEditor>().event);
         editor.setup(e => e.executed).returns(() => new EventEmitter<INotebookEditor>().event);
         editor.setup(e => (e as any).then).returns(() => undefined);
+        storage.setup(e => (e as any).then).returns(() => undefined);
+        storage
+            .setup(s => s.load(typemoq.It.isAny(), typemoq.It.isAny()))
+            .returns(f => {
+                storageFile = f;
+                return Promise.resolve();
+            });
+        storage.setup(s => s.file).returns(() => storageFile);
         when(svcContainer.get<INotebookEditor>(INotebookEditor)).thenReturn(editor.object);
+        when(svcContainer.get<ILoadableNotebookStorage>(ILoadableNotebookStorage)).thenReturn(storage.object);
+        customEditorService.setup(e => (e as any).then).returns(() => undefined);
+        customEditorService
+            .setup(c => c.registerWebviewCustomEditorProvider(typemoq.It.isAny(), typemoq.It.isAny(), typemoq.It.isAny()))
+            .returns((_a1, _a2, _a3) => {
+                return { dispose: noop };
+            });
+        customEditorService
+            .setup(c => c.openEditor(typemoq.It.isAny()))
+            .returns(async f => {
+                return registeredProvider.resolveWebviewEditor(f, panel.object);
+            });
 
-        // Ensure the editor is created and the load and show methods are invoked.
-        const invocationCount = shouldOpenNotebookEditor ? 1 : 0;
         editor
             .setup(e => e.load(typemoq.It.isAny(), typemoq.It.isAny()))
-            .returns((_a1: string, f: Uri) => {
-                file = f;
+            .returns((s, _p) => {
+                file = s.file;
                 return Promise.resolve();
-            })
-            .verifiable(typemoq.Times.exactly(invocationCount));
-        editor
-            .setup(e => e.show())
-            .returns(() => Promise.resolve())
-            .verifiable(typemoq.Times.exactly(invocationCount));
+            });
+        editor.setup(e => e.show()).returns(() => Promise.resolve());
         editor.setup(e => e.file).returns(() => file);
 
-        return new NativeEditorProvider(
+        registeredProvider = new NativeEditorProvider(
             instance(svcContainer),
             instance(mock(AsyncDisposableRegistry)),
             [],
             instance(workspace),
             instance(configService),
-            instance(customEditorService)
+            customEditorService.object
         );
+
+        return registeredProvider;
     }
 
+    test('Opening a notebook', async () => {
+        const provider = createNotebookProvider();
+        const n = await provider.open(Uri.file('foo.ipynb'));
+        expect(n.file.fsPath).to.be.include('foo.ipynb');
+    });
+
     test('Multiple new notebooks have new names', async () => {
-        const provider = createNotebookProvider(false);
+        const provider = createNotebookProvider();
         const n1 = await provider.createNew();
         expect(n1.file.fsPath).to.be.include('Untitled-1');
         const n2 = await provider.createNew();

@@ -70,6 +70,10 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         }
     }
 
+    public static unregister(): void {
+        NativeEditorStorage.signedUpForCommands = false;
+    }
+
     private static registerCommands(commandManager: ICommandManager): void {
         NativeEditorStorage.signedUpForCommands = true;
         commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, NativeEditorStorage.handleClearAllOutputs);
@@ -258,12 +262,6 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         try {
             // Attempt to read the contents if a viable file
             const contents = file.scheme === 'untitled' ? possibleContents : await this.fileSystem.readFile(this.file.fsPath);
-
-            // Clear out old global storage the first time somebody opens
-            // a notebook
-            if (!this.globalStorage.get(NotebookTransferKey)) {
-                await this.transferStorage();
-            }
 
             // See if this file was stored in storage prior to shutdown
             const dirtyContents = await this.getStoredContents();

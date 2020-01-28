@@ -62,7 +62,7 @@ class MockWorkspaceConfiguration implements WorkspaceConfiguration {
 }
 
 // tslint:disable: max-func-body-length
-suite('Data Science - Native Editor', () => {
+suite('Data Science - Native Editor Storage', () => {
     let workspace: IWorkspaceService;
     let configService: IConfigurationService;
     let fileSystem: typemoq.IMock<IFileSystem>;
@@ -79,6 +79,7 @@ suite('Data Science - Native Editor', () => {
     let wroteToFileEvent: EventEmitter<string> = new EventEmitter<string>();
     let filesConfig: MockWorkspaceConfiguration | undefined;
     let testIndex = 0;
+    let storage: NativeEditorStorage;
     const baseUri = Uri.parse('file:///foo.ipynb');
     const baseFile = `{
  "cells": [
@@ -324,33 +325,31 @@ suite('Data Science - Native Editor', () => {
             .returns(_a1 => {
                 return Promise.resolve(lastWriteFileValue);
             });
-    });
 
-    teardown(() => {
-        globalMemento.clear();
-        sinon.reset();
-    });
-
-    function createStorage() {
-        return new NativeEditorStorage(
+        storage = new NativeEditorStorage(
             instance(executionProvider),
             fileSystem.object, // Use typemoq so can save values in returns
             instance(crypto),
             context.object,
             globalMemento,
-            globalMemento,
+            localMemento,
             cmdManager
         );
-    }
+    });
+
+    teardown(() => {
+        globalMemento.clear();
+        sinon.reset();
+        NativeEditorStorage.unregister();
+    });
 
     function executeCommand<E extends keyof ICommandNameArgumentTypeMapping, U extends ICommandNameArgumentTypeMapping[E]>(command: E, ...rest: U) {
         return cmdManager.executeCommand(command, ...rest);
     }
 
     test('Create new editor and add some cells', async () => {
-        const storage = createStorage();
         await storage.load(baseUri);
-        executeCommand(Commands.NotebookStorage_InsertCell, baseUri, { index: 0, cell: createEmptyCell('1', 1), code: '1', codeCellAboveId: undefined });
+        await executeCommand(Commands.NotebookStorage_InsertCell, baseUri, { index: 0, cell: createEmptyCell('1', 1), code: '1', codeCellAboveId: undefined });
         const cells = await storage.getCells();
         expect(cells).to.be.lengthOf(4);
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
@@ -358,9 +357,8 @@ suite('Data Science - Native Editor', () => {
     });
 
     test('Move cells around', async () => {
-        const storage = createStorage();
         await storage.load(baseUri);
-        executeCommand(Commands.NotebookStorage_SwapCells, baseUri, { firstCellId: 'NotebookImport#0', secondCellId: 'NotebookImport#1' });
+        await executeCommand(Commands.NotebookStorage_SwapCells, baseUri, { firstCellId: 'NotebookImport#0', secondCellId: 'NotebookImport#1' });
         const cells = await storage.getCells();
         expect(cells).to.be.lengthOf(3);
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
@@ -368,10 +366,9 @@ suite('Data Science - Native Editor', () => {
     });
 
     test('Edit/delete cells', async () => {
-        const storage = createStorage();
         await storage.load(baseUri);
         expect(storage.isDirty).to.be.equal(false, 'Editor should not be dirty');
-        executeCommand(Commands.NotebookStorage_EditCell, baseUri, {
+        await executeCommand(Commands.NotebookStorage_EditCell, baseUri, {
             changes: [
                 {
                     range: {
@@ -392,11 +389,11 @@ suite('Data Science - Native Editor', () => {
         expect(cells[1].id).to.be.match(/NotebookImport#1/);
         expect(cells[1].data.source).to.be.equals('b=2\nab');
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
-        executeCommand(Commands.NotebookStorage_RemoveCell, baseUri, 'NotebookImport#0');
+        await executeCommand(Commands.NotebookStorage_RemoveCell, baseUri, 'NotebookImport#0');
         cells = await storage.getCells();
         expect(cells).to.be.lengthOf(2);
         expect(cells[0].id).to.be.match(/NotebookImport#1/);
-        executeCommand(Commands.NotebookStorage_DeleteAllCells, baseUri);
+        await executeCommand(Commands.NotebookStorage_DeleteAllCells, baseUri);
         cells = await storage.getCells();
         expect(cells).to.be.lengthOf(0);
     });
@@ -411,12 +408,11 @@ suite('Data Science - Native Editor', () => {
         expect(localMemento.get(`notebook-storage-${file.toString()}`)).to.be.undefined;
 
         // Put the regular file into the local storage
-        localMemento.update(`notebook-storage-${file.toString()}`, differentFile);
-        const editor = createStorage();
-        await editor.load(file);
+        await localMemento.update(`notebook-storage-${file.toString()}`, differentFile);
+        await storage.load(file);
 
         // It should load with that value
-        const cells = await editor.getCells();
+        const cells = await storage.getCells();
         expect(cells).to.be.lengthOf(2);
     });
 
@@ -430,12 +426,11 @@ suite('Data Science - Native Editor', () => {
         expect(localMemento.get(`notebook-storage-${file.toString()}`)).to.be.undefined;
 
         // Put the regular file into the global storage
-        globalMemento.update(`notebook-storage-${file.toString()}`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
-        const editor = createStorage();
-        await editor.load(file);
+        await globalMemento.update(`notebook-storage-${file.toString()}`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
+        await storage.load(file);
 
         // It should load with that value
-        const cells = await editor.getCells();
+        const cells = await storage.getCells();
         expect(cells).to.be.lengthOf(2);
     });
 
@@ -451,16 +446,15 @@ suite('Data Science - Native Editor', () => {
         expect(localMemento.get(`notebook-storage-${file.toString()}`)).to.be.undefined;
 
         // Put the regular file into the global storage
-        globalMemento.update(`notebook-storage-${file.toString()}`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
+        await globalMemento.update(`notebook-storage-${file.toString()}`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
 
         // Put another file into the global storage
-        globalMemento.update(`notebook-storage-file::///bar.ipynb`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
+        await globalMemento.update(`notebook-storage-file::///bar.ipynb`, { contents: differentFile, lastModifiedTimeMs: Date.now() });
 
-        const editor = createStorage();
-        await editor.load(file);
+        await storage.load(file);
 
         // It should load with that value
-        const cells = await editor.getCells();
+        const cells = await storage.getCells();
         expect(cells).to.be.lengthOf(2);
 
         // And global storage should be empty

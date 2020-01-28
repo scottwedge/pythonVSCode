@@ -2,9 +2,11 @@
 // Licensed under the MIT License.
 'use strict';
 import { inject, injectable } from 'inversify';
+import * as uuid from 'uuid/v4';
 import { Disposable, Event, EventEmitter, Uri, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider, WebviewPanel } from 'vscode';
-
+import { arePathsSame } from '../../../datascience-ui/react-common/arePathsSame';
 import { ICustomEditorService, IWorkspaceService } from '../../common/application/types';
+import { traceInfo } from '../../common/logger';
 import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
 import { createDeferred } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
@@ -28,6 +30,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     private executedEditors: Set<string> = new Set<string>();
     private notebookCount: number = 0;
     private openedNotebookCount: number = 0;
+    private _id = uuid();
     constructor(
         @inject(IServiceContainer) private serviceContainer: IServiceContainer,
         @inject(IAsyncDisposableRegistry) asyncRegistry: IAsyncDisposableRegistry,
@@ -36,6 +39,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         @inject(IConfigurationService) private configuration: IConfigurationService,
         @inject(ICustomEditorService) private customEditorService: ICustomEditorService
     ) {
+        traceInfo(`id is ${this._id}`);
         asyncRegistry.push(this);
 
         // Look through the file system for ipynb files to see how many we have in the workspace. Don't wait
@@ -79,11 +83,8 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         // Create a new editor
         const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
 
-        // Indicate opened
-        this.openedEditor(editor);
-
         // Load it (should already be visible)
-        return editor.load(storage, panel);
+        return editor.load(storage, panel).then(() => this.openedEditor(editor));
     }
     public get editingDelegate(): WebviewCustomEditorEditingDelegate<unknown> | undefined {
         return this;
@@ -121,14 +122,14 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         // Sign up for open event once it does open
         let disposable: Disposable | undefined;
         const handler = (e: INotebookEditor) => {
-            if (e.file === file) {
+            if (arePathsSame(e.file.fsPath, file.fsPath)) {
                 if (disposable) {
                     disposable.dispose();
                 }
                 deferred.resolve(e);
             }
         };
-        disposable = this.onDidOpenNotebookEditor(handler);
+        disposable = this._onDidOpenNotebookEditor.event(handler);
 
         // Send an open command.
         this.customEditorService.openEditor(file);

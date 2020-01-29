@@ -58,14 +58,14 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     }
 
     public save(resource: Uri): Thenable<void> {
-        return this.getStorage(resource).then(async s => {
+        return this.loadStorage(resource).then(async s => {
             if (s) {
                 await s.save();
             }
         });
     }
     public saveAs(resource: Uri, targetResource: Uri): Thenable<void> {
-        return this.getStorage(resource).then(async s => {
+        return this.loadStorage(resource).then(async s => {
             if (s) {
                 await s.saveAs(targetResource);
             }
@@ -82,7 +82,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     }
     public async resolveWebviewEditor(resource: Uri, panel: WebviewPanel) {
         // Get the storage
-        const storage = await this.getStorage(resource);
+        const storage = await this.loadStorage(resource);
 
         // Create a new editor
         const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
@@ -136,7 +136,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         disposable = this._onDidOpenNotebookEditor.event(handler);
 
         // Send an open command.
-        this.customEditorService.openEditor(file);
+        this.customEditorService.openEditor(file).ignoreErrors();
 
         // Promise should resolve when the file opens.
         return deferred.promise;
@@ -155,7 +155,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         this.notebookCount += 1;
 
         // Set these contents into the storage before the file opens
-        await this.getStorage(uri, contents);
+        await this.loadStorage(uri, contents);
 
         return this.open(uri);
     }
@@ -216,7 +216,7 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         }
     }
 
-    private getStorage(file: Uri, contents?: string): Promise<ILoadableNotebookStorage> {
+    private loadStorage(file: Uri, contents?: string): Promise<ILoadableNotebookStorage> {
         const key = file.toString();
         let storagePromise = this.storage.get(key);
         if (!storagePromise) {

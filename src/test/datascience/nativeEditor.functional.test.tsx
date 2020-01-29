@@ -9,9 +9,8 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as sinon from 'sinon';
-import { anything, when } from 'ts-mockito';
 import * as TypeMoq from 'typemoq';
-import { Disposable, TextDocument, TextEditor, Uri, WindowState } from 'vscode';
+import { Disposable, TextDocument, TextEditor, Uri } from 'vscode';
 import { IApplicationShell, IDocumentManager } from '../../client/common/application/types';
 import { IFileSystem } from '../../client/common/platform/types';
 import { createDeferred, sleep, waitForPromise } from '../../client/common/utils/async';
@@ -31,7 +30,6 @@ import { IMonacoEditorState, MonacoEditor } from '../../datascience-ui/react-com
 import { waitForCondition } from '../common';
 import { createTemporaryFile } from '../utils/fs';
 import { DataScienceIocContainer } from './dataScienceIocContainer';
-import { defaultDataScienceSettings } from './helpers';
 import { MockDocumentManager } from './mockDocumentManager';
 import { addCell, closeNotebook, createNewEditor, getNativeCellResults, mountNativeWebView, openEditor, runMountedTest, setupWebview } from './nativeEditorTestHelpers';
 import { waitForUpdate } from './reactHelpers';
@@ -657,7 +655,6 @@ for _ in range(50):
             outputs: [],
             source: []
         });
-        const addedJSONFile = JSON.stringify(addedJSON, null, ' ');
 
         let notebookFile: {
             filePath: string;

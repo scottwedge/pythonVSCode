@@ -28,7 +28,7 @@ export class MockCustomEditorService implements ICustomEditorService {
 
         return { dispose: noop };
     }
-    public openEditor(file: Uri): Thenable<void | undefined> {
+    public async openEditor(file: Uri): Promise<void> {
         if (!this.provider) {
             throw new Error('Opening before registering');
         }
@@ -42,7 +42,7 @@ export class MockCustomEditorService implements ICustomEditorService {
             this.resolvedList.set(file.toString(), resolved);
         }
 
-        return resolved;
+        await resolved;
     }
 
     private onFileSave(file: Uri) {

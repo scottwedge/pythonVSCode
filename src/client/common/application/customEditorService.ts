@@ -22,7 +22,7 @@ export class CustomEditorService implements ICustomEditorService {
         return vscode.window.registerWebviewCustomEditorProvider(viewType, provider, options);
     }
 
-    public openEditor(file: vscode.Uri): Thenable<void | undefined> {
-        return this.commandManager.executeCommand('vscode.open', file);
+    public async openEditor(file: vscode.Uri): Promise<void> {
+        await this.commandManager.executeCommand('vscode.open', file);
     }
 }

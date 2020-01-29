@@ -1067,5 +1067,5 @@ export interface ICustomEditorService {
     /**
      * Opens a file with a custom editor
      */
-    openEditor(file: Uri): Thenable<void | undefined>;
+    openEditor(file: Uri): Promise<void>;
 }

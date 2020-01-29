@@ -48,9 +48,9 @@ import {
     INotebookEditorProvider,
     INotebookExporter,
     INotebookImporter,
+    INotebookModel,
+    INotebookModelChange,
     INotebookServerOptions,
-    INotebookStorage,
-    INotebookStorageChange,
     IStatusProvider,
     IThemeFinder
 } from '../types';
@@ -69,7 +69,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     private loadedPromise: Deferred<void> = createDeferred<void>();
     private startupTimer: StopWatch = new StopWatch();
     private loadedAllCells: boolean = false;
-    private _storage: INotebookStorage | undefined;
+    private _model: INotebookModel | undefined;
 
     constructor(
         @multiInject(IInteractiveWindowListener) listeners: IInteractiveWindowListener[],
@@ -136,23 +136,23 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     public get file(): Uri {
-        if (this._storage) {
-            return this._storage.file;
+        if (this._model) {
+            return this._model.file;
         }
         return Uri.file('');
     }
 
     public get isUntitled(): boolean {
-        return this._storage ? this._storage.isUntitled : false;
+        return this._model ? this._model.isUntitled : false;
     }
     public dispose(): Promise<void> {
         super.dispose();
         return this.close();
     }
 
-    public async load(storage: INotebookStorage, webViewPanel: WebviewPanel): Promise<void> {
-        // Save the storage we're using
-        this._storage = storage;
+    public async load(model: INotebookModel, webViewPanel: WebviewPanel): Promise<void> {
+        // Save the model we're using
+        this._model = model;
 
         // Indicate we have our identity
         this.loadedPromise.resolve();
@@ -162,13 +162,13 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         await super.loadWebPanel(path.dirname(this.file.fsPath), webViewPanel);
 
         // Sign up for dirty events
-        storage.changed(this.contentsChanged.bind(this));
+        model.changed(this.modelChanged.bind(this));
 
         // Load our cells, but don't wait for this to finish, otherwise the window won't load.
-        this.loadCells(await storage.getCells())
+        this.sendInitialCellsToWebView(model.cells)
             .then(() => {
                 // May alread be dirty, if so send a message
-                if (storage.isDirty) {
+                if (model.isDirty) {
                     this.postMessage(InteractiveWindowMessages.NotebookDirty).ignoreErrors();
                 }
             })
@@ -192,7 +192,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     }
 
     public get isDirty(): boolean {
-        return this._storage ? this._storage.isDirty : false;
+        return this._model ? this._model.isDirty : false;
     }
 
     // tslint:disable-next-line: no-any
@@ -251,8 +251,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
     public async getNotebookOptions(): Promise<INotebookServerOptions> {
         const options = await this.editorProvider.getNotebookOptions();
-        if (this._storage) {
-            const metadata = (await this._storage.getJson()).metadata;
+        if (this._model) {
+            const metadata = (await this._model.getJson()).metadata;
             return {
                 ...options,
                 metadata
@@ -426,11 +426,10 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         // Actually don't close, just let the error bubble out
     }
 
-    private contentsChanged(change: INotebookStorageChange) {
+    private modelChanged(change: INotebookModelChange) {
         if (change.isDirty !== undefined) {
             this.modifiedEvent.fire();
-            const dirty = !this._storage || this._storage.isDirty;
-            if (dirty) {
+            if (change.model.isDirty) {
                 return this.postMessage(InteractiveWindowMessages.NotebookDirty);
             } else {
                 // Going clean should only happen on a save (for now. Undo might do this too)
@@ -442,15 +441,12 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         }
     }
 
-    private async loadCells(cells: ICell[]): Promise<void> {
+    private async sendInitialCellsToWebView(cells: ICell[]): Promise<void> {
         sendTelemetryEvent(Telemetry.CellCount, undefined, { count: cells.length });
         return this.postMessage(InteractiveWindowMessages.LoadAllCells, { cells });
     }
 
     private async close(): Promise<void> {
-        // Send a close command to our model
-        await this.commandManager.executeCommand(Commands.NotebookStorage_Close, this.file);
-
         // Fire our event
         this.closedEvent.fire(this);
 
@@ -493,7 +489,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             tempFile = await this.fileSystem.createTemporaryFile('.ipynb');
 
             // Translate the cells into a notebook
-            const content = this._storage ? await this._storage.getContent(cells) : '';
+            const content = this._model ? await this._model.getContent(cells) : '';
             await this.fileSystem.writeFile(tempFile.filePath, content, 'utf-8');
 
             // Import this file and show it

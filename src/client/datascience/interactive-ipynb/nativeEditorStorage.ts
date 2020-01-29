@@ -16,7 +16,7 @@ import { Commands, Identifiers } from '../constants';
 import { IEditCell, IInsertCell, ISwapCells } from '../interactive-common/interactiveWindowTypes';
 import { InvalidNotebookFileError } from '../jupyter/invalidNotebookFileError';
 import { LiveKernelModel } from '../jupyter/kernels/types';
-import { CellState, ICell, IJupyterExecution, IJupyterKernelSpec, ILoadableNotebookStorage, INotebookStorage, INotebookStorageChange } from '../types';
+import { CellState, ICell, IJupyterExecution, IJupyterKernelSpec, INotebookModel, INotebookModelChange, INotebookStorage } from '../types';
 
 // tslint:disable-next-line:no-require-imports no-var-requires
 import detectIndent = require('detect-indent');
@@ -32,11 +32,11 @@ interface INativeEditorStorageState {
 }
 
 @injectable()
-export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookStorage, IDisposable {
+export class NativeEditorStorage implements INotebookModel, INotebookStorage, IDisposable {
     public get isDirty(): boolean {
         return this._state.isDirty;
     }
-    public get changed(): Event<INotebookStorageChange> {
+    public get changed(): Event<INotebookModelChange> {
         return this._changedEmitter.event;
     }
     public get file(): Uri {
@@ -46,13 +46,15 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     public get isUntitled(): boolean {
         return this.file.scheme === 'untitled';
     }
+    public get cells(): ICell[] {
+        return this._state.cells;
+    }
     private static signedUpForCommands = false;
 
     private static storageMap = new Map<string, NativeEditorStorage>();
-    private _changedEmitter = new EventEmitter<INotebookStorageChange>();
+    private _changedEmitter = new EventEmitter<INotebookModelChange>();
     private _state: INativeEditorStorageState = { file: Uri.file(''), isDirty: false, cells: [], notebookJson: {} };
     private _loadPromise: Promise<ICell[]> | undefined;
-    private _loaded = false;
     private indentAmount: string = ' ';
 
     constructor(
@@ -67,27 +69,9 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     ) {
         // Sign up for commands if this is the first storage created.
         if (!NativeEditorStorage.signedUpForCommands) {
-            NativeEditorStorage.registerCommands(cmdManager, disposables);
+            this.registerCommands(cmdManager, disposables);
         }
         disposables.push(this);
-    }
-
-    private static registerCommands(commandManager: ICommandManager, disposableRegistry: IDisposableRegistry): void {
-        NativeEditorStorage.signedUpForCommands = true;
-        disposableRegistry.push({
-            dispose: () => {
-                NativeEditorStorage.signedUpForCommands = false;
-            }
-        });
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, NativeEditorStorage.handleClearAllOutputs));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_Close, NativeEditorStorage.handleClose));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_DeleteAllCells, NativeEditorStorage.handleDeleteAllCells));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_EditCell, NativeEditorStorage.handleEdit));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_InsertCell, NativeEditorStorage.handleInsert));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_ModifyCells, NativeEditorStorage.handleModifyCells));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_RemoveCell, NativeEditorStorage.handleRemoveCell));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_SwapCells, NativeEditorStorage.handleSwapCells));
-        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_UpdateVersion, NativeEditorStorage.handleUpdateVersionInfo));
     }
 
     private static async getStorage(resource: Uri): Promise<NativeEditorStorage | undefined> {
@@ -99,159 +83,136 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         return undefined;
     }
 
-    private static handleCallback(resource: Uri, callback: (storage: NativeEditorStorage) => Promise<void>): Promise<void> {
-        return NativeEditorStorage.getStorage(resource).then(s => {
-            if (s) {
-                return callback(s);
-            }
-        });
-    }
+    private static async handleEdit(s: NativeEditorStorage, request: IEditCell): Promise<void> {
+        // Apply the changes to the visible cell list. We won't get an update until
+        // submission otherwise
+        if (request.changes && request.changes.length) {
+            const change = request.changes[0];
+            const normalized = change.text.replace(/\r/g, '');
 
-    private static async handleEdit(resource: Uri, request: IEditCell): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            // Apply the changes to the visible cell list. We won't get an update until
-            // submission otherwise
-            if (request.changes && request.changes.length) {
-                const change = request.changes[0];
-                const normalized = change.text.replace(/\r/g, '');
-
-                // Figure out which cell we're editing.
-                const index = s._state.cells.findIndex(c => c.id === request.id);
-                if (index >= 0) {
-                    // This is an actual edit.
-                    const contents = concatMultilineStringInput(s._state.cells[index].data.source);
-                    const before = contents.substr(0, change.rangeOffset);
-                    const after = contents.substr(change.rangeOffset + change.rangeLength);
-                    const newContents = `${before}${normalized}${after}`;
-                    if (contents !== newContents) {
-                        const newCells = [...s._state.cells];
-                        const newCell = { ...newCells[index], data: { ...newCells[index].data, source: newContents } };
-                        newCells[index] = newCell;
-                        return s.setState({ cells: newCells });
-                    }
+            // Figure out which cell we're editing.
+            const index = s.cells.findIndex(c => c.id === request.id);
+            if (index >= 0) {
+                // This is an actual edit.
+                const contents = concatMultilineStringInput(s.cells[index].data.source);
+                const before = contents.substr(0, change.rangeOffset);
+                const after = contents.substr(change.rangeOffset + change.rangeLength);
+                const newContents = `${before}${normalized}${after}`;
+                if (contents !== newContents) {
+                    const newCells = [...s.cells];
+                    const newCell = { ...newCells[index], data: { ...newCells[index].data, source: newContents } };
+                    newCells[index] = newCell;
+                    s.setState({ cells: newCells });
                 }
             }
-        });
+        }
     }
 
-    private static async handleInsert(resource: Uri, request: IInsertCell): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            // Insert a cell into our visible list based on the index. They should be in sync
-            const newCells = [...s._state.cells];
-            newCells.splice(request.index, 0, request.cell);
-            return s.setState({ cells: newCells });
-        });
+    private static async handleInsert(s: NativeEditorStorage, request: IInsertCell): Promise<void> {
+        // Insert a cell into our visible list based on the index. They should be in sync
+        const newCells = [...s.cells];
+        newCells.splice(request.index, 0, request.cell);
+        s.setState({ cells: newCells });
     }
 
-    private static async handleRemoveCell(resource: Uri, id: string): Promise<void> {
+    private static async handleRemoveCell(s: NativeEditorStorage, id: string): Promise<void> {
         // Filter our list
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            const newCells = [...s._state.cells].filter(v => v.id !== id);
-            return s.setState({ cells: newCells });
-        });
+        const newCells = [...s.cells].filter(v => v.id !== id);
+        if (newCells.length !== s.cells.length) {
+            s.setState({ cells: newCells });
+        }
     }
 
-    private static async handleSwapCells(resource: Uri, request: ISwapCells): Promise<void> {
+    private static async handleSwapCells(s: NativeEditorStorage, request: ISwapCells): Promise<void> {
         // Swap two cells in our list
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            const first = s._state.cells.findIndex(v => v.id === request.firstCellId);
-            const second = s._state.cells.findIndex(v => v.id === request.secondCellId);
-            if (first >= 0 && second >= 0) {
-                const newCells = [...s._state.cells];
-                const temp = { ...newCells[first] };
-                newCells[first] = newCells[second];
-                newCells[second] = temp;
-                return s.setState({ cells: newCells });
-            }
-        });
+        const first = s.cells.findIndex(v => v.id === request.firstCellId);
+        const second = s.cells.findIndex(v => v.id === request.secondCellId);
+        if (first >= 0 && second >= 0) {
+            const newCells = [...s.cells];
+            const temp = { ...newCells[first] };
+            newCells[first] = newCells[second];
+            newCells[second] = temp;
+            s.setState({ cells: newCells });
+        }
     }
 
-    private static handleDeleteAllCells(resource: Uri): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            return s.setState({ cells: [] });
-        });
+    private static async handleDeleteAllCells(s: NativeEditorStorage): Promise<void> {
+        if (s.cells.length !== 0) {
+            s.setState({ cells: [] });
+        }
     }
 
-    private static handleClearAllOutputs(resource: Uri): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            const newCells = s._state.cells.map(c => {
-                return { ...c, data: { ...c.data, execution_count: null, outputs: [] } };
-            });
-            return s.setState({ cells: newCells });
+    private static async handleClearAllOutputs(s: NativeEditorStorage): Promise<void> {
+        const newCells = s.cells.map(c => {
+            return { ...c, data: { ...c.data, execution_count: null, outputs: [] } };
         });
+
+        // Do our check here to see if any changes happened. We don't want
+        // to fire an unnecessary change if we can help it.
+        if (!fastDeepEqual(s.cells, newCells)) {
+            s.setState({ cells: newCells });
+        }
     }
 
-    private static async handleModifyCells(resource: Uri, cells: ICell[]): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            const newCells = [...s._state.cells];
-            // Update these cells in our list
-            cells.forEach(c => {
-                const index = newCells.findIndex(v => v.id === c.id);
-                newCells[index] = c;
-            });
-
-            // Indicate dirty
-            return s.setState({ cells: newCells, isDirty: true });
+    private static async handleModifyCells(s: NativeEditorStorage, cells: ICell[]): Promise<void> {
+        const newCells = [...s.cells];
+        // Update these cells in our list
+        cells.forEach(c => {
+            const index = newCells.findIndex(v => v.id === c.id);
+            newCells[index] = c;
         });
-    }
 
-    private static async handleClose(_resource: Uri): Promise<void> {
-        // Don't care about close (used to)
+        // Indicate dirty
+        if (!fastDeepEqual(newCells, s.cells)) {
+            s.setState({ cells: newCells, isDirty: true });
+        }
     }
 
     private static async handleUpdateVersionInfo(
-        resource: Uri,
+        s: NativeEditorStorage,
         interpreter: PythonInterpreter | undefined,
         kernelSpec: IJupyterKernelSpec | LiveKernelModel | undefined
     ): Promise<void> {
-        return NativeEditorStorage.handleCallback(resource, async s => {
-            // Get our kernel_info and language_info from the current notebook
-            if (interpreter && interpreter.version && s._state.notebookJson.metadata && s._state.notebookJson.metadata.language_info) {
-                s._state.notebookJson.metadata.language_info.version = interpreter.version.raw;
-            }
+        // Get our kernel_info and language_info from the current notebook
+        if (interpreter && interpreter.version && s._state.notebookJson.metadata && s._state.notebookJson.metadata.language_info) {
+            s._state.notebookJson.metadata.language_info.version = interpreter.version.raw;
+        }
 
-            if (kernelSpec && s._state.notebookJson.metadata && !s._state.notebookJson.metadata.kernelspec) {
-                // Add a new spec in this case
-                s._state.notebookJson.metadata.kernelspec = {
-                    name: kernelSpec.name || kernelSpec.display_name || '',
-                    display_name: kernelSpec.display_name || kernelSpec.name || ''
-                };
-            } else if (kernelSpec && s._state.notebookJson.metadata && s._state.notebookJson.metadata.kernelspec) {
-                // Spec exists, just update name and display_name
-                s._state.notebookJson.metadata.kernelspec.name = kernelSpec.name || kernelSpec.display_name || '';
-                s._state.notebookJson.metadata.kernelspec.display_name = kernelSpec.display_name || kernelSpec.name || '';
-            }
-        });
+        if (kernelSpec && s._state.notebookJson.metadata && !s._state.notebookJson.metadata.kernelspec) {
+            // Add a new spec in this case
+            s._state.notebookJson.metadata.kernelspec = {
+                name: kernelSpec.name || kernelSpec.display_name || '',
+                display_name: kernelSpec.display_name || kernelSpec.name || ''
+            };
+        } else if (kernelSpec && s._state.notebookJson.metadata && s._state.notebookJson.metadata.kernelspec) {
+            // Spec exists, just update name and display_name
+            s._state.notebookJson.metadata.kernelspec.name = kernelSpec.name || kernelSpec.display_name || '';
+            s._state.notebookJson.metadata.kernelspec.display_name = kernelSpec.display_name || kernelSpec.name || '';
+        }
     }
 
     public dispose(): void {
         NativeEditorStorage.storageMap.delete(this.file.toString());
     }
 
-    public async load(file: Uri, possibleContents?: string): Promise<void> {
+    public async load(file: Uri, possibleContents?: string): Promise<INotebookModel> {
         // Reset the load promise and reload our cells
-        this._loaded = false;
         this._loadPromise = this.loadFromFile(file, possibleContents);
         await this._loadPromise;
+        return this;
     }
 
-    public save(): Promise<void> {
+    public save(): Promise<INotebookModel> {
         return this.saveAs(this.file);
     }
 
-    public async saveAs(file: Uri): Promise<void> {
+    public async saveAs(file: Uri): Promise<INotebookModel> {
         const contents = await this.getContent();
         await this.fileSystem.writeFile(file.fsPath, contents, 'utf-8');
-        this.setState({ isDirty: false, file });
-    }
-
-    public getCells(): Promise<ICell[]> {
-        if (!this._loaded && this._loadPromise) {
-            return this._loadPromise;
+        if (this.isDirty || file.fsPath !== this.file.fsPath) {
+            this.setState({ isDirty: false, file });
         }
-
-        // If already loaded, return the updated cell values
-        return Promise.resolve(this._state.cells);
+        return this;
     }
 
     public async getJson(): Promise<Partial<nbformat.INotebookContent>> {
@@ -260,7 +221,39 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
     }
 
     public getContent(cells?: ICell[]): Promise<string> {
-        return this.generateNotebookContent(cells ? cells : this._state.cells);
+        return this.generateNotebookContent(cells ? cells : this.cells);
+    }
+
+    // tslint:disable-next-line: no-any
+    private async commandCallback(handler: (...any: [NativeEditorStorage, ...any[]]) => Promise<any>, resource: Uri) {
+        const args = Array.prototype.slice.call(arguments).slice(2);
+        const storage = await NativeEditorStorage.getStorage(resource);
+        if (storage) {
+            return handler(storage, ...args);
+        }
+    }
+
+    private registerCommands(commandManager: ICommandManager, disposableRegistry: IDisposableRegistry): void {
+        NativeEditorStorage.signedUpForCommands = true;
+        disposableRegistry.push({
+            dispose: () => {
+                NativeEditorStorage.signedUpForCommands = false;
+            }
+        });
+        disposableRegistry.push(
+            commandManager.registerCommand(Commands.NotebookStorage_ClearCellOutputs, this.commandCallback.bind(undefined, NativeEditorStorage.handleClearAllOutputs))
+        );
+        disposableRegistry.push(
+            commandManager.registerCommand(Commands.NotebookStorage_DeleteAllCells, this.commandCallback.bind(undefined, NativeEditorStorage.handleDeleteAllCells))
+        );
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_EditCell, this.commandCallback.bind(undefined, NativeEditorStorage.handleEdit)));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_InsertCell, this.commandCallback.bind(undefined, NativeEditorStorage.handleInsert)));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_ModifyCells, this.commandCallback.bind(undefined, NativeEditorStorage.handleModifyCells)));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_RemoveCell, this.commandCallback.bind(undefined, NativeEditorStorage.handleRemoveCell)));
+        disposableRegistry.push(commandManager.registerCommand(Commands.NotebookStorage_SwapCells, this.commandCallback.bind(undefined, NativeEditorStorage.handleSwapCells)));
+        disposableRegistry.push(
+            commandManager.registerCommand(Commands.NotebookStorage_UpdateVersion, this.commandCallback.bind(undefined, NativeEditorStorage.handleUpdateVersionInfo))
+        );
     }
 
     private async loadFromFile(file: Uri, possibleContents?: string): Promise<ICell[]> {
@@ -298,7 +291,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
 
     private async loadContents(contents: string | undefined, forceDirty: boolean): Promise<ICell[]> {
         // tslint:disable-next-line: no-any
-        const json = contents ? (JSON.parse(contents) as any) : undefined;
+        const json = contents ? (JSON.parse(contents) as Partial<nbformat.INotebookContent>) : undefined;
 
         // Double check json (if we have any)
         if (json && !json.cells) {
@@ -316,7 +309,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         }
 
         // Extract cells from the json
-        const cells = contents ? (json.cells as (nbformat.ICodeCell | nbformat.IRawCell | nbformat.IMarkdownCell)[]) : [];
+        const cells = json ? (json.cells as (nbformat.ICodeCell | nbformat.IRawCell | nbformat.IMarkdownCell)[]) : [];
 
         // Remap the ids
         const remapped = cells.map((c, index) => {
@@ -338,10 +331,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
         // Save as our visible list
         this.setState({ cells: remapped, isDirty: forceDirty });
 
-        // Indicate loaded
-        this._loaded = true;
-
-        return this._state.cells;
+        return this.cells;
     }
 
     private async extractPythonMainVersion(notebookData: Partial<nbformat.INotebookContent>): Promise<number> {
@@ -415,8 +405,8 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
 
     private setState(newState: Partial<INativeEditorStorageState>) {
         let changed = false;
-        const change: INotebookStorageChange = { storage: this };
-        if (newState.file && newState.file !== this.file) {
+        const change: INotebookModelChange = { model: this };
+        if (newState.file) {
             change.newFile = newState.file;
             change.oldFile = this.file;
             this._state.file = change.newFile;
@@ -424,7 +414,7 @@ export class NativeEditorStorage implements INotebookStorage, ILoadableNotebookS
             NativeEditorStorage.storageMap.set(newState.file.toString(), this);
             changed = true;
         }
-        if (newState.cells && !fastDeepEqual(newState.cells, this._state.cells)) {
+        if (newState.cells) {
             change.oldCells = this._state.cells;
             change.newCells = newState.cells;
             this._state.cells = newState.cells;

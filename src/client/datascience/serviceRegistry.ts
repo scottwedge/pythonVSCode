@@ -89,13 +89,13 @@ import {
     IJupyterSessionManagerFactory,
     IJupyterSubCommandExecutionService,
     IJupyterVariables,
-    ILoadableNotebookStorage,
     INotebookEditor,
     INotebookEditorProvider,
     INotebookExecutionLogger,
     INotebookExporter,
     INotebookImporter,
     INotebookServer,
+    INotebookStorage,
     IPlotViewer,
     IPlotViewerProvider,
     IStatusProvider,
@@ -139,7 +139,7 @@ export function registerTypes(serviceManager: IServiceManager) {
     serviceManager.addBinding(ICellHashProvider, INotebookExecutionLogger);
     serviceManager.addBinding(IJupyterDebugger, ICellHashListener);
     serviceManager.addSingleton<INotebookEditorProvider>(INotebookEditorProvider, NativeEditorProvider);
-    serviceManager.add<ILoadableNotebookStorage>(ILoadableNotebookStorage, NativeEditorStorage);
+    serviceManager.add<INotebookStorage>(INotebookStorage, NativeEditorStorage);
     serviceManager.add<INotebookEditor>(INotebookEditor, NativeEditor);
     serviceManager.addSingleton<IDataScienceCommandListener>(IDataScienceCommandListener, NativeEditorCommandListener);
     serviceManager.addBinding(ICodeLensFactory, IInteractiveWindowListener);

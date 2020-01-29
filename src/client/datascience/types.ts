@@ -332,7 +332,7 @@ export interface INotebookEditor extends IInteractiveBase {
     readonly file: Uri;
     readonly visible: boolean;
     readonly active: boolean;
-    load(storage: INotebookStorage, webViewPanel: WebviewPanel): Promise<void>;
+    load(storage: INotebookModel, webViewPanel: WebviewPanel): Promise<void>;
     runAllCells(): void;
     runSelectedCell(): void;
     addCellBelow(): void;
@@ -731,8 +731,8 @@ export interface INotebookEdit {
     readonly contents: ICell[];
 }
 
-export interface INotebookStorageChange {
-    storage: INotebookStorage;
+export interface INotebookModelChange {
+    model: INotebookModel;
     newFile?: Uri;
     oldFile?: Uri;
     isDirty?: boolean;
@@ -741,20 +741,20 @@ export interface INotebookStorageChange {
     oldCells?: ICell[];
 }
 
-export interface INotebookStorage {
+export interface INotebookModel {
     readonly file: Uri;
     readonly isDirty: boolean;
     readonly isUntitled: boolean;
-    readonly changed: Event<INotebookStorageChange>;
-    getCells(): Promise<ICell[]>;
+    readonly changed: Event<INotebookModelChange>;
+    readonly cells: ICell[];
     getJson(): Promise<Partial<nbformat.INotebookContent>>;
     getContent(cells?: ICell[]): Promise<string>;
 }
 
-export const ILoadableNotebookStorage = Symbol('ILoadableNotebookStorage');
+export const INotebookStorage = Symbol('INotebookStorage');
 
-export interface ILoadableNotebookStorage extends INotebookStorage {
-    load(file: Uri, contents?: string): Promise<void>;
-    save(): Promise<void>;
-    saveAs(file: Uri): Promise<void>;
+export interface INotebookStorage {
+    load(file: Uri, contents?: string): Promise<INotebookModel>;
+    save(): Promise<INotebookModel>;
+    saveAs(file: Uri): Promise<INotebookModel>;
 }

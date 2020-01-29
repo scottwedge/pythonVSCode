@@ -13,10 +13,13 @@ import * as localize from '../../common/utils/localize';
 import { IServiceContainer } from '../../ioc/types';
 import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { Identifiers, Settings, Telemetry } from '../constants';
-import { ILoadableNotebookStorage, INotebookEdit, INotebookEditor, INotebookEditorProvider, INotebookServerOptions, INotebookStorageChange } from '../types';
+import { INotebookEdit, INotebookEditor, INotebookEditorProvider, INotebookModel, INotebookModelChange, INotebookServerOptions, INotebookStorage } from '../types';
 
+// Class that is registered as the custom editor provider for notebooks. VS code will call into this class when
+// opening an ipynb file. This class then creates a backing storage, model, and opens a view for the file.
 @injectable()
 export class NativeEditorProvider implements INotebookEditorProvider, WebviewCustomEditorProvider, WebviewCustomEditorEditingDelegate<INotebookEdit>, IAsyncDisposable {
+    // Note, this constant has to match the value used in the package.json to register the webview custom editor.
     public static readonly customEditorViewType = 'NativeEditorProvider.ipynb';
     public get onDidChangeActiveNotebookEditor(): Event<INotebookEditor | undefined> {
         return this._onDidChangeActiveNotebookEditor.event;
@@ -28,8 +31,8 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
     private readonly _onDidCloseNotebookEditor = new EventEmitter<INotebookEditor>();
     private readonly _editEventEmitter = new EventEmitter<{ readonly resource: Uri; readonly edit: INotebookEdit }>();
     private openedEditors: Set<INotebookEditor> = new Set<INotebookEditor>();
-    private storage: Map<string, Promise<ILoadableNotebookStorage>> = new Map<string, Promise<ILoadableNotebookStorage>>();
-    private storageChangedHandlers: Map<string, Disposable> = new Map<string, Disposable>();
+    private models = new Map<string, Promise<{ model: INotebookModel; storage: INotebookStorage }>>();
+    private modelChangedHandlers: Map<string, Disposable> = new Map<string, Disposable>();
     private _onDidOpenNotebookEditor = new EventEmitter<INotebookEditor>();
     private executedEditors: Set<string> = new Set<string>();
     private notebookCount: number = 0;
@@ -81,14 +84,19 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         return Promise.resolve();
     }
     public async resolveWebviewEditor(resource: Uri, panel: WebviewPanel) {
-        // Get the storage
-        const storage = await this.loadStorage(resource);
+        try {
+            // Get the model
+            const model = await this.loadModel(resource);
 
-        // Create a new editor
-        const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
+            // Create a new editor
+            const editor = this.serviceContainer.get<INotebookEditor>(INotebookEditor);
 
-        // Load it (should already be visible)
-        return editor.load(storage, panel).then(() => this.openedEditor(editor));
+            // Load it (should already be visible)
+            return editor.load(model, panel).then(() => this.openedEditor(editor));
+        } catch (exc) {
+            // Send telemetry indicating a failure
+            sendTelemetryEvent(Telemetry.OpenNotebookFailure, { message: exc.message });
+        }
     }
     public get editingDelegate(): WebviewCustomEditorEditingDelegate<unknown> | undefined {
         return this;
@@ -204,11 +212,12 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         }
     }
 
-    private async storageChanged(file: Uri, change: INotebookStorageChange): Promise<void> {
+    private async modelChanged(file: Uri, change: INotebookModelChange): Promise<void> {
         // If the file changes, update our storage
-        if (change.oldFile && change.newFile) {
-            this.storage.delete(change.oldFile.toString());
-            this.storage.set(change.newFile.toString(), Promise.resolve(change.storage as ILoadableNotebookStorage));
+        if (change.oldFile && change.newFile && this.models.has(change.oldFile.toString())) {
+            const promise = this.models.get(change.oldFile.toString());
+            this.models.delete(change.oldFile.toString());
+            this.models.set(change.newFile.toString(), promise!);
         }
         // If the cells change, tell VS code about it
         if (change.newCells && change.isDirty) {
@@ -216,26 +225,36 @@ export class NativeEditorProvider implements INotebookEditorProvider, WebviewCus
         }
     }
 
-    private loadStorage(file: Uri, contents?: string): Promise<ILoadableNotebookStorage> {
+    private async loadModel(file: Uri, contents?: string): Promise<INotebookModel> {
+        const modelAndStorage = await this.loadModelAndStorage(file, contents);
+        return modelAndStorage.model;
+    }
+
+    private async loadStorage(file: Uri, contents?: string): Promise<INotebookStorage> {
+        const modelAndStorage = await this.loadModelAndStorage(file, contents);
+        return modelAndStorage.storage;
+    }
+
+    private loadModelAndStorage(file: Uri, contents?: string) {
         const key = file.toString();
-        let storagePromise = this.storage.get(key);
-        if (!storagePromise) {
-            const storage = this.serviceContainer.get<ILoadableNotebookStorage>(ILoadableNotebookStorage);
-            if (!this.storageChangedHandlers.has(key)) {
-                this.storageChangedHandlers.set(key, storage.changed(this.storageChanged.bind(this, file)));
-            }
-            storagePromise = storage.load(file, contents).then(_v => {
-                return storage;
+        let modelPromise = this.models.get(key);
+        if (!modelPromise) {
+            const storage = this.serviceContainer.get<INotebookStorage>(INotebookStorage);
+            modelPromise = storage.load(file, contents).then(m => {
+                if (!this.modelChangedHandlers.has(key)) {
+                    this.modelChangedHandlers.set(key, m.changed(this.modelChanged.bind(this, file)));
+                }
+                return { model: m, storage };
             });
 
-            this.storage.set(key, storagePromise);
+            this.models.set(key, modelPromise);
         }
-        return storagePromise;
+        return modelPromise;
     }
 
     private async getNextNewNotebookUri(): Promise<Uri> {
         // See if we have any untitled storage already
-        const untitledStorage = [...this.storage.keys()].filter(k => Uri.parse(k).scheme === 'untitled');
+        const untitledStorage = [...this.models.keys()].filter(k => Uri.parse(k).scheme === 'untitled');
 
         // Just use the length (don't bother trying to fill in holes). We never remove storage objects from
         // our map, so we'll keep creating new untitled notebooks.

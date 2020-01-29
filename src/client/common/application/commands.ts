@@ -149,7 +149,6 @@ export interface ICommandNameArgumentTypeMapping extends ICommandNameWithoutArgu
     [DSCommands.ViewJupyterOutput]: [];
     [DSCommands.SwitchJupyterKernel]: [INotebook | undefined];
     [DSCommands.NotebookStorage_DeleteAllCells]: [Uri];
-    [DSCommands.NotebookStorage_Close]: [Uri];
     [DSCommands.NotebookStorage_ModifyCells]: [Uri, ICell[]];
     [DSCommands.NotebookStorage_EditCell]: [Uri, IEditCell];
     [DSCommands.NotebookStorage_InsertCell]: [Uri, IInsertCell];

@@ -2773,7 +2773,7 @@
         "webviewEditors": [
             {
                 "viewType": "NativeEditorProvider.ipynb",
-                "displayName": "Jupyter Notebook Editor",
+                "displayName": "Jupyter Notebook",
                 "selector": [
                     {
                         "filenamePattern": "*.ipynb"

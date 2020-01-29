@@ -206,13 +206,13 @@ import {
     IJupyterSessionManagerFactory,
     IJupyterSubCommandExecutionService,
     IJupyterVariables,
-    ILoadableNotebookStorage,
     INotebookEditor,
     INotebookEditorProvider,
     INotebookExecutionLogger,
     INotebookExporter,
     INotebookImporter,
     INotebookServer,
+    INotebookStorage,
     IPlotViewer,
     IPlotViewerProvider,
     IStatusProvider,
@@ -439,7 +439,7 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         this.serviceManager.addSingleton<IDebugLocationTracker>(IDebugLocationTracker, DebugLocationTrackerFactory);
         this.serviceManager.addSingleton<INotebookEditorProvider>(INotebookEditorProvider, TestNativeEditorProvider);
         this.serviceManager.add<INotebookEditor>(INotebookEditor, NativeEditor);
-        this.serviceManager.add<ILoadableNotebookStorage>(ILoadableNotebookStorage, NativeEditorStorage);
+        this.serviceManager.add<INotebookStorage>(INotebookStorage, NativeEditorStorage);
         this.serviceManager.addSingletonInstance<ICustomEditorService>(ICustomEditorService, new MockCustomEditorService(this.asyncRegistry, this.commandManager));
         this.serviceManager.addSingleton<IDataScienceCommandListener>(IDataScienceCommandListener, NativeEditorCommandListener);
         this.serviceManager.addSingletonInstance<IOutputChannel>(IOutputChannel, mock(MockOutputChannel), JUPYTER_OUTPUT_CHANNEL);

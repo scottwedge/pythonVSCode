@@ -16,7 +16,7 @@ import { ConfigurationService } from '../../../client/common/configuration/servi
 import { IConfigurationService } from '../../../client/common/types';
 import { noop } from '../../../client/common/utils/misc';
 import { NativeEditorProvider } from '../../../client/datascience/interactive-ipynb/nativeEditorProvider';
-import { ILoadableNotebookStorage, INotebookEditor } from '../../../client/datascience/types';
+import { INotebookEditor, INotebookModel, INotebookStorage } from '../../../client/datascience/types';
 import { ServiceContainer } from '../../../client/ioc/container';
 import { IServiceContainer } from '../../../client/ioc/types';
 
@@ -26,7 +26,7 @@ suite('Data Science - Native Editor Provider', () => {
     let configService: IConfigurationService;
     let svcContainer: IServiceContainer;
     let editor: typemoq.IMock<INotebookEditor>;
-    let storage: typemoq.IMock<ILoadableNotebookStorage>;
+    let storage: typemoq.IMock<INotebookStorage & INotebookModel>;
     let customEditorService: typemoq.IMock<ICustomEditorService>;
     let file: Uri;
     let storageFile: Uri;
@@ -44,7 +44,7 @@ suite('Data Science - Native Editor Provider', () => {
 
     function createNotebookProvider() {
         editor = typemoq.Mock.ofType<INotebookEditor>();
-        storage = typemoq.Mock.ofType<ILoadableNotebookStorage>();
+        storage = typemoq.Mock.ofType<INotebookStorage & INotebookModel>();
         when(configService.getSettings()).thenReturn({ datascience: { useNotebookEditor: true } } as any);
         editor.setup(e => e.closed).returns(() => new EventEmitter<INotebookEditor>().event);
         editor.setup(e => e.executed).returns(() => new EventEmitter<INotebookEditor>().event);
@@ -54,11 +54,11 @@ suite('Data Science - Native Editor Provider', () => {
             .setup(s => s.load(typemoq.It.isAny(), typemoq.It.isAny()))
             .returns(f => {
                 storageFile = f;
-                return Promise.resolve();
+                return Promise.resolve(storage.object);
             });
         storage.setup(s => s.file).returns(() => storageFile);
         when(svcContainer.get<INotebookEditor>(INotebookEditor)).thenReturn(editor.object);
-        when(svcContainer.get<ILoadableNotebookStorage>(ILoadableNotebookStorage)).thenReturn(storage.object);
+        when(svcContainer.get<INotebookStorage>(INotebookStorage)).thenReturn(storage.object);
         customEditorService.setup(e => (e as any).then).returns(() => undefined);
         customEditorService
             .setup(c => c.registerWebviewCustomEditorProvider(typemoq.It.isAny(), typemoq.It.isAny(), typemoq.It.isAny()))

@@ -65,7 +65,6 @@ export namespace Commands {
 
     // Make sure to put these into the package .json
     export const NotebookStorage_DeleteAllCells = 'python.datascience.notebook.deleteall';
-    export const NotebookStorage_Close = 'python.datascience.notebook.close';
     export const NotebookStorage_ModifyCells = 'python.datascience.notebook.modifycells';
     export const NotebookStorage_EditCell = 'python.datascience.notebook.editcell';
     export const NotebookStorage_InsertCell = 'python.datascience.notebook.insertcell';
@@ -249,7 +248,8 @@ export enum Telemetry {
     UserInstalledJupyter = 'DATASCIENCE.USER_INSTALLED_JUPYTER',
     UserDidNotInstallJupyter = 'DATASCIENCE.USER_DID_NOT_INSTALL_JUPYTER',
     OpenedInteractiveWindow = 'DATASCIENCE.OPENED_INTERACTIVE',
-    FindKernelForLocalConnection = 'DATASCIENCE.FIND_KERNEL_FOR_LOCAL_CONNECTION'
+    FindKernelForLocalConnection = 'DATASCIENCE.FIND_KERNEL_FOR_LOCAL_CONNECTION',
+    OpenNotebookFailure = 'DS_INTERNAL.NATIVE.OPEN_NOTEBOOK_FAILURE'
 }
 
 export enum NativeKeyboardCommandTelemetry {

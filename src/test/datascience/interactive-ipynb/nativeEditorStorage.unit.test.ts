@@ -352,7 +352,7 @@ suite('Data Science - Native Editor Storage', () => {
     test('Create new editor and add some cells', async () => {
         await storage.load(baseUri);
         await executeCommand(Commands.NotebookStorage_InsertCell, baseUri, { index: 0, cell: createEmptyCell('1', 1), code: '1', codeCellAboveId: undefined });
-        const cells = await storage.getCells();
+        const cells = storage.cells;
         expect(cells).to.be.lengthOf(4);
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
         expect(cells[0].id).to.be.match(/1/);
@@ -361,7 +361,7 @@ suite('Data Science - Native Editor Storage', () => {
     test('Move cells around', async () => {
         await storage.load(baseUri);
         await executeCommand(Commands.NotebookStorage_SwapCells, baseUri, { firstCellId: 'NotebookImport#0', secondCellId: 'NotebookImport#1' });
-        const cells = await storage.getCells();
+        const cells = storage.cells;
         expect(cells).to.be.lengthOf(3);
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
         expect(cells[0].id).to.be.match(/NotebookImport#1/);
@@ -386,17 +386,17 @@ suite('Data Science - Native Editor Storage', () => {
             ],
             id: 'NotebookImport#1'
         });
-        let cells = await storage.getCells();
+        let cells = storage.cells;
         expect(cells).to.be.lengthOf(3);
         expect(cells[1].id).to.be.match(/NotebookImport#1/);
         expect(cells[1].data.source).to.be.equals('b=2\nab');
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
         await executeCommand(Commands.NotebookStorage_RemoveCell, baseUri, 'NotebookImport#0');
-        cells = await storage.getCells();
+        cells = storage.cells;
         expect(cells).to.be.lengthOf(2);
         expect(cells[0].id).to.be.match(/NotebookImport#1/);
         await executeCommand(Commands.NotebookStorage_DeleteAllCells, baseUri);
-        cells = await storage.getCells();
+        cells = storage.cells;
         expect(cells).to.be.lengthOf(0);
     });
 
@@ -414,7 +414,7 @@ suite('Data Science - Native Editor Storage', () => {
         await storage.load(file);
 
         // It should load with that value
-        const cells = await storage.getCells();
+        const cells = storage.cells;
         expect(cells).to.be.lengthOf(2);
     });
 
@@ -432,7 +432,7 @@ suite('Data Science - Native Editor Storage', () => {
         await storage.load(file);
 
         // It should load with that value
-        const cells = await storage.getCells();
+        const cells = storage.cells;
         expect(cells).to.be.lengthOf(2);
     });
 
@@ -456,7 +456,7 @@ suite('Data Science - Native Editor Storage', () => {
         await storage.load(file);
 
         // It should load with that value
-        const cells = await storage.getCells();
+        const cells = storage.cells;
         expect(cells).to.be.lengthOf(2);
 
         // And global storage should be empty

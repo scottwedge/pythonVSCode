@@ -38,7 +38,7 @@ export namespace Creation {
     }
 
     export function insertAbove(arg: NativeEditorReducerArg<ICellAction>): IMainState {
-        const newVM = prepareCellVM(createEmptyCell(uuid(), null), false, arg.prevState.settings);
+        const newVM = prepareCellVM(createEmptyCell(arg.payload.newCellId || uuid(), null), false, arg.prevState.settings);
         const newList = [...arg.prevState.cellVMs];
 
         // Find the position where we want to insert
@@ -70,7 +70,7 @@ export namespace Creation {
     }
 
     export function insertBelow(arg: NativeEditorReducerArg<ICellAction>): IMainState {
-        const newVM = prepareCellVM(createEmptyCell(uuid(), null), false, arg.prevState.settings);
+        const newVM = prepareCellVM(createEmptyCell(arg.payload.newCellId || uuid(), null), false, arg.prevState.settings);
         const newList = [...arg.prevState.cellVMs];
 
         // Find the position where we want to insert

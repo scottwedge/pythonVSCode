@@ -14,7 +14,7 @@ import { combineReducers, createQueueableActionMiddleware, QueuableAction } from
 import { computeEditorOptions, getDefaultSettings } from '../../react-common/settingsReactSide';
 import { createEditableCellVM, generateTestState } from '../mainState';
 import { forceLoad } from '../transforms';
-import { AllowedMessages, createPostableAction, generatePostOfficeSendReducer, IncomingMessageActions } from './postOffice';
+import { AllowedMessages, createPostableAction, editorSyncActions, generatePostOfficeSendReducer, IncomingMessageActions } from './postOffice';
 import { generateMonacoReducer, IMonacoState } from './reducers/monaco';
 import { generateVariableReducer, IVariableState } from './reducers/variables';
 
@@ -258,11 +258,27 @@ export function createStore<M>(skipDefault: boolean, baseTheme: string, testMode
     postOffice.addHandler({
         // tslint:disable-next-line: no-any
         handleMessage(message: string, payload: any): boolean {
+            let doNotBroadcast = false;
+            if (message && message === 'sync' && payload && payload.type) {
+                doNotBroadcast = true;
+                message = payload.type.startsWith('action') ? payload.type.substring('action.'.length) : payload.type;
+                // Add a custom property `__sync` to ensure we do not propagate this back to the others.
+                payload = { ...(payload.payload || {}), __sync: true };
+            }
             // Double check this is one of our messages. React will actually post messages here too during development
             if (AllowedMessages.find(k => k === message)) {
                 // Prefix message type with 'action.' so that we can:
                 // - Have one reducer for incoming
                 // - Have another reducer for outgoing
+                store.dispatch({ type: `action.${message}`, payload });
+                // tslint:disable-next-line: no-any
+            } else if (!doNotBroadcast && editorSyncActions.includes(`action.${message}` as any)) {
+                console.error(`Sending Message to others from post office handler ${message}`);
+                // tslint:disable-next-line: no-any
+                postOffice.sendMessage<any, any>('sync', { type: message, payload });
+            } else if (doNotBroadcast && editorSyncActions.includes(`action.${message}` as any)) {
+                console.error(`Displatching Message from others ${message}`);
+                // tslint:disable-next-line: no-any
                 store.dispatch({ type: `action.${message}`, payload });
             }
             return true;

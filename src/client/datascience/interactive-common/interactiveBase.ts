@@ -171,6 +171,10 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
     // tslint:disable-next-line: no-any no-empty cyclomatic-complexity max-func-body-length
     public onMessage(message: string, payload: any) {
         switch (message) {
+            case 'sync':
+                // tslint:disable-next-line: no-any
+                this.postMessageInternal(payload.type as any, payload.payload).ignoreErrors();
+                break;
             case InteractiveWindowMessages.GotoCodeCell:
                 this.handleMessage(message, payload, this.gotoCode);
                 break;

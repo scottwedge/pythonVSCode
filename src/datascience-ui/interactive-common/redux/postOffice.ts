@@ -6,6 +6,7 @@ import * as Redux from 'redux';
 import { IInteractiveWindowMapping, InteractiveWindowMessages } from '../../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CssMessages, SharedMessages } from '../../../client/datascience/messages';
 import { PostOffice } from '../../react-common/postOffice';
+import { CommonActionType } from './reducers/types';
 
 // Action types for Incoming messages. Basically all possible messages prefixed with the word 'action'
 // This allows us to have a reducer for an incoming message and a separate reducer for an outgoing message.
@@ -96,6 +97,38 @@ export enum IncomingMessageActions {
     LOCINIT = 'action.loc_init'
 }
 
+export const editorSyncActions: (IncomingMessageActions | CommonActionType)[] = [
+    IncomingMessageActions.DELETECELL,
+    IncomingMessageActions.DELETEALLCELLS,
+    IncomingMessageActions.EXPANDALL,
+    IncomingMessageActions.COLLAPSEALL,
+    IncomingMessageActions.ADDCELL,
+    IncomingMessageActions.EDITCELL,
+    IncomingMessageActions.REMOVECELL,
+    IncomingMessageActions.SWAPCELLS,
+    IncomingMessageActions.INSERTCELL,
+    IncomingMessageActions.SCROLLTOCELL,
+    IncomingMessageActions.NOTEBOOKDIRTY,
+    IncomingMessageActions.NOTEBOOKCLEAN,
+    IncomingMessageActions.NOTEBOOKADDCELLBELOW,
+    CommonActionType.ADD_NEW_CELL,
+    CommonActionType.INSERT_ABOVE,
+    CommonActionType.INSERT_ABOVE_FIRST,
+    CommonActionType.INSERT_BELOW,
+    CommonActionType.CLICK_CELL,
+    CommonActionType.CLEAR_ALL_OUTPUTS,
+    CommonActionType.DELETE_ALL_CELLS,
+    CommonActionType.DELETE_CELL,
+    CommonActionType.ARROW_DOWN,
+    CommonActionType.ARROW_UP,
+    CommonActionType.DOUBLE_CLICK_CELL,
+    CommonActionType.FOCUS_CELL,
+    CommonActionType.MOVE_CELL_DOWN,
+    CommonActionType.MOVE_CELL_UP,
+    CommonActionType.SELECT_CELL,
+    CommonActionType.UNFOCUS_CELL
+];
+
 export const AllowedMessages = [...Object.values(InteractiveWindowMessages), ...Object.values(CssMessages), ...Object.values(SharedMessages)];
 
 // Actions created from messages
@@ -111,6 +144,10 @@ export function generatePostOfficeSendReducer(postOffice: PostOffice): Redux.Red
             // Just post this to the post office.
             // tslint:disable-next-line: no-any
             postOffice.sendMessage<IInteractiveWindowMapping>(action.type, action.payload);
+        } else if (action && !action.type.startsWith('@@redux') && editorSyncActions.includes(action.type) && !action?.payload?.__sync) {
+            console.error(`Sending Message to others ${action.type}`);
+            // tslint:disable-next-line: no-any
+            postOffice.sendMessage<any, any>('sync' as any, { type: action.type, payload: action.payload });
         }
 
         // We don't modify the state.

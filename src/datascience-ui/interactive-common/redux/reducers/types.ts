@@ -91,6 +91,7 @@ export type CommonReducerArg<AT, T = never | undefined> = ReducerArg<IMainState,
 
 export interface ICellAction {
     cellId: string | undefined;
+    newCellId?: string | undefined;
 }
 
 export interface IEditCellAction extends ICellAction {

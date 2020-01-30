@@ -3,6 +3,7 @@
 'use strict';
 import '../../common/extensions';
 
+import * as uuid from 'uuid/v4';
 import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
 
@@ -15,11 +16,13 @@ import { InteractiveWindowMessages, InteractiveWindowRemoteMessages } from './in
 
 // This class listens to messages that come from the local Python Interactive window
 export class InteractiveWindowMessageListener implements IWebPanelMessageListener {
+    private static handlers = new Map<InteractiveWindowMessageListener, (message: string, payload: any) => void>();
     private postOffice: PostOffice;
     private disposedCallback: () => void;
     private callback: (message: string, payload: any) => void;
     private viewChanged: (panel: IWebPanel) => void;
     private interactiveWindowMessages: string[] = [];
+    private readonly id = uuid();
 
     constructor(liveShare: ILiveShareApi, callback: (message: string, payload: any) => void, viewChanged: (panel: IWebPanel) => void, disposed: () => void) {
         this.postOffice = new PostOffice(LiveShare.WebPanelMessageService, liveShare, (api, _command, role, args) => this.translateHostArgs(api, role, args));
@@ -40,6 +43,8 @@ export class InteractiveWindowMessageListener implements IWebPanelMessageListene
         this.interactiveWindowMessages.forEach(m => {
             this.postOffice.registerCallback(m, a => callback(m, a)).ignoreErrors();
         });
+
+        InteractiveWindowMessageListener.handlers.set(this, callback);
     }
 
     public async dispose() {
@@ -48,6 +53,19 @@ export class InteractiveWindowMessageListener implements IWebPanelMessageListene
     }
 
     public onMessage(message: string, payload: any) {
+        if (message === 'sync') {
+            console.log(JSON.stringify(payload));
+            Array.from(InteractiveWindowMessageListener.handlers.keys()).forEach(item => {
+                if (item === this) {
+                    return;
+                }
+                const cb = InteractiveWindowMessageListener.handlers.get(item);
+                if (cb) {
+                    cb('sync', { id: this.id, type: message, payload });
+                }
+            });
+            return;
+        }
         // We received a message from the local webview. Broadcast it to everybody if it's a remote message
         if (InteractiveWindowRemoteMessages.indexOf(message) >= 0) {
             this.postOffice.postCommand(message, payload).ignoreErrors();

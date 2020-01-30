@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-import { Disposable, Uri, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider, WebviewPanel, WebviewPanelOptions } from 'vscode';
-import { ICommandManager, ICustomEditorService } from '../../client/common/application/types';
+import { Disposable, Uri, WebviewPanel, WebviewPanelOptions } from 'vscode';
+import { ICommandManager, ICustomEditorService, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider } from '../../client/common/application/types';
 import { IDisposableRegistry } from '../../client/common/types';
 import { noop } from '../../client/common/utils/misc';
 import { INotebookEdit, INotebookEditor, INotebookEditorProvider } from '../../client/datascience/types';
@@ -15,9 +15,6 @@ export class MockCustomEditorService implements ICustomEditorService {
         disposableRegistry.push(commandManager.registerCommand('workbench.action.files.saveAs', this.onFileSaveAs.bind(this)));
     }
 
-    public get supportsCustomEditors(): boolean {
-        return true;
-    }
     public registerWebviewCustomEditorProvider(_viewType: string, provider: WebviewCustomEditorProvider, _options?: WebviewPanelOptions | undefined): Disposable {
         // Only support one view type, so just save the provider
         this.provider = provider;

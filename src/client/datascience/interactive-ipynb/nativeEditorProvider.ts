@@ -3,9 +3,9 @@
 'use strict';
 import { inject, injectable } from 'inversify';
 import * as uuid from 'uuid/v4';
-import { Disposable, Event, EventEmitter, Uri, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider, WebviewPanel } from 'vscode';
+import { Disposable, Event, EventEmitter, Uri, WebviewPanel } from 'vscode';
 import { arePathsSame } from '../../../datascience-ui/react-common/arePathsSame';
-import { ICustomEditorService, IWorkspaceService } from '../../common/application/types';
+import { ICustomEditorService, IWorkspaceService, WebviewCustomEditorEditingDelegate, WebviewCustomEditorProvider } from '../../common/application/types';
 import { traceInfo } from '../../common/logger';
 import { IAsyncDisposable, IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry } from '../../common/types';
 import { createDeferred } from '../../common/utils/async';

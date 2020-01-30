@@ -101,7 +101,7 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage, ID
                 if (contents !== newContents) {
                     const newCells = [...s.cells];
                     const newCell = { ...newCells[index], data: { ...newCells[index].data, source: newContents } };
-                    newCells[index] = newCell;
+                    newCells[index] = NativeEditorStorage.asCell(newCell);
                     s.setState({ cells: newCells });
                 }
             }
@@ -130,8 +130,8 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage, ID
         if (first >= 0 && second >= 0) {
             const newCells = [...s.cells];
             const temp = { ...newCells[first] };
-            newCells[first] = newCells[second];
-            newCells[second] = temp;
+            newCells[first] = NativeEditorStorage.asCell(newCells[second]);
+            newCells[second] = NativeEditorStorage.asCell(temp);
             s.setState({ cells: newCells });
         }
     }
@@ -144,7 +144,7 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage, ID
 
     private static async handleClearAllOutputs(s: NativeEditorStorage): Promise<void> {
         const newCells = s.cells.map(c => {
-            return { ...c, data: { ...c.data, execution_count: null, outputs: [] } };
+            return NativeEditorStorage.asCell({ ...c, data: { ...c.data, execution_count: null, outputs: [] } });
         });
 
         // Do our check here to see if any changes happened. We don't want
@@ -159,7 +159,7 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage, ID
         // Update these cells in our list
         cells.forEach(c => {
             const index = newCells.findIndex(v => v.id === c.id);
-            newCells[index] = c;
+            newCells[index] = NativeEditorStorage.asCell(c);
         });
 
         // Indicate dirty
@@ -189,6 +189,11 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage, ID
             s._state.notebookJson.metadata.kernelspec.name = kernelSpec.name || kernelSpec.display_name || '';
             s._state.notebookJson.metadata.kernelspec.display_name = kernelSpec.display_name || kernelSpec.name || '';
         }
+    }
+
+    // tslint:disable-next-line: no-any
+    private static asCell(cell: any): ICell {
+        return cell as ICell;
     }
 
     public dispose(): void {

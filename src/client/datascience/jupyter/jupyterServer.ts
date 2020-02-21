@@ -12,6 +12,7 @@ import { IAsyncDisposableRegistry, IConfigurationService, IDisposableRegistry, R
 import { createDeferred, Deferred } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
+import { capturePerformance } from '../../telemetry';
 import {
     IConnection,
     IJupyterSession,
@@ -22,7 +23,6 @@ import {
     INotebookServer,
     INotebookServerLaunchInfo
 } from '../types';
-import { capturePerformance } from '../../telemetry';
 
 // This code is based on the examples here:
 // https://www.npmjs.com/package/@jupyterlab/services

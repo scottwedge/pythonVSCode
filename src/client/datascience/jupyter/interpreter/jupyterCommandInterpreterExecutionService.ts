@@ -14,13 +14,13 @@ import { DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { EXTENSION_ROOT_DIR } from '../../../constants';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
+import { capturePerformance } from '../../../telemetry';
 import { JupyterCommands, PythonDaemonModule } from '../../constants';
 import { IJupyterSubCommandExecutionService } from '../../types';
 import { JupyterServerInfo } from '../jupyterConnection';
 import { JupyterInstallError } from '../jupyterInstallError';
 import { JupyterKernelSpec, parseKernelSpecs } from '../kernels/jupyterKernelSpec';
 import { IFindCommandResult, JupyterCommandFinder } from './jupyterCommandFinder';
-import { capturePerformance } from '../../../telemetry';
 
 /**
  * Responsible for execution of jupyter sub commands using the command finder and related classes.

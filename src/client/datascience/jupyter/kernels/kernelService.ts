@@ -227,7 +227,7 @@ export class KernelService {
         }
     }
     @capturePerformance()
-   public async searchAndRegisterKernel(
+    public async searchAndRegisterKernel(
         interpreter: PythonInterpreter,
         disableUI?: boolean,
         cancelToken?: CancellationToken

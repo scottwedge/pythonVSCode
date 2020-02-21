@@ -17,7 +17,7 @@ import {
 } from '../common/types';
 import { sleep } from '../common/utils/async';
 import { IServiceContainer } from '../ioc/types';
-import { captureTelemetry } from '../telemetry';
+import { capturePerformance, captureTelemetry } from '../telemetry';
 import { EventName } from '../telemetry/constants';
 import {
     IInterpreterDisplay,
@@ -124,6 +124,7 @@ export class InterpreterService implements Disposable, IInterpreterService {
 
         return this.getInterpreterDetails(fullyQualifiedPath, resource);
     }
+    @capturePerformance()
     public async getInterpreterDetails(pythonPath: string, resource?: Uri): Promise<PythonInterpreter | undefined> {
         // If we don't have the fully qualified path, then get it.
         if (path.basename(pythonPath) === pythonPath) {

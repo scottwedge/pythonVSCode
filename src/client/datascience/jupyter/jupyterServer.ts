@@ -22,6 +22,7 @@ import {
     INotebookServer,
     INotebookServerLaunchInfo
 } from '../types';
+import { capturePerformance } from '../../telemetry';
 
 // This code is based on the examples here:
 // https://www.npmjs.com/package/@jupyterlab/services
@@ -47,6 +48,7 @@ export class JupyterServerBase implements INotebookServer {
         this.asyncRegistry.push(this);
     }
 
+    @capturePerformance()
     public async connect(launchInfo: INotebookServerLaunchInfo, cancelToken?: CancellationToken): Promise<void> {
         traceInfo(
             `Connecting server ${this.id} kernelSpec ${launchInfo.kernelSpec ? launchInfo.kernelSpec.name : 'unknown'}`

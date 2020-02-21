@@ -16,6 +16,7 @@ import { IServiceContainer } from '../../ioc/types';
 import { RegExpValues } from '../constants';
 import { IConnection } from '../types';
 import { JupyterConnectError } from './jupyterConnectError';
+import { capturePerformance } from '../../telemetry';
 
 // tslint:disable-next-line:no-require-imports no-var-requires no-any
 const namedRegexp = require('named-js-regexp');
@@ -94,6 +95,7 @@ export class JupyterConnectionWaiter implements IDisposable {
         clearTimeout(this.launchTimeout as any);
     }
 
+    @capturePerformance()
     public waitForConnection(): Promise<IConnection> {
         return this.startPromise.promise;
     }

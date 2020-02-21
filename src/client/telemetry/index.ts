@@ -6,12 +6,12 @@ import { JSONObject } from '@phosphor/coreutils';
 import { basename as pathBasename, sep as pathSep } from 'path';
 import * as stackTrace from 'stack-trace';
 import TelemetryReporter from 'vscode-extension-telemetry';
-
 import { DiagnosticCodes } from '../application/diagnostics/constants';
 import { IWorkspaceService } from '../common/application/types';
 import { AppinsightsKey, EXTENSION_ROOT_DIR, isTestExecution, PVSC_EXTENSION_ID } from '../common/constants';
 import { traceError, traceInfo } from '../common/logger';
 import { TerminalShellType } from '../common/terminal/types';
+import { noop } from '../common/utils/misc';
 import { StopWatch } from '../common/utils/stopWatch';
 import {
     JupyterCommands,
@@ -133,18 +133,113 @@ export function sendTelemetryEvent<P extends IEventNamePropertyMapping, E extend
     }
 }
 
-// tslint:disable-next-line:no-any function-name
+type PerfEvent = {
+    event: string;
+    start: number;
+    total?: number;
+    fail?: boolean;
+};
+
+const perfGroupTracker = new Map<string, PerfEvent[]>();
+
+function createPerfTracker(
+    capturePerfEvents: boolean,
+    stopWatch: StopWatch = new StopWatch(),
+    target?: Object,
+    propertyName?: string,
+    eventName?: string
+) {
+    const startTime = new Date().getTime();
+    /**
+     * Captures the times taken for methods executed until this completes.
+     * (note: due to async, we don't really know what method has been executed as a result of this method).
+     * We'll need to wait for node 13 for asynchooks.
+     *
+     */
+    let completePerfGroup = noop;
+
+    if (capturePerfEvents) {
+        if (!eventName) {
+            throw new Error('eventName cannot be empty');
+        }
+
+        // Send telemetry with perf captured for all events thus far.
+        perfGroupTracker.set(eventName, [{ event: 'start', start: startTime }]);
+        completePerfGroup = () => {
+            const events = perfGroupTracker.get(eventName!.toString());
+            if (events) {
+                const now = new Date().getTime();
+                // Clone so as not to mess up other perf groups.
+                const perfEvents = events.map(item => ({ ...item }));
+                perfEvents.push({ event: 'end', start: now, total: 0 });
+                perfEvents[0].total = now - startTime;
+
+                // Change all times to be relative to start.
+                perfEvents.forEach(item => {
+                    if (item.start) {
+                        item.start = item.start - startTime;
+                    }
+                });
+
+                sendTelemetryEvent(`${eventName!.toString()}_PERF` as any, perfEvents[0].total, {
+                    events: perfEvents
+                });
+
+                perfGroupTracker.delete(eventName!.toString());
+            }
+        };
+    }
+
+    // Build a name = <class>.<method>
+    const className = target ? ('constructor' in target && target.constructor.name ? target.constructor.name : '') : '';
+    propertyName = propertyName || '';
+    const methodName = className && propertyName ? `${className}.${propertyName}` : '';
+    eventName = eventName || '';
+
+    const perfEvent: PerfEvent = {
+        start: startTime,
+        event: methodName ? `${methodName}${eventName ? '-' : ''}${eventName}` : eventName
+    };
+
+    // Track thod method in all perf groups.
+    // Basically we could be tracking multiple perf groups that are running in paralle, and
+    // all of them may end up calling the same method at some point. Hence which ever is running plonk this into that list.
+    perfGroupTracker.forEach(items => {
+        items.push(perfEvent!);
+    });
+
+    /**
+     * Tracks how long a method took.
+     */
+    const trackPerfTimes = (failed: boolean) => {
+        if (perfEvent) {
+            perfEvent.total = stopWatch!.elapsedTime;
+            // Minimize data sent via telemetry.
+            if (failed) {
+                perfEvent.fail = true;
+            }
+        }
+        completePerfGroup();
+    };
+
+    return { completed: () => trackPerfTimes(true), failed: () => trackPerfTimes(false) };
+}
+
+// tslint:disable-next-line:no-any function-name max-func-body-length
 export function captureTelemetry<P extends IEventNamePropertyMapping, E extends keyof P>(
     eventName: E,
     properties?: P[E],
     captureDuration: boolean = true,
-    failureEventName?: E
+    failureEventName?: E,
+    capturePerfEvents?: boolean
 ) {
-    // tslint:disable-next-line:no-function-expression no-any
-    return function(_target: Object, _propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
+    // tslint:disable-next-line:no-function-expression no-any max-func-body-length
+    return function(target: Object, propertyName: string, descriptor: TypedPropertyDescriptor<any>) {
         const originalMethod = descriptor.value;
-        // tslint:disable-next-line:no-function-expression no-any
+        // tslint:disable-next-line:no-function-expression no-any max-func-body-length
         descriptor.value = function(...args: any[]) {
+            // If we have started capturing perf, then always capture duration.
+            captureDuration = captureDuration || perfGroupTracker.size > 0 || !!capturePerfEvents;
             if (!captureDuration) {
                 sendTelemetryEvent(eventName, undefined, properties);
                 // tslint:disable-next-line:no-invalid-this
@@ -152,35 +247,175 @@ export function captureTelemetry<P extends IEventNamePropertyMapping, E extends 
             }
 
             const stopWatch = new StopWatch();
-            // tslint:disable-next-line:no-invalid-this no-use-before-declare no-unsafe-any
-            const result = originalMethod.apply(this, args);
 
-            // If method being wrapped returns a promise then wait for it.
-            // tslint:disable-next-line:no-unsafe-any
-            if (result && typeof result.then === 'function' && typeof result.catch === 'function') {
-                // tslint:disable-next-line:prefer-type-cast
-                (result as Promise<void>)
-                    .then(data => {
-                        sendTelemetryEvent(eventName, stopWatch.elapsedTime, properties);
-                        return data;
-                    })
-                    // tslint:disable-next-line:promise-function-async
-                    .catch(ex => {
-                        // tslint:disable-next-line:no-any
-                        properties = properties || ({} as any);
-                        (properties as any).failed = true;
-                        sendTelemetryEvent(
-                            failureEventName ? failureEventName : eventName,
-                            stopWatch.elapsedTime,
-                            properties,
-                            ex
-                        );
-                    });
-            } else {
-                sendTelemetryEvent(eventName, stopWatch.elapsedTime, properties);
+            const tracker = createPerfTracker(
+                capturePerfEvents === true,
+                stopWatch,
+                target,
+                propertyName,
+                eventName.toString()
+            );
+            // if (capturePerfEvents) {
+            //     const startTime = new Date().getTime();
+            //     perfTracker.set(eventName.toString(), [{ event: 'start', start: startTime }]);
+            //     completePerfGroup = () => {
+            //         let perfEvents = perfTracker.get(eventName.toString());
+            //         if (perfEvents) {
+            //             const now = new Date().getTime();
+            //             perfEvents.push({ event: 'end', start: now, end: now, total: 0 });
+            //             perfEvents = perfEvents.map(item => ({ ...item }));
+            //             perfEvents[0].end = now;
+            //             perfEvents[0].total = now - startTime;
+            //             // Change all times to be relative to start.
+            //             perfEvents.forEach(item => {
+            //                 if (item.end) {
+            //                     item.end = item.end - startTime;
+            //                 }
+            //                 if (item.start) {
+            //                     item.start = item.start - startTime;
+            //                 }
+            //             });
+            //             sendTelemetryEvent(`${eventName.toString()}_PERF` as any, stopWatch.elapsedTime, {
+            //                 events: perfEvents
+            //             });
+            //             perfTracker.delete(eventName.toString());
+            //         }
+            //     };
+            // }
+
+            // let perfEvent: PerfEvent | undefined;
+            // let updatePerfEvent = (_failed: boolean) => noop();
+            // if (captureDuration) {
+            //     updatePerfEvent = (failed: boolean) => {
+            //         if (perfEvent) {
+            //             perfEvent.end = new Date().getTime();
+            //             perfEvent.total = stopWatch.elapsedTime;
+            //             // Minimize data sent via telemetry.
+            //             if (failed) {
+            //                 perfEvent.fail = true;
+            //             }
+            //         }
+            //         completePerfGroup();
+            //     };
+            //     const className = 'constructor' in target && target.constructor.name ? target.constructor.name : '';
+            //     perfEvent = {
+            //         start: new Date().getTime(),
+            //         event: `${className}.${propertyName}-${eventName.toString()}`
+            //     };
+            //     perfTracker.forEach(items => {
+            //         items.push(perfEvent!);
+            //     });
+            // }
+
+            let isSyncMethod = true;
+            let telemetrySent = false;
+            try {
+                // tslint:disable-next-line:no-invalid-this no-use-before-declare no-unsafe-any
+                const result = originalMethod.apply(this, args);
+
+                // If method being wrapped returns a promise then wait for it.
+                // tslint:disable-next-line:no-unsafe-any
+                if (result && typeof result.then === 'function' && typeof result.catch === 'function') {
+                    isSyncMethod = false;
+                    // tslint:disable-next-line:prefer-type-cast
+                    (result as Promise<void>)
+                        .then(data => {
+                            tracker.completed();
+                            sendTelemetryEvent(eventName, stopWatch.elapsedTime, properties);
+                            return data;
+                        })
+                        // tslint:disable-next-line:promise-function-async
+                        .catch(ex => {
+                            // tslint:disable-next-line:no-any
+                            properties = properties || ({} as any);
+                            (properties as any).failed = true;
+                            tracker.failed();
+                            sendTelemetryEvent(
+                                failureEventName ? failureEventName : eventName,
+                                stopWatch.elapsedTime,
+                                properties,
+                                ex
+                            );
+                        });
+                } else {
+                    telemetrySent = true;
+                    tracker.completed();
+                    sendTelemetryEvent(eventName, stopWatch.elapsedTime, properties);
+                }
+                return result;
+            } finally {
+                // If this is a sync method and telemetry was not sent,
+                // that means it blew up - i.e. kaboom.
+                if (isSyncMethod && !telemetrySent) {
+                    tracker.failed();
+                }
+            }
+        };
+
+        return descriptor;
+    };
+}
+
+// tslint:disable-next-line:no-any function-name
+export function capturePerformance() {
+    // tslint:disable-next-line:no-function-expression no-any
+    return function(target: Object, propertyName: string, descriptor: TypedPropertyDescriptor<any>) {
+        const originalMethod = descriptor.value;
+        // tslint:disable-next-line:no-function-expression no-any
+        descriptor.value = function(...args: any[]) {
+            if (perfGroupTracker.size === 0) {
+                // tslint:disable-next-line: no-invalid-this
+                return originalMethod.apply(this, args);
             }
 
-            return result;
+            const stopWatch = new StopWatch();
+            const tracker = createPerfTracker(false, stopWatch, target, propertyName);
+
+            // let perfEvent: PerfEvent | undefined;
+            // const updatePerfEvent = (failed: boolean) => {
+            //     if (perfEvent) {
+            //         perfEvent.end = new Date().getTime();
+            //         perfEvent.total = stopWatch.elapsedTime;
+            //         // Minimize data sent via telemetry.
+            //         if (failed) {
+            //             perfEvent.fail = true;
+            //         }
+            //     }
+            // };
+            // const className = 'constructor' in target && target.constructor.name ? target.constructor.name : '';
+
+            // perfEvent = {
+            //     start: new Date().getTime(),
+            //     event: `${className}.${propertyName}`
+            // };
+            // perfTracker.forEach(items => {
+            //     items.push(perfEvent!);
+            // });
+
+            let isSyncMethod = true;
+            let telemetrySent = false;
+            try {
+                // tslint:disable-next-line:no-invalid-this no-use-before-declare no-unsafe-any
+                const result = originalMethod.apply(this, args);
+
+                // If method being wrapped returns a promise then wait for it.
+                // tslint:disable-next-line:no-unsafe-any
+                if (result && typeof result.then === 'function' && typeof result.catch === 'function') {
+                    isSyncMethod = false;
+                    // tslint:disable-next-line:prefer-type-cast
+                    (result as Promise<void>).then(tracker.completed.bind(tracker)).catch(tracker.failed.bind(tracker));
+                } else {
+                    telemetrySent = true;
+                    tracker.completed();
+                }
+                return result;
+            } finally {
+                // If this is a sync method and telemetry was not sent,
+                // that means it blew up - i.e. kaboom.
+                if (isSyncMethod && !telemetrySent) {
+                    tracker.failed();
+                }
+            }
         };
 
         return descriptor;
@@ -192,19 +427,78 @@ export function sendTelemetryWhenDone<P extends IEventNamePropertyMapping, E ext
     eventName: E,
     promise: Promise<any> | Thenable<any>,
     stopWatch?: StopWatch,
-    properties?: P[E]
+    properties?: P[E],
+    capturePerfEvents?: boolean
 ) {
-    stopWatch = stopWatch ? stopWatch : new StopWatch();
+    stopWatch = stopWatch || new StopWatch();
+    const tracker = createPerfTracker(
+        capturePerfEvents === true,
+        stopWatch,
+        undefined,
+        undefined,
+        eventName.toString()
+    );
+    // let completePerfGroup = noop;
+    // if (capturePerfEvents) {
+    //     const startTime = new Date().getTime();
+    //     perfTracker.set(eventName.toString(), [{ event: 'start', start: startTime }]);
+    //     completePerfGroup = () => {
+    //         let perfEvents = perfTracker.get(eventName.toString());
+    //         if (perfEvents) {
+    //             const now = new Date().getTime();
+    //             perfEvents.push({ event: 'end', start: now, end: now, total: 0 });
+    //             perfEvents = perfEvents.map(item => ({ ...item }));
+    //             perfEvents[0].end = now;
+    //             perfEvents[0].total = now - startTime;
+    //             // Change all times to be relative to start.
+    //             perfEvents.forEach(item => {
+    //                 if (item.end) {
+    //                     item.end = item.end - startTime;
+    //                 }
+    //                 if (item.start) {
+    //                     item.start = item.start - startTime;
+    //                 }
+    //             });
+    //             sendTelemetryEvent(`${eventName.toString()}_PERF` as any, stopWatch!.elapsedTime, {
+    //                 events: perfEvents
+    //             });
+    //             perfTracker.delete(eventName.toString());
+    //         }
+    //     };
+    // }
+
+    // let perfEvent: PerfEvent | undefined;
+    // const updatePerfEvent = (failed: boolean) => {
+    //     if (perfEvent) {
+    //         perfEvent.end = new Date().getTime();
+    //         perfEvent.total = stopWatch!.elapsedTime;
+    //         // Minimize data sent via telemetry.
+    //         if (failed) {
+    //             perfEvent.fail = true;
+    //         }
+    //     }
+    //     completePerfGroup();
+    // };
+    // perfEvent = {
+    //     start: new Date().getTime(),
+    //     event: eventName.toString()
+    // };
+    // perfTracker.forEach(items => {
+    //     items.push(perfEvent!);
+    // });
+
     if (typeof promise.then === 'function') {
         // tslint:disable-next-line:prefer-type-cast no-any
         (promise as Promise<any>).then(
             data => {
+                tracker.completed();
                 // tslint:disable-next-line:no-non-null-assertion
                 sendTelemetryEvent(eventName, stopWatch!.elapsedTime, properties);
                 return data;
                 // tslint:disable-next-line:promise-function-async
             },
             ex => {
+                tracker.failed();
                 // tslint:disable-next-line:no-non-null-assertion
                 sendTelemetryEvent(eventName, stopWatch!.elapsedTime, properties, ex);
                 return Promise.reject(ex);

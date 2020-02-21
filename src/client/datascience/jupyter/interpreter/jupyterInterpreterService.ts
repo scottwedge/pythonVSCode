@@ -10,7 +10,7 @@ import { createPromiseFromCancellation } from '../../../common/cancellation';
 import '../../../common/extensions';
 import { noop } from '../../../common/utils/misc';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
-import { sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, sendTelemetryEvent } from '../../../telemetry';
 import { Telemetry } from '../../constants';
 import {
     JupyterInterpreterDependencyResponse,
@@ -45,6 +45,7 @@ export class JupyterInterpreterService {
      * @returns {(Promise<PythonInterpreter | undefined>)}
      * @memberof JupyterInterpreterService
      */
+    @capturePerformance()
     public async getSelectedInterpreter(token?: CancellationToken): Promise<PythonInterpreter | undefined> {
         // Before we return _selected interpreter make sure that we have run our initial set interpreter once
         // because _selectedInterpreter can be changed by other function and at other times, this promise
@@ -138,6 +139,7 @@ export class JupyterInterpreterService {
 
     // For a given python path check if it can run jupyter for us
     // if so, return the interpreter
+    @capturePerformance()
     private async validateInterpreterPath(
         pythonPath: string,
         token?: CancellationToken
@@ -167,6 +169,7 @@ export class JupyterInterpreterService {
         return undefined;
     }
 
+    @capturePerformance()
     private async getInitialInterpreterImpl(token?: CancellationToken): Promise<PythonInterpreter | undefined> {
         let interpreter: PythonInterpreter | undefined;
 

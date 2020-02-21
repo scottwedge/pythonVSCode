@@ -3,6 +3,7 @@
 
 import { inject, injectable } from 'inversify';
 import { ConfigurationChangeEvent, Disposable, Event, EventEmitter, FileSystemWatcher, Uri } from 'vscode';
+import { capturePerformance } from '../../telemetry';
 import { IWorkspaceService } from '../application/types';
 import { IPlatformService } from '../platform/types';
 import { IConfigurationService, ICurrentProcess, IDisposableRegistry } from '../types';
@@ -42,6 +43,7 @@ export class EnvironmentVariablesProvider implements IEnvironmentVariablesProvid
             }
         });
     }
+    @capturePerformance()
     @cacheResourceSpecificInterpreterData('getEnvironmentVariables', cacheDuration)
     public async getEnvironmentVariables(resource?: Uri): Promise<EnvironmentVariables> {
         let mergedVars = await this.getCustomEnvironmentVariables(resource);

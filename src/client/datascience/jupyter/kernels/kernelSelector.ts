@@ -14,7 +14,7 @@ import * as localize from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { StopWatch } from '../../../common/utils/stopWatch';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
-import { IEventNamePropertyMapping, sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, IEventNamePropertyMapping, sendTelemetryEvent } from '../../../telemetry';
 import { KnownNotebookLanguages, Telemetry } from '../../constants';
 import { reportAction } from '../../progress/decorator';
 import { ReportableAction } from '../../progress/types';
@@ -89,6 +89,7 @@ export class KernelSelector {
      * @returns {Promise<KernelSpecInterpreter>}
      * @memberof KernelSelector
      */
+    @capturePerformance()
     public async selectRemoteKernel(
         resource: Resource,
         stopWatch: StopWatch,
@@ -120,6 +121,7 @@ export class KernelSelector {
      * @returns {Promise<KernelSpecInterpreter>}
      * @memberof KernelSelector
      */
+    @capturePerformance()
     public async selectLocalKernel(
         resource: Resource,
         stopWatch: StopWatch,
@@ -153,6 +155,7 @@ export class KernelSelector {
      * @returns {Promise<KernelSpecInterpreter>}
      * @memberof KernelSelector
      */
+    @capturePerformance()
     @reportAction(ReportableAction.KernelsGetKernelForLocalConnection)
     public async getKernelForLocalConnection(
         resource: Resource,
@@ -235,6 +238,7 @@ export class KernelSelector {
      * @memberof KernelSelector
      */
     // tslint:disable-next-line: cyclomatic-complexity
+    @capturePerformance()
     @reportAction(ReportableAction.KernelsGetKernelForRemoteConnection)
     public async getKernelForRemoteConnection(
         resource: Resource,
@@ -293,6 +297,7 @@ export class KernelSelector {
             interpreter: interpreter
         };
     }
+    @capturePerformance()
     private async selectKernel(
         resource: Resource,
         stopWatch: StopWatch,
@@ -360,6 +365,7 @@ export class KernelSelector {
      * @returns {Promise<KernelSpecInterpreter>}
      * @memberof KernelSelector
      */
+    @capturePerformance()
     private async useInterpreterAsKernel(
         resource: Resource,
         interpreter: PythonInterpreter,

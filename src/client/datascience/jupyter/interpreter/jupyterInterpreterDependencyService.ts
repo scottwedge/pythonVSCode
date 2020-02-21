@@ -13,7 +13,7 @@ import { IInstaller, InstallerResponse, Product } from '../../../common/types';
 import { Common, DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { PythonInterpreter } from '../../../interpreter/contracts';
-import { sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, sendTelemetryEvent } from '../../../telemetry';
 import { HelpLinks, JupyterCommands, Telemetry } from '../../constants';
 import { IJupyterCommandFactory } from '../../types';
 import { JupyterInstallError } from '../jupyterInstallError';
@@ -126,6 +126,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<JupyterInterpreterDependencyResponse>}
      * @memberof JupyterInterpreterDependencyService
      */
+    @capturePerformance()
     public async installMissingDependencies(
         interpreter: PythonInterpreter,
         _error?: JupyterInstallError,
@@ -213,6 +214,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<boolean>}
      * @memberof JupyterInterpreterConfigurationService
      */
+    @capturePerformance()
     public async areDependenciesInstalled(interpreter: PythonInterpreter, token?: CancellationToken): Promise<boolean> {
         return this.getDependenciesNotInstalled(interpreter, token).then(items => items.length === 0);
     }
@@ -226,6 +228,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<boolean>}
      * @memberof JupyterInterpreterConfigurationService
      */
+    @capturePerformance()
     public async isExportSupported(interpreter: PythonInterpreter, _token?: CancellationToken): Promise<boolean> {
         if (this.nbconvertInstalledInInterpreter.has(interpreter.path)) {
             return true;
@@ -245,6 +248,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<Product[]>}
      * @memberof JupyterInterpreterConfigurationService
      */
+    @capturePerformance()
     public async getDependenciesNotInstalled(
         interpreter: PythonInterpreter,
         token?: CancellationToken
@@ -292,6 +296,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<boolean>}
      * @memberof JupyterInterpreterConfigurationService
      */
+    @capturePerformance()
     private async isKernelSpecAvailable(interpreter: PythonInterpreter, _token?: CancellationToken): Promise<boolean> {
         const command = this.commandFactory.createInterpreterCommand(
             JupyterCommands.KernelSpecCommand,
@@ -322,6 +327,7 @@ export class JupyterInterpreterDependencyService {
      * @returns {Promise<JupyterInterpreterDependencyResponse>}
      * @memberof JupyterInterpreterConfigurationService
      */
+    @capturePerformance()
     private async checkKernelSpecAvailability(
         interpreter: PythonInterpreter,
         token?: CancellationToken

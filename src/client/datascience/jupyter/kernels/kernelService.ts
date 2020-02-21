@@ -20,7 +20,7 @@ import { sleep } from '../../../common/utils/async';
 import { noop } from '../../../common/utils/misc';
 import { IEnvironmentActivationService } from '../../../interpreter/activation/types';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
-import { captureTelemetry, sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, captureTelemetry, sendTelemetryEvent } from '../../../telemetry';
 import { Telemetry } from '../../constants';
 import { reportAction } from '../../progress/decorator';
 import { ReportableAction } from '../../progress/types';
@@ -93,6 +93,7 @@ export class KernelService {
         sessionManager?: IJupyterSessionManager | undefined,
         cancelToken?: CancellationToken
     ): Promise<IJupyterKernelSpec | undefined>;
+    @capturePerformance()
     public async findMatchingKernelSpec(
         option: nbformat.IKernelspecMetadata | PythonInterpreter,
         sessionManager: IJupyterSessionManager | undefined,
@@ -128,6 +129,7 @@ export class KernelService {
      * @returns {(Promise<PythonInterpreter | undefined>)}
      * @memberof KernelService
      */
+    @capturePerformance()
     public async findMatchingInterpreter(
         kernelSpec: IJupyterKernelSpec | LiveKernelModel,
         cancelToken?: CancellationToken
@@ -224,7 +226,8 @@ export class KernelService {
             }
         }
     }
-    public async searchAndRegisterKernel(
+    @capturePerformance()
+   public async searchAndRegisterKernel(
         interpreter: PythonInterpreter,
         disableUI?: boolean,
         cancelToken?: CancellationToken
@@ -253,6 +256,7 @@ export class KernelService {
      */
     // tslint:disable-next-line: max-func-body-length
     // tslint:disable-next-line: cyclomatic-complexity
+    @capturePerformance()
     @captureTelemetry(Telemetry.RegisterInterpreterAsKernel, undefined, true)
     @traceDecorators.error('Failed to register an interpreter as a kernel')
     @reportAction(ReportableAction.KernelsRegisterKernel)
@@ -409,6 +413,7 @@ export class KernelService {
      * @returns {Promise<IJupyterKernelSpec[]>}
      * @memberof KernelService
      */
+    @capturePerformance()
     @reportAction(ReportableAction.KernelsGetKernelSpecs)
     public async getKernelSpecs(
         sessionManager?: IJupyterSessionManager,
@@ -454,6 +459,7 @@ export class KernelService {
      * @returns {JupyterKernelSpec}
      * @memberof KernelService
      */
+    @capturePerformance()
     @traceDecorators.error('Failed to parse kernel creation stdout')
     private async getKernelSpecFromStdOut(output: string): Promise<JupyterKernelSpec | undefined> {
         if (!output) {

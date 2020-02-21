@@ -22,7 +22,7 @@ import { traceInfo, traceWarning } from '../../common/logger';
 import { sleep, waitForPromise } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
-import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
+import { capturePerformance, captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { Telemetry } from '../constants';
 import { reportAction } from '../progress/decorator';
 import { ReportableAction } from '../progress/types';
@@ -123,6 +123,7 @@ export class JupyterSession implements IJupyterSession {
         return this.getServerStatus();
     }
 
+    @capturePerformance()
     @reportAction(ReportableAction.JupyterSessionWaitForIdleSession)
     public async waitForIdle(timeout: number): Promise<void> {
         // Wait for idle on this session
@@ -218,6 +219,7 @@ export class JupyterSession implements IJupyterSession {
         }
     }
 
+    @capturePerformance()
     public async connect(cancelToken?: CancellationToken): Promise<void> {
         if (!this.connInfo) {
             throw new Error(localize.DataScience.sessionDisposed());
@@ -237,6 +239,7 @@ export class JupyterSession implements IJupyterSession {
         return this.connected;
     }
 
+    @capturePerformance()
     public async changeKernel(kernel: IJupyterKernelSpec | LiveKernelModel, timeoutMS: number): Promise<void> {
         if (kernel.id && this.session && 'session' in kernel) {
             // Shutdown the current session
@@ -341,6 +344,7 @@ export class JupyterSession implements IJupyterSession {
         }
     }
 
+    @capturePerformance()
     private async createRestartSession(
         serverSettings: ServerConnection.ISettings,
         contentsManager: ContentsManager,
@@ -369,6 +373,7 @@ export class JupyterSession implements IJupyterSession {
         throw exception;
     }
 
+    @capturePerformance()
     private async createSession(
         serverSettings: ServerConnection.ISettings,
         contentsManager: ContentsManager,
@@ -391,6 +396,7 @@ export class JupyterSession implements IJupyterSession {
         );
     }
 
+    @capturePerformance()
     private async waitForKernelPromise(
         kernelPromise: Promise<void>,
         timeout: number,

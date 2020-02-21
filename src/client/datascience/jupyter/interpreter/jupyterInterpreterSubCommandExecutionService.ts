@@ -15,7 +15,7 @@ import { DataScience } from '../../../common/utils/localize';
 import { noop } from '../../../common/utils/misc';
 import { EXTENSION_ROOT_DIR } from '../../../constants';
 import { IInterpreterService, PythonInterpreter } from '../../../interpreter/contracts';
-import { sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, sendTelemetryEvent } from '../../../telemetry';
 import { JUPYTER_OUTPUT_CHANNEL, PythonDaemonModule, Telemetry } from '../../constants';
 import { IJupyterInterpreterDependencyManager, IJupyterSubCommandExecutionService } from '../../types';
 import { JupyterServerInfo } from '../jupyterConnection';
@@ -100,6 +100,7 @@ export class JupyterInterpreterSubCommandExecutionService
     public async getSelectedInterpreter(token?: CancellationToken): Promise<PythonInterpreter | undefined> {
         return this.jupyterInterpreter.getSelectedInterpreter(token);
     }
+    @capturePerformance()
     public async startNotebook(
         notebookArgs: string[],
         options: SpawnOptions
@@ -118,6 +119,7 @@ export class JupyterInterpreterSubCommandExecutionService
         return executionService.execModuleObservable('jupyter', ['notebook'].concat(notebookArgs), options);
     }
 
+    @capturePerformance()
     public async getRunningJupyterServers(token?: CancellationToken): Promise<JupyterServerInfo[] | undefined> {
         const interpreter = await this.getSelectedInterpreterAndThrowIfNotAvailable(token);
         const daemon = await this.pythonExecutionFactory.createDaemon({
@@ -176,6 +178,7 @@ export class JupyterInterpreterSubCommandExecutionService
             .ignoreErrors();
     }
 
+    @capturePerformance()
     public async getKernelSpecs(token?: CancellationToken): Promise<JupyterKernelSpec[]> {
         const interpreter = await this.getSelectedInterpreterAndThrowIfNotAvailable(token);
         const daemon = await this.pythonExecutionFactory.createDaemon({
@@ -226,6 +229,7 @@ export class JupyterInterpreterSubCommandExecutionService
         }
     }
 
+    @capturePerformance()
     public async installMissingDependencies(err?: JupyterInstallError): Promise<void> {
         let interpreter = await this.jupyterInterpreter.getSelectedInterpreter();
         if (!interpreter) {

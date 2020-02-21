@@ -16,7 +16,7 @@ import { IDisposable, IOutputChannel } from '../../common/types';
 import * as localize from '../../common/utils/localize';
 import { StopWatch } from '../../common/utils/stopWatch';
 import { IServiceContainer } from '../../ioc/types';
-import { sendTelemetryEvent } from '../../telemetry';
+import { capturePerformance, sendTelemetryEvent } from '../../telemetry';
 import { JUPYTER_OUTPUT_CHANNEL, Telemetry } from '../constants';
 import { reportAction } from '../progress/decorator';
 import { ReportableAction } from '../progress/types';
@@ -56,6 +56,7 @@ export class NotebookStarter implements Disposable {
     }
     // tslint:disable-next-line: max-func-body-length
     @reportAction(ReportableAction.NotebookStart)
+    @capturePerformance()
     public async start(
         useDefaultConfig: boolean,
         customCommandLine: string[],
@@ -156,6 +157,7 @@ export class NotebookStarter implements Disposable {
         }
     }
 
+    @capturePerformance()
     private async generateDefaultArguments(
         useDefaultConfig: boolean,
         tempDirPromise: Promise<TemporaryDirectory>
@@ -265,6 +267,7 @@ export class NotebookStarter implements Disposable {
             return args;
         }
     }
+    @capturePerformance()
     private async generateTempDir(): Promise<TemporaryDirectory> {
         const resultDir = path.join(os.tmpdir(), uuid());
         await this.fileSystem.createDirectory(resultDir);

@@ -29,7 +29,7 @@ import {
     IKnownSearchPathsForInterpreters,
     PythonInterpreter
 } from '../../../interpreter/contracts';
-import { sendTelemetryEvent } from '../../../telemetry';
+import { capturePerformance, sendTelemetryEvent } from '../../../telemetry';
 import { JupyterCommands, PythonDaemonModule, RegExpValues, Telemetry } from '../../constants';
 import { IJupyterCommand, IJupyterCommandFactory } from '../../types';
 
@@ -578,6 +578,7 @@ export class JupyterCommandFinder extends JupyterCommandFinderImpl {
     private get cacheStore(): CacheInfo {
         return this.workspace.hasWorkspaceFolders ? this.workspaceJupyterInterpreter : this.globalJupyterInterpreter;
     }
+    @capturePerformance()
     public findBestCommand(command: JupyterCommands, token?: CancellationToken): Promise<IFindCommandResult> {
         if (
             command === JupyterCommands.NotebookCommand &&

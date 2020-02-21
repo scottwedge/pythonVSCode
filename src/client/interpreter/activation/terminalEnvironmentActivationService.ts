@@ -12,7 +12,7 @@ import { IFileSystem } from '../../common/platform/types';
 import { ITerminalServiceFactory } from '../../common/terminal/types';
 import { Resource } from '../../common/types';
 import { IEnvironmentVariablesProvider } from '../../common/variables/types';
-import { captureTelemetry } from '../../telemetry';
+import { capturePerformance, captureTelemetry } from '../../telemetry';
 import { EventName } from '../../telemetry/constants';
 import { PythonInterpreter } from '../contracts';
 import { IEnvironmentActivationService } from './types';
@@ -37,6 +37,7 @@ export class TerminalEnvironmentActivationService implements IEnvironmentActivat
         @inject(IFileSystem) private readonly fs: IFileSystem,
         @inject(IEnvironmentVariablesProvider) private readonly envVarsProvider: IEnvironmentVariablesProvider
     ) {}
+    @capturePerformance()
     @traceDecorators.verbose('getActivatedEnvironmentVariables', LogOptions.Arguments)
     @captureTelemetry(
         EventName.PYTHON_INTERPRETER_ACTIVATION_ENVIRONMENT_VARIABLES,

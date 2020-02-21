@@ -20,7 +20,7 @@ import * as localize from '../../common/utils/localize';
 import { noop } from '../../common/utils/misc';
 import { StopWatch } from '../../common/utils/stopWatch';
 import { PythonInterpreter } from '../../interpreter/contracts';
-import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
+import { capturePerformance, captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { generateCells } from '../cellFactory';
 import { CellMatcher } from '../cellMatcher';
 import { CodeSnippits, Identifiers, Telemetry } from '../constants';
@@ -235,11 +235,13 @@ export class JupyterNotebookBase implements INotebook {
         return this._identity;
     }
 
+    @capturePerformance()
     public waitForIdle(timeoutMs: number): Promise<void> {
         return this.session ? this.session.waitForIdle(timeoutMs) : Promise.resolve();
     }
 
     // Set up our initial plotting and imports
+    @capturePerformance()
     public async initialize(cancelToken?: CancellationToken): Promise<void> {
         if (this.ranInitialSetup) {
             return;
@@ -283,6 +285,7 @@ export class JupyterNotebookBase implements INotebook {
         noop();
     }
 
+    @capturePerformance()
     public execute(
         code: string,
         file: string,
@@ -354,6 +357,7 @@ export class JupyterNotebookBase implements INotebook {
         return deferred.promise;
     }
 
+    @capturePerformance()
     public setLaunchingFile(file: string): Promise<void> {
         // Update our working directory if we don't have one set already
         return this.updateWorkingDirectory(file);
@@ -389,6 +393,7 @@ export class JupyterNotebookBase implements INotebook {
         });
     }
 
+    @capturePerformance()
     public async getSysInfo(): Promise<ICell> {
         // tslint:disable-next-line:no-multiline-string
         const versionCells = await this.executeSilently(`import sys\r\nsys.version`);
@@ -524,6 +529,7 @@ export class JupyterNotebookBase implements INotebook {
         throw this.getDisposedError();
     }
 
+    @capturePerformance()
     public async setMatplotLibStyle(useDark: boolean): Promise<void> {
         // Make sure matplotlib is initialized
         if (!this.initializedMatplotlib) {
@@ -597,6 +603,7 @@ export class JupyterNotebookBase implements INotebook {
         return this.launchInfo.kernelSpec;
     }
 
+    @capturePerformance()
     public async setKernelSpec(spec: IJupyterKernelSpec | LiveKernelModel, timeoutMS: number): Promise<void> {
         // We need to start a new session with the new kernel spec
         if (this.session) {
@@ -620,6 +627,7 @@ export class JupyterNotebookBase implements INotebook {
         this.kernelChanged.fire(spec);
     }
 
+    @capturePerformance()
     private async initializeMatplotlib(cancelToken?: CancellationToken): Promise<void> {
         const settings = this.configService.getSettings(this.resource).datascience;
         if (settings && settings.themeMatplotlibPlots) {

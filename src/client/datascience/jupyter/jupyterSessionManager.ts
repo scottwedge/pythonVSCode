@@ -8,6 +8,7 @@ import { CancellationToken } from 'vscode-jsonrpc';
 import { traceInfo } from '../../common/logger';
 import { IConfigurationService } from '../../common/types';
 import * as localize from '../../common/utils/localize';
+import { capturePerformance } from '../../telemetry';
 import {
     IConnection,
     IJupyterKernel,
@@ -60,6 +61,7 @@ export class JupyterSessionManager implements IJupyterSessionManager {
         this.contentsManager = new ContentsManager({ serverSettings: this.serverSettings });
     }
 
+    @capturePerformance()
     public async getRunningSessions(): Promise<Session.IModel[]> {
         if (!this.sessionManager) {
             return [];
@@ -79,6 +81,7 @@ export class JupyterSessionManager implements IJupyterSessionManager {
         return sessions;
     }
 
+    @capturePerformance()
     public async getRunningKernels(): Promise<IJupyterKernel[]> {
         const models = await Kernel.listRunning(this.serverSettings);
         // Remove duplicates.
@@ -100,7 +103,7 @@ export class JupyterSessionManager implements IJupyterSessionManager {
                 return true;
             });
     }
-
+    @capturePerformance()
     public async startNew(
         kernelSpec: IJupyterKernelSpec | LiveKernelModel | undefined,
         cancelToken?: CancellationToken
@@ -127,6 +130,7 @@ export class JupyterSessionManager implements IJupyterSessionManager {
         return session;
     }
 
+    @capturePerformance()
     public async getKernelSpecs(): Promise<IJupyterKernelSpec[]> {
         if (!this.connInfo || !this.sessionManager || !this.contentsManager) {
             throw new Error(localize.DataScience.sessionDisposed());

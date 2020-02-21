@@ -41,9 +41,8 @@ import { IFileSystem } from '../../common/platform/types';
 import { IConfigurationService, IDisposableRegistry, IExperimentsManager } from '../../common/types';
 import { createDeferred, Deferred } from '../../common/utils/async';
 import * as localize from '../../common/utils/localize';
-import { StopWatch } from '../../common/utils/stopWatch';
 import { IInterpreterService, PythonInterpreter } from '../../interpreter/contracts';
-import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
+import { captureTelemetry, sendTelemetryEvent, sendTelemetryWhenDone } from '../../telemetry';
 import { generateCellRangesFromDocument } from '../cellFactory';
 import { CellMatcher } from '../cellMatcher';
 import { addToUriList } from '../common';
@@ -503,8 +502,29 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
         cancelToken?: CancellationToken
     ): Promise<boolean> {
         traceInfo(`Submitting code for ${this.id}`);
-        const stopWatch =
-            this._notebook && !this.perceivedJupyterStartupTelemetryCaptured ? new StopWatch() : undefined;
+
+        let startJupyter: Deferred<void> | undefined;
+        let runFirstCell: Deferred<void> | undefined;
+        if (!this.perceivedJupyterStartupTelemetryCaptured) {
+            this.perceivedJupyterStartupTelemetryCaptured = true;
+            startJupyter = createDeferred();
+            runFirstCell = createDeferred();
+            sendTelemetryWhenDone(
+                Telemetry.PerceivedJupyterStartupNotebook,
+                startJupyter.promise,
+                undefined,
+                undefined,
+                true
+            );
+            sendTelemetryWhenDone(
+                Telemetry.StartExecuteNotebookCellPerceivedCold,
+                runFirstCell.promise,
+                undefined,
+                undefined,
+                true
+            );
+        }
+
         let result = true;
         // Do not execute or render empty code cells
         const cellMatcher = new CellMatcher(this.configService.getSettings(await this.getOwningResource()).datascience);
@@ -572,12 +592,11 @@ export abstract class InteractiveBase extends WebViewHost<IInteractiveWindowMapp
                         true
                     );
                 }
-                if (stopWatch && !this.perceivedJupyterStartupTelemetryCaptured) {
-                    this.perceivedJupyterStartupTelemetryCaptured = true;
-                    sendTelemetryEvent(Telemetry.PerceivedJupyterStartupNotebook, stopWatch?.elapsedTime);
+                startJupyter?.resolve();
+                if (runFirstCell) {
                     const disposable = this._notebook.onSessionStatusChanged(e => {
                         if (e === ServerStatus.Busy) {
-                            sendTelemetryEvent(Telemetry.StartExecuteNotebookCellPerceivedCold, stopWatch?.elapsedTime);
+                            runFirstCell?.resolve();
                             disposable.dispose();
                         }
                     });

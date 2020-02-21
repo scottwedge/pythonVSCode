@@ -10,6 +10,7 @@ import { IFileSystem } from '../../../common/platform/types';
 import { IPathUtils, Resource } from '../../../common/types';
 import * as localize from '../../../common/utils/localize';
 import { IInterpreterSelector } from '../../../interpreter/configuration/types';
+import { capturePerformance } from '../../../telemetry';
 import { IJupyterKernelSpec, IJupyterSessionManager } from '../../types';
 import { KernelService } from './kernelService';
 import { IKernelSelectionListProvider, IKernelSpecQuickPickItem, LiveKernelModel } from './types';
@@ -64,6 +65,7 @@ function getQuickPickItemForActiveKernel(kernel: LiveKernelModel, pathUtils: IPa
  */
 export class ActiveJupyterSessionKernelSelectionListProvider implements IKernelSelectionListProvider {
     constructor(private readonly sessionManager: IJupyterSessionManager, private readonly pathUtils: IPathUtils) {}
+    @capturePerformance()
     public async getKernelSelections(
         _resource: Resource,
         _cancelToken?: CancellationToken | undefined
@@ -106,6 +108,7 @@ export class InstalledJupyterKernelSelectionListProvider implements IKernelSelec
         private readonly pathUtils: IPathUtils,
         private readonly sessionManager?: IJupyterSessionManager
     ) {}
+    @capturePerformance()
     public async getKernelSelections(
         _resource: Resource,
         cancelToken?: CancellationToken | undefined
@@ -127,6 +130,7 @@ export class InstalledJupyterKernelSelectionListProvider implements IKernelSelec
  */
 export class InterpreterKernelSelectionListProvider implements IKernelSelectionListProvider {
     constructor(private readonly interpreterSelector: IInterpreterSelector) {}
+    @capturePerformance()
     public async getKernelSelections(
         resource: Resource,
         _cancelToken?: CancellationToken | undefined
@@ -167,6 +171,7 @@ export class KernelSelectionProvider {
      * @returns {Promise<IKernelSpecQuickPickItem[]>}
      * @memberof KernelSelectionProvider
      */
+    @capturePerformance()
     public async getKernelSelectionsForRemoteSession(
         resource: Resource,
         sessionManager: IJupyterSessionManager,
@@ -204,6 +209,7 @@ export class KernelSelectionProvider {
      * @returns {Promise<IKernelSelectionListProvider>}
      * @memberof KernelSelectionProvider
      */
+    @capturePerformance()
     public async getKernelSelectionsForLocalSession(
         resource: Resource,
         sessionManager?: IJupyterSessionManager,

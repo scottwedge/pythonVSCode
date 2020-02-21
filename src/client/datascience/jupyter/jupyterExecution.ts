@@ -358,7 +358,7 @@ export class JupyterExecutionBase implements IJupyterExecution {
     }
 
     // tslint:disable-next-line: max-func-body-length
-    @captureTelemetry(Telemetry.StartJupyter)
+    @captureTelemetry(Telemetry.StartJupyter, undefined, true, undefined, true)
     private async startNotebookServer(
         useDefaultConfig: boolean,
         customCommandLine: string[],

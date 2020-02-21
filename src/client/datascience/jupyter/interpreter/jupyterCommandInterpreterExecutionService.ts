@@ -20,6 +20,7 @@ import { JupyterServerInfo } from '../jupyterConnection';
 import { JupyterInstallError } from '../jupyterInstallError';
 import { JupyterKernelSpec, parseKernelSpecs } from '../kernels/jupyterKernelSpec';
 import { IFindCommandResult, JupyterCommandFinder } from './jupyterCommandFinder';
+import { capturePerformance } from '../../../telemetry';
 
 /**
  * Responsible for execution of jupyter sub commands using the command finder and related classes.
@@ -68,6 +69,7 @@ export class JupyterCommandFinderInterpreterExecutionService implements IJupyter
 
         return undefined;
     }
+    @capturePerformance()
     public async startNotebook(
         notebookArgs: string[],
         options: SpawnOptions
@@ -78,6 +80,7 @@ export class JupyterCommandFinderInterpreterExecutionService implements IJupyter
         return notebookCommand!.command!.execObservable(notebookArgs, options);
     }
 
+    @capturePerformance()
     public async getRunningJupyterServers(token?: CancellationToken): Promise<JupyterServerInfo[] | undefined> {
         const [interpreter, activeInterpreter] = await Promise.all([
             this.getSelectedInterpreter(token),

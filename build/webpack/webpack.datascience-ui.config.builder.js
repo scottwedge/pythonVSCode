@@ -103,7 +103,9 @@ function buildConfiguration(isNotebook) {
         devtool: 'source-map',
         optimization: {
             minimize: isProdBuild,
-            minimizer: isProdBuild ? [new TerserPlugin({ sourceMap: true })] : [],
+            minimizer: isProdBuild
+                ? [new TerserPlugin({ sourceMap: true, terserOptions: { keep_classnames: true } })]
+                : [],
             moduleIds: 'hashed', // (doesn't re-generate bundles unnecessarily) https://webpack.js.org/configuration/optimization/#optimizationmoduleids.
             splitChunks: {
                 chunks: 'all',

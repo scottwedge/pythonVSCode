@@ -188,6 +188,9 @@ function createPerfTracker(
                 perfGroupTracker.delete(eventName!.toString());
             }
         };
+    } else if (perfGroupTracker.size === 0) {
+        // No perf has been setup to be captured.
+        return { completed: noop, failed: noop };
     }
 
     // Build a name = <class>.<method>

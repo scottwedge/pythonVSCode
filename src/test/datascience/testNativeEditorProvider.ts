@@ -4,8 +4,7 @@
 import { inject, injectable } from 'inversify';
 import { Event, Uri } from 'vscode';
 
-import { ICommandManager, IDocumentManager, IWorkspaceService } from '../../client/common/application/types';
-import { IFileSystem } from '../../client/common/platform/types';
+import { ICustomEditorService, IWorkspaceService } from '../../client/common/application/types';
 import {
     IAsyncDisposableRegistry,
     IConfigurationService,
@@ -16,18 +15,16 @@ import { InteractiveWindowMessageListener } from '../../client/datascience/inter
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
 import { NativeEditor } from '../../client/datascience/interactive-ipynb/nativeEditor';
 import { NativeEditorProvider } from '../../client/datascience/interactive-ipynb/nativeEditorProvider';
-import {
-    IDataScienceErrorHandler,
-    INotebookEditor,
-    INotebookEditorProvider,
-    INotebookServerOptions
-} from '../../client/datascience/types';
+import { INotebookEditor, INotebookEditorProvider, INotebookServerOptions } from '../../client/datascience/types';
 import { IServiceContainer } from '../../client/ioc/types';
 
 @injectable()
 export class TestNativeEditorProvider implements INotebookEditorProvider {
     public get onDidChangeActiveNotebookEditor() {
         return this.realProvider.onDidChangeActiveNotebookEditor;
+    }
+    public get onDidCloseNotebookEditor() {
+        return this.realProvider.onDidCloseNotebookEditor;
     }
     private realProvider: NativeEditorProvider;
     public get onDidOpenNotebookEditor(): Event<INotebookEditor> {
@@ -40,10 +37,7 @@ export class TestNativeEditorProvider implements INotebookEditorProvider {
         @inject(IDisposableRegistry) disposables: IDisposableRegistry,
         @inject(IWorkspaceService) workspace: IWorkspaceService,
         @inject(IConfigurationService) configuration: IConfigurationService,
-        @inject(IFileSystem) fileSystem: IFileSystem,
-        @inject(IDocumentManager) documentManager: IDocumentManager,
-        @inject(ICommandManager) cmdManager: ICommandManager,
-        @inject(IDataScienceErrorHandler) dataScienceErrorHandler: IDataScienceErrorHandler
+        @inject(ICustomEditorService) customEditorService: ICustomEditorService
     ) {
         this.realProvider = new NativeEditorProvider(
             serviceContainer,
@@ -51,10 +45,7 @@ export class TestNativeEditorProvider implements INotebookEditorProvider {
             disposables,
             workspace,
             configuration,
-            fileSystem,
-            documentManager,
-            cmdManager,
-            dataScienceErrorHandler
+            customEditorService
         );
     }
 
@@ -66,8 +57,8 @@ export class TestNativeEditorProvider implements INotebookEditorProvider {
         return this.realProvider.editors;
     }
 
-    public async open(file: Uri, contents: string): Promise<INotebookEditor> {
-        const result = await this.realProvider.open(file, contents);
+    public async open(file: Uri): Promise<INotebookEditor> {
+        const result = await this.realProvider.open(file);
 
         // During testing the MainPanel sends the init message before our interactive window is created.
         // Pretend like it's happening now

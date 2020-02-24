@@ -331,6 +331,7 @@ suite('Try blocks with indentation of 4 spaces', () => {
     });
 });
 
+// tslint:disable-next-line: max-func-body-length
 suite('Try blocks with indentation of Tab', () => {
     suiteSetup(async () => {
         await initialize();

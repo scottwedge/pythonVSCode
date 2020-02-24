@@ -31,6 +31,7 @@ type RenameResponse = {
     results: [{ diff: string }];
 };
 
+// tslint:disable-next-line: max-func-body-length
 suite('Refactor Rename', () => {
     const options: TextEditorOptions = {
         cursorStyle: TextEditorCursorStyle.Line,

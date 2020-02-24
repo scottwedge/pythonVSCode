@@ -68,6 +68,7 @@ import { TerminalManager } from '../../client/common/application/terminalManager
 import {
     IApplicationShell,
     ICommandManager,
+    ICustomEditorService,
     IDebugService,
     IDocumentManager,
     ILiveShareApi,
@@ -103,7 +104,7 @@ import { IInstallationChannelManager, IProductPathService, IProductService } fro
 import { IS_WINDOWS } from '../../client/common/platform/constants';
 import { PathUtils } from '../../client/common/platform/pathUtils';
 import { RegistryImplementation } from '../../client/common/platform/registry';
-import { IRegistry } from '../../client/common/platform/types';
+import { IFileSystem, IRegistry } from '../../client/common/platform/types';
 import { CurrentProcess } from '../../client/common/process/currentProcess';
 import { BufferDecoder } from '../../client/common/process/decoder';
 import { ProcessLogger } from '../../client/common/process/logger';
@@ -170,9 +171,9 @@ import { DataScienceErrorHandler } from '../../client/datascience/errorHandler/e
 import { GatherExecution } from '../../client/datascience/gather/gather';
 import { GatherListener } from '../../client/datascience/gather/gatherListener';
 import { IntellisenseProvider } from '../../client/datascience/interactive-common/intellisense/intellisenseProvider';
-import { AutoSaveService } from '../../client/datascience/interactive-ipynb/autoSaveService';
 import { NativeEditor } from '../../client/datascience/interactive-ipynb/nativeEditor';
 import { NativeEditorCommandListener } from '../../client/datascience/interactive-ipynb/nativeEditorCommandListener';
+import { NativeEditorStorage } from '../../client/datascience/interactive-ipynb/nativeEditorStorage';
 import { InteractiveWindow } from '../../client/datascience/interactive-window/interactiveWindow';
 import { InteractiveWindowCommandListener } from '../../client/datascience/interactive-window/interactiveWindowCommandListener';
 import { JupyterCommandFactory } from '../../client/datascience/jupyter/interpreter/jupyterCommand';
@@ -235,6 +236,7 @@ import {
     INotebookExporter,
     INotebookImporter,
     INotebookServer,
+    INotebookStorage,
     IPlotViewer,
     IPlotViewerProvider,
     IStatusProvider,
@@ -325,9 +327,11 @@ import { MockOutputChannel } from '../mockClasses';
 import { MockAutoSelectionService } from '../mocks/autoSelector';
 import { UnitTestIocContainer } from '../testing/serviceRegistry';
 import { MockCommandManager } from './mockCommandManager';
+import { MockCustomEditorService } from './mockCustomEditorService';
 import { MockDebuggerService } from './mockDebugService';
 import { MockDocumentManager } from './mockDocumentManager';
 import { MockExtensions } from './mockExtensions';
+import { MockFileSystem } from './mockFileSystem';
 import { MockJupyterManager, SupportedCommands } from './mockJupyterManager';
 import { MockJupyterManagerFactory } from './mockJupyterManagerFactory';
 import { MockLanguageServerAnalysisOptions } from './mockLanguageServerAnalysisOptions';
@@ -452,6 +456,7 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         const testWorkspaceFolder = path.join(EXTENSION_ROOT_DIR, 'src', 'test', 'datascience');
 
         this.registerFileSystemTypes();
+        this.serviceManager.rebindInstance<IFileSystem>(IFileSystem, new MockFileSystem());
         this.serviceManager.addSingleton<IJupyterExecution>(IJupyterExecution, JupyterExecutionFactory);
         this.serviceManager.addSingleton<IInteractiveWindowProvider>(
             IInteractiveWindowProvider,
@@ -504,6 +509,11 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         this.serviceManager.addSingleton<IDebugLocationTracker>(IDebugLocationTracker, DebugLocationTrackerFactory);
         this.serviceManager.addSingleton<INotebookEditorProvider>(INotebookEditorProvider, TestNativeEditorProvider);
         this.serviceManager.add<INotebookEditor>(INotebookEditor, NativeEditor);
+        this.serviceManager.add<INotebookStorage>(INotebookStorage, NativeEditorStorage);
+        this.serviceManager.addSingletonInstance<ICustomEditorService>(
+            ICustomEditorService,
+            new MockCustomEditorService(this.asyncRegistry, this.commandManager)
+        );
         this.serviceManager.addSingleton<IDataScienceCommandListener>(
             IDataScienceCommandListener,
             NativeEditorCommandListener
@@ -588,7 +598,6 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         }
 
         this.serviceManager.add<IInteractiveWindowListener>(IInteractiveWindowListener, IntellisenseProvider);
-        this.serviceManager.add<IInteractiveWindowListener>(IInteractiveWindowListener, AutoSaveService);
         this.serviceManager.add<IProtocolParser>(IProtocolParser, ProtocolParser);
         this.serviceManager.addSingleton<IDebugService>(IDebugService, MockDebuggerService);
         this.serviceManager.addSingleton<ICellHashProvider>(ICellHashProvider, CellHashProvider);
@@ -1060,6 +1069,10 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         this.addInterpreter(this.workingPython2, SupportedCommands.all);
         this.addInterpreter(this.workingPython, SupportedCommands.all);
     }
+    public setFileContents(uri: Uri, contents: string) {
+        const fileSystem = this.serviceManager.get<IFileSystem>(IFileSystem) as MockFileSystem;
+        fileSystem.addFileContents(uri.fsPath, contents);
+    }
 
     public async activate(): Promise<void> {
         // Activate all of the extension activation services
@@ -1067,6 +1080,26 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
             IExtensionSingleActivationService
         );
         await Promise.all(activationServices.map(a => a.activate()));
+    }
+
+    public createWebPanel(): IWebPanel {
+        const webPanel = TypeMoq.Mock.ofType<IWebPanel>();
+        webPanel
+            .setup(p => p.postMessage(TypeMoq.It.isAny()))
+            .callback((m: WebPanelMessage) => {
+                const message = createMessageEvent(m);
+                if (this.postMessage) {
+                    this.postMessage(message);
+                } else {
+                    throw new Error('postMessage callback not defined');
+                }
+            });
+        webPanel.setup(p => p.show(TypeMoq.It.isAny())).returns(() => Promise.resolve());
+
+        // See https://github.com/florinn/typemoq/issues/67 for why this is necessary
+        webPanel.setup((p: any) => p.then).returns(() => undefined);
+
+        return webPanel.object;
     }
 
     // tslint:disable:any
@@ -1089,7 +1122,7 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
         } else {
             this.webPanelProvider.reset();
         }
-        const webPanel = TypeMoq.Mock.ofType<IWebPanel>();
+        const webPanel = this.createWebPanel();
 
         // Setup the webpanel provider so that it returns our dummy web panel. It will have to talk to our global JSDOM window so that the react components can link into it
         this.webPanelProvider
@@ -1116,23 +1149,8 @@ export class DataScienceIocContainer extends UnitTestIocContainer {
                 }
 
                 // Return our dummy web panel
-                return Promise.resolve(webPanel.object);
+                return Promise.resolve(webPanel);
             });
-        webPanel
-            .setup(p => p.postMessage(TypeMoq.It.isAny()))
-            .callback((m: WebPanelMessage) => {
-                const message = createMessageEvent(m);
-                if (this.postMessage) {
-                    this.postMessage(message);
-                } else {
-                    throw new Error('postMessage callback not defined');
-                }
-            });
-        webPanel.setup(p => p.show(TypeMoq.It.isAny())).returns(() => Promise.resolve());
-
-        // See https://github.com/florinn/typemoq/issues/67 for why this is necessary
-        webPanel.setup((p: any) => p.then).returns(() => undefined);
-
         // We need to mount the react control before we even create an interactive window object. Otherwise the mount will miss rendering some parts
         this.mountReactControl(mount);
     }

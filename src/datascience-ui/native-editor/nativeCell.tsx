@@ -24,6 +24,7 @@ import { IKeyboardEvent } from '../react-common/event';
 import { Image, ImageName } from '../react-common/image';
 import { ImageButton } from '../react-common/imageButton';
 import { getLocString } from '../react-common/locReactSide';
+import { IMonacoModelContentChangeEvent } from '../react-common/monacoHelpers';
 import { AddCellLine } from './addCellLine';
 import { actionCreators } from './redux/actions';
 
@@ -283,6 +284,7 @@ export class NativeCell extends React.Component<INativeCellProps> {
             case 'l':
                 if (!this.isFocused() && this.isSelected()) {
                     e.stopPropagation();
+                    e.preventDefault();
                     this.props.toggleLineNumbers(cellId);
                     this.props.sendCommand(NativeCommandType.ToggleLineNumbers, 'keyboard');
                 }
@@ -290,10 +292,12 @@ export class NativeCell extends React.Component<INativeCellProps> {
             case 'o':
                 if (!this.isFocused() && this.isSelected()) {
                     e.stopPropagation();
+                    e.preventDefault();
                     this.props.toggleOutput(cellId);
                     this.props.sendCommand(NativeCommandType.ToggleOutput, 'keyboard');
                 }
                 break;
+            case 'NumpadEnter':
             case 'Enter':
                 if (e.shiftKey) {
                     this.shiftEnterCell(e);
@@ -316,32 +320,19 @@ export class NativeCell extends React.Component<INativeCellProps> {
             case 'a':
                 if (!this.isFocused()) {
                     e.stopPropagation();
-                    this.props.insertAbove(cellId);
+                    e.preventDefault();
+                    setTimeout(() => this.props.insertAbove(cellId), 1);
                     this.props.sendCommand(NativeCommandType.InsertAbove, 'keyboard');
                 }
                 break;
             case 'b':
                 if (!this.isFocused()) {
                     e.stopPropagation();
-                    this.props.insertBelow(cellId);
+                    e.preventDefault();
+                    setTimeout(() => this.props.insertBelow(cellId), 1);
                     this.props.sendCommand(NativeCommandType.InsertBelow, 'keyboard');
                 }
                 break;
-            case 'z':
-            case 'Z':
-                if (!this.isFocused()) {
-                    if (e.shiftKey && !e.ctrlKey && !e.altKey) {
-                        e.stopPropagation();
-                        this.props.redo();
-                        this.props.sendCommand(NativeCommandType.Redo, 'keyboard');
-                    } else if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
-                        e.stopPropagation();
-                        this.props.undo();
-                        this.props.sendCommand(NativeCommandType.Undo, 'keyboard');
-                    }
-                }
-                break;
-
             default:
                 break;
         }
@@ -445,7 +436,7 @@ export class NativeCell extends React.Component<INativeCellProps> {
     };
 
     private addNewCell = () => {
-        this.props.insertBelow(this.cellId);
+        setTimeout(() => this.props.insertBelow(this.cellId), 1);
         this.props.sendCommand(NativeCommandType.AddToEnd, 'mouse');
     };
 
@@ -644,6 +635,8 @@ export class NativeCell extends React.Component<INativeCellProps> {
                         keyDown={this.keyDownInput}
                         showLineNumbers={this.props.cellVM.showLineNumbers}
                         font={this.props.font}
+                        disableUndoStack={true}
+                        codeVersion={this.props.cellVM.codeVersion ? this.props.cellVM.codeVersion : 1}
                         focusPending={this.props.focusPending}
                     />
                 </div>
@@ -661,8 +654,8 @@ export class NativeCell extends React.Component<INativeCellProps> {
         this.props.unfocusCell(this.cellId, this.getCurrentCode());
     };
 
-    private onCodeChange = (changes: monacoEditor.editor.IModelContentChange[], cellId: string, modelId: string) => {
-        this.props.editCell(cellId, changes, modelId, this.getCurrentCode());
+    private onCodeChange = (e: IMonacoModelContentChangeEvent) => {
+        this.props.editCell(this.getCell().id, e);
     };
 
     private onCodeCreated = (_code: string, _file: string, cellId: string, modelId: string) => {

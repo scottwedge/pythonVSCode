@@ -17,7 +17,11 @@
             "src",
             "types"
         ],
-        "paths": { "*": ["types/*"] },
+        "paths": {
+            "*": [
+                "types/*"
+            ]
+        },
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
         "noImplicitThis": false,

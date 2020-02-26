@@ -220,7 +220,6 @@ export namespace Execution {
             const current = arg.prevState.cellVMs[index];
             const newType = current.cell.data.cell_type === 'code' ? 'markdown' : 'code';
             const newNotebookCell = createCellFrom(current.cell.data, newType);
-            newNotebookCell.source = arg.payload.data.currentCode;
             const newCell: ICellViewModel = {
                 ...current,
                 cell: {
@@ -228,18 +227,8 @@ export namespace Execution {
                     data: newNotebookCell
                 }
             };
-            // tslint:disable-next-line: no-any
-            cellVMs[index] = newCell as any; // This is because IMessageCell doesn't fit in here. But message cells can't change type
-            if (newType === 'code') {
-                Transfer.postModelInsert(
-                    arg,
-                    index,
-                    cellVMs[index].cell,
-                    Helpers.firstCodeCellAbove(arg.prevState, current.cell.id)
-                );
-            } else {
-                Transfer.postModelRemove(arg, index, current.cell);
-            }
+            cellVMs[index] = newCell;
+            Transfer.changeCellType(arg, cellVMs[index].cell);
 
             return {
                 ...arg.prevState,

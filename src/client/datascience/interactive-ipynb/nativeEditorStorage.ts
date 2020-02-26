@@ -193,6 +193,9 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage {
             case 'insert':
                 changed = this.insertCell(change.cell, change.index);
                 break;
+            case 'changeCellType':
+                changed = this.changeCellType(change.cell);
+                break;
             case 'modify':
                 changed = this.modifyCells(change.newCells);
                 break;
@@ -235,6 +238,10 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage {
                 break;
             case 'edit':
                 this.editCell(change.reverse, change.id);
+                changed = true;
+                break;
+            case 'changeCellType':
+                this.changeCellType(change.cell);
                 changed = true;
                 break;
             case 'insert':
@@ -318,6 +325,13 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage {
             const index = this.cells.findIndex(v => v.id === c.id);
             this._state.cells[index] = this.asCell(c);
         });
+        return true;
+    }
+
+    private changeCellType(cell: ICell): boolean {
+        // Update these cells in our list
+        const index = this.cells.findIndex(v => v.id === cell.id);
+        this._state.cells[index] = this.asCell(cell);
         return true;
     }
 

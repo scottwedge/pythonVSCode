@@ -80,8 +80,7 @@ export const actionCreators = {
         createIncomingActionWithPayload(CommonActionType.MOVE_CELL_UP, { cellId }),
     moveCellDown: (cellId: string): CommonAction<ICellAction> =>
         createIncomingActionWithPayload(CommonActionType.MOVE_CELL_DOWN, { cellId }),
-    changeCellType: (cellId: string, currentCode: string) =>
-        createIncomingActionWithPayload(CommonActionType.CHANGE_CELL_TYPE, { cellId, currentCode }),
+    changeCellType: (cellId: string) => createIncomingActionWithPayload(CommonActionType.CHANGE_CELL_TYPE, { cellId }),
     toggleLineNumbers: (cellId: string): CommonAction<ICellAction> =>
         createIncomingActionWithPayload(CommonActionType.TOGGLE_LINE_NUMBERS, { cellId }),
     toggleOutput: (cellId: string): CommonAction<ICellAction> =>

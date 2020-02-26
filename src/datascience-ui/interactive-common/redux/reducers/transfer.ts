@@ -158,6 +158,16 @@ export namespace Transfer {
         });
     }
 
+    export function changeCellType<T>(arg: CommonReducerArg<CommonActionType, T>, cell: ICell) {
+        postModelUpdate(arg, {
+            source: 'user',
+            kind: 'changeCellType',
+            newDirty: true,
+            oldDirty: arg.prevState.dirty,
+            cell
+        });
+    }
+
     export function postModelRemove<T>(arg: CommonReducerArg<CommonActionType, T>, index: number, cell: ICell) {
         postModelUpdate(arg, {
             source: 'user',

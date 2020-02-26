@@ -356,6 +356,11 @@ export interface INotebookModelAddChange extends INotebookModelChange {
     currentText: string;
 }
 
+export interface INotebookModelChangeTypeChange extends INotebookModelChange {
+    kind: 'changeCellType';
+    cell: ICell;
+}
+
 export interface IEditorPosition {
     /**
      * line number (starts at 1)
@@ -438,7 +443,8 @@ export type NotebookModelChange =
     | INotebookModelAddChange
     | INotebookModelEditChange
     | INotebookModelVersionChange
-    | INotebookModelFileChange;
+    | INotebookModelFileChange
+    | INotebookModelChangeTypeChange;
 
 // Map all messages to specific payloads
 export class IInteractiveWindowMapping {

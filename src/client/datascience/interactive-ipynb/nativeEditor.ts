@@ -86,6 +86,7 @@ import {
 import { nbformat } from '@jupyterlab/coreutils';
 // tslint:disable-next-line: no-require-imports
 import cloneDeep = require('lodash/cloneDeep');
+import { concatMultilineStringInput } from '../../../datascience-ui/common';
 
 const nativeEditorDir = path.join(EXTENSION_ROOT_DIR, 'out', 'datascience-ui', 'notebook');
 @injectable()
@@ -369,11 +370,15 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     protected async reexecuteCells(info: IReExecuteCells): Promise<void> {
         const tokenSource = new CancellationTokenSource();
         this.executeCancelTokens.add(tokenSource);
-        let finishedPos = info && info.entries ? info.entries.length : -1;
+        let finishedPos = info && info.cellIds ? info.cellIds.length : -1;
         try {
-            if (info && info.entries) {
-                for (let i = 0; i < info.entries.length && !tokenSource.token.isCancellationRequested; i += 1) {
-                    await this.reexecuteCell(info.entries[i], tokenSource.token);
+            if (info && info.cellIds && this.model) {
+                for (let i = 0; i < info.cellIds.length && !tokenSource.token.isCancellationRequested; i += 1) {
+                    const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
+                    if (!cell) {
+                        continue;
+                    }
+                    await this.reexecuteCell(cell, tokenSource.token);
                     if (!tokenSource.token.isCancellationRequested) {
                         finishedPos = i;
                     }
@@ -390,9 +395,13 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             // Make sure everything is marked as finished or error after the final finished
             // position
-            if (info && info.entries) {
-                for (let i = finishedPos + 1; i < info.entries.length; i += 1) {
-                    this.finishCell(info.entries[i]);
+            if (info && info.cellIds && this.model) {
+                for (let i = finishedPos + 1; i < info.cellIds.length; i += 1) {
+                    const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
+                    if (!cell) {
+                        continue;
+                    }
+                    this.finishCell(cell);
                 }
             }
         }
@@ -534,44 +543,35 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         this.executeCancelTokens.forEach(t => t.cancel());
     }
 
-    private finishCell(entry: { cell: ICell; code: string }) {
+    private finishCell(cell: ICell) {
         this.sendCellsToWebView([
             {
-                ...entry.cell,
-                // tslint:disable-next-line: no-any
-                data: { ...entry.cell.data, source: entry.code } as any, // nyc compiler issue
+                ...cell,
                 state: CellState.finished
             }
         ]);
     }
 
-    private async reexecuteCell(entry: { cell: ICell; code: string }, cancelToken: CancellationToken): Promise<void> {
+    private async reexecuteCell(cell: ICell, cancelToken: CancellationToken): Promise<void> {
         try {
             // If there's any payload, it has the code and the id
-            if (entry.code && entry.cell.id && entry.cell.data.cell_type !== 'messages') {
-                traceInfo(`Executing cell ${entry.cell.id}`);
+            if (cell.id && cell.data.cell_type !== 'messages') {
+                traceInfo(`Executing cell ${cell.id}`);
 
                 // Clear the result if we've run before
-                await this.clearResult(entry.cell.id);
+                await this.clearResult(cell.id);
 
+                const code = concatMultilineStringInput(cell.data.source);
                 // Send to ourselves.
-                await this.submitCode(
-                    entry.code,
-                    Identifiers.EmptyFileName,
-                    0,
-                    entry.cell.id,
-                    entry.cell.data,
-                    false,
-                    cancelToken
-                );
+                await this.submitCode(code, Identifiers.EmptyFileName, 0, cell.id, cell.data, false, cancelToken);
             }
         } catch (exc) {
             // Make this error our cell output
             this.sendCellsToWebView([
                 {
                     // tslint:disable-next-line: no-any
-                    data: { ...entry.cell.data, outputs: [createErrorOutput(exc)] } as any, // nyc compiler issue
-                    id: entry.cell.id,
+                    data: { ...cell.data, outputs: [createErrorOutput(exc)] } as any, // nyc compiler issue
+                    id: cell.id,
                     file: Identifiers.EmptyFileName,
                     line: 0,
                     state: CellState.error
@@ -580,8 +580,8 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
             throw exc;
         } finally {
-            if (entry && entry.cell.id) {
-                traceInfo(`Finished executing cell ${entry.cell.id}`);
+            if (cell && cell.id) {
+                traceInfo(`Finished executing cell ${cell.id}`);
             }
         }
     }

@@ -226,7 +226,6 @@ export namespace Transfer {
                 const current = arg.prevState.cellVMs[index];
                 const newCell = {
                     ...current,
-                    uncommittedText: arg.payload.data.code,
                     codeVersion: arg.payload.data.version
                 };
 

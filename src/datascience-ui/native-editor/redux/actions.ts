@@ -53,8 +53,8 @@ export const actionCreators = {
             cellId,
             newCellId: uuid()
         }),
-    executeCell: (cellId: string, code: string, moveOp: 'add' | 'select' | 'none') =>
-        createIncomingActionWithPayload(CommonActionType.EXECUTE_CELL_AND_ADVANCE, { cellId, code, moveOp }),
+    executeCell: (cellId: string, moveOp: 'add' | 'select' | 'none') =>
+        createIncomingActionWithPayload(CommonActionType.EXECUTE_CELL_AND_ADVANCE, { cellId, moveOp }),
     focusCell: (cellId: string, cursorPos: CursorPos = CursorPos.Current): CommonAction<ICellAndCursorAction> =>
         createIncomingActionWithPayload(CommonActionType.FOCUS_CELL, { cellId, cursorPos }),
     unfocusCell: (cellId: string, code: string) =>

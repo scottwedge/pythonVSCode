@@ -38,7 +38,8 @@ export namespace Creation {
         const newText = extractInputText(cellVM, settings);
 
         cellVM.inputBlockOpen = true;
-        cellVM.inputBlockText = newText;
+        // TODO: Shouldn't we be splitting into multi line here?
+        cell.data.source = newText;
         cellVM.hasBeenRun = hasBeenRun;
 
         return cellVM;
@@ -208,14 +209,15 @@ export namespace Creation {
         if (index >= 0) {
             const newVM = { ...arg.prevState.cellVMs[index] };
             arg.payload.data.changes.forEach(c => {
-                const source = newVM.uncommittedText ? newVM.uncommittedText : newVM.inputBlockText;
+                const source = newVM.inputBlockText;
                 const before = source.slice(0, c.rangeOffset);
                 // tslint:disable-next-line: restrict-plus-operands
                 const after = source.slice(c.rangeOffset + c.rangeLength);
-                newVM.uncommittedText = `${before}${c.text}${after}`;
+                newVM.inputBlockText = `${before}${c.text}${after}`;
             });
             newVM.codeVersion = newVM.codeVersion ? newVM.codeVersion + 1 : 1;
-            newVM.inputBlockText = newVM.cell.data.source = newVM.uncommittedText!;
+            // TODO: Should we be splitting into mult-line text?
+            newVM.cell.data.source = newVM.inputBlockText;
             newVM.cursorPos = arg.payload.data.changes[0].position;
             const newVMs = [...arg.prevState.cellVMs];
             newVMs[index] = Helpers.asCellViewModel(newVM);

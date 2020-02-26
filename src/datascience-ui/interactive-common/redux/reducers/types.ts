@@ -174,7 +174,7 @@ export interface IEditCellAction extends ICodeAction {
 
 // I.e. when using the operation `add`, we need the corresponding `IAddCellAction`.
 // They are mutually exclusive, if not `add`, then there's no `newCellId`.
-export type IExecuteAction = ICodeAction & {
+export type IExecuteAction = ICellAction & {
     moveOp: 'select' | 'none' | 'add';
 };
 

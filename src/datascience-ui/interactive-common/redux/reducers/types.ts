@@ -94,7 +94,7 @@ export type CommonActionTypeMapping = {
     [CommonActionType.EXECUTE_CELL]: IExecuteAction;
     [CommonActionType.EXECUTE_ALL_CELLS]: never | undefined;
     [CommonActionType.EXECUTE_ABOVE]: ICellAction;
-    [CommonActionType.EXECUTE_CELL_AND_BELOW]: ICodeAction;
+    [CommonActionType.EXECUTE_CELL_AND_BELOW]: ICellAction;
     [CommonActionType.RESTART_KERNEL]: never | undefined;
     [CommonActionType.INTERRUPT_KERNEL]: never | undefined;
     [CommonActionType.EXPORT]: never | undefined;

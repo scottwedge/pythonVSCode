@@ -4,7 +4,6 @@
 // tslint:disable-next-line: no-require-imports no-var-requires
 const cloneDeep = require('lodash/cloneDeep');
 import * as uuid from 'uuid/v4';
-import { CellMatcher } from '../../../../client/datascience/cellMatcher';
 import { InteractiveWindowMessages } from '../../../../client/datascience/interactive-common/interactiveWindowTypes';
 import { CellState } from '../../../../client/datascience/types';
 import { concatMultilineStringInput } from '../../../common';
@@ -22,7 +21,6 @@ import {
     CommonActionType,
     ICellAction,
     IChangeCellTypeAction,
-    ICodeAction,
     IExecuteAction
 } from '../../../interactive-common/redux/reducers/types';
 import { NativeEditorReducerArg } from '../mapping';
@@ -31,49 +29,38 @@ import { Effects } from './effects';
 export namespace Execution {
     function executeRange(
         prevState: IMainState,
-        start: number,
-        end: number,
+        cellIds: string[],
         // tslint:disable-next-line: no-any
         originalArg: NativeEditorReducerArg<any>
     ): IMainState {
         const newVMs = [...prevState.cellVMs];
-        const cellIds: string[] = [];
-        for (let pos = start; pos <= end; pos += 1) {
-            const orig = prevState.cellVMs[pos];
-            const code = Array.isArray(orig.cell.data.source)
-                ? orig.cell.data.source.length === 1
-                    ? orig.cell.data.source[0]
-                    : ''
-                : orig.cell.data.source;
+        const cellIdsToExecute: string[] = [];
+        cellIds.forEach(cellId => {
+            const index = prevState.cellVMs.findIndex(cell => cell.cell.id === cellId);
+            if (index === -1) {
+                return;
+            }
+            const orig = prevState.cellVMs[index];
+            const code = concatMultilineStringInput(orig.cell.data.source);
             // noop if the submitted code is just a cell marker
-            const matcher = new CellMatcher(prevState.settings);
-            if (code && matcher.stripFirstMarker(code).length > 0) {
+            if (code && orig.cell.data.cell_type === 'code') {
                 // When cloning cells, preserve the metadata (hence deep clone).
                 const clonedCell = cloneDeep(orig.cell.data);
-                clonedCell.source = code;
-                if (orig.cell.data.cell_type === 'code') {
-                    // Update our input cell to be in progress again and clear outputs
-                    clonedCell.outputs = [];
-                    newVMs[pos] = Helpers.asCellViewModel({
-                        ...orig,
-                        cell: { ...orig.cell, state: CellState.executing, data: clonedCell }
-                    });
-                    cellIds.push(orig.cell.id);
-                } else {
-                    // Update our input to be our new code
-                    newVMs[pos] = Helpers.asCellViewModel({
-                        ...orig,
-                        cell: { ...orig.cell, data: clonedCell }
-                    });
-                }
+                // Update our input cell to be in progress again and clear outputs
+                clonedCell.outputs = [];
+                newVMs[index] = Helpers.asCellViewModel({
+                    ...orig,
+                    cell: { ...orig.cell, state: CellState.executing, data: clonedCell }
+                });
+                cellIdsToExecute.push(orig.cell.id);
             }
-        }
+        });
 
         // If any cells to execute, execute them all
-        if (cellIds.length > 0) {
+        if (cellIdsToExecute.length > 0) {
             // Send a message if a code cell
             postActionToExtension(originalArg, InteractiveWindowMessages.ReExecuteCells, {
-                cellIds
+                cellIds: cellIdsToExecute
             });
         }
 
@@ -86,7 +73,9 @@ export namespace Execution {
     export function executeAbove(arg: NativeEditorReducerArg<ICellAction>): IMainState {
         const index = arg.prevState.cellVMs.findIndex(c => c.cell.id === arg.payload.data.cellId);
         if (index > 0) {
-            return executeRange(arg.prevState, 0, index - 1, arg);
+            // Get all cellIds until `index`.
+            const cellIds = arg.prevState.cellVMs.slice(0, index).map(cellVm => cellVm.cell.id);
+            return executeRange(arg.prevState, cellIds, arg);
         }
         return arg.prevState;
     }
@@ -112,9 +101,9 @@ export namespace Execution {
 
     export function executeCell(arg: NativeEditorReducerArg<IExecuteAction>): IMainState {
         const index = arg.prevState.cellVMs.findIndex(c => c.cell.id === arg.payload.data.cellId);
-        if (index >= 0) {
+        if (index >= 0 && arg.payload.data.cellId) {
             // Start executing this cell.
-            const executeResult = executeRange(arg.prevState, index, index, arg);
+            const executeResult = executeRange(arg.prevState, [arg.payload.data.cellId], arg);
 
             // Modify the execute result if moving
             if (arg.payload.data.moveOp === 'select') {
@@ -147,33 +136,21 @@ export namespace Execution {
         return arg.prevState;
     }
 
-    export function executeCellAndBelow(arg: NativeEditorReducerArg<ICodeAction>): IMainState {
+    export function executeCellAndBelow(arg: NativeEditorReducerArg<ICellAction>): IMainState {
         const index = arg.prevState.cellVMs.findIndex(c => c.cell.id === arg.payload.data.cellId);
         if (index >= 0) {
-            const codes = arg.prevState.cellVMs
-                .filter((_c, i) => i > index)
-                .map(c => concatMultilineStringInput(c.cell.data.source));
-            return executeRange(arg.prevState, index, index + codes.length, arg);
+            // Get all cellIds starting from `index`.
+            const cellIds = arg.prevState.cellVMs.slice(index).map(cellVm => cellVm.cell.id);
+            return executeRange(arg.prevState, cellIds, arg);
         }
         return arg.prevState;
     }
 
     export function executeAllCells(arg: NativeEditorReducerArg): IMainState {
-        // This is the same thing as executing the first cell and all below
-        const firstCell = arg.prevState.cellVMs.length > 0 ? arg.prevState.cellVMs[0].cell.id : undefined;
-        if (firstCell) {
-            return executeCellAndBelow({
-                ...arg,
-                payload: {
-                    ...arg.payload,
-                    data: {
-                        cellId: firstCell,
-                        code: concatMultilineStringInput(arg.prevState.cellVMs[0].cell.data.source)
-                    }
-                }
-            });
+        if (arg.prevState.cellVMs.length > 0) {
+            const cellIds = arg.prevState.cellVMs.map(cellVm => cellVm.cell.id);
+            return executeRange(arg.prevState, cellIds, arg);
         }
-
         return arg.prevState;
     }
 

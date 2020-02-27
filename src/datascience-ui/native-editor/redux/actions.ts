@@ -64,8 +64,8 @@ export const actionCreators = {
     executeAllCells: (): CommonAction => createIncomingAction(CommonActionType.EXECUTE_ALL_CELLS),
     executeAbove: (cellId: string): CommonAction<ICellAction> =>
         createIncomingActionWithPayload(CommonActionType.EXECUTE_ABOVE, { cellId }),
-    executeCellAndBelow: (cellId: string, code: string): CommonAction<ICodeAction> =>
-        createIncomingActionWithPayload(CommonActionType.EXECUTE_CELL_AND_BELOW, { cellId, code }),
+    executeCellAndBelow: (cellId: string): CommonAction<ICellAction> =>
+        createIncomingActionWithPayload(CommonActionType.EXECUTE_CELL_AND_BELOW, { cellId }),
     toggleVariableExplorer: (): CommonAction => createIncomingAction(CommonActionType.TOGGLE_VARIABLE_EXPLORER),
     restartKernel: (): CommonAction => createIncomingAction(CommonActionType.RESTART_KERNEL),
     interruptKernel: (): CommonAction => createIncomingAction(CommonActionType.INTERRUPT_KERNEL),

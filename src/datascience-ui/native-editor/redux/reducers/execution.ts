@@ -41,9 +41,8 @@ export namespace Execution {
                 return;
             }
             const orig = prevState.cellVMs[index];
-            const code = concatMultilineStringInput(orig.cell.data.source);
             // noop if the submitted code is just a cell marker
-            if (code && orig.cell.data.cell_type === 'code') {
+            if (orig.cell.data.cell_type === 'code' && concatMultilineStringInput(orig.cell.data.source)) {
                 // When cloning cells, preserve the metadata (hence deep clone).
                 const clonedCell = cloneDeep(orig.cell.data);
                 // Update our input cell to be in progress again and clear outputs

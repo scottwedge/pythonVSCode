@@ -368,21 +368,21 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     @captureTelemetry(Telemetry.ExecuteNativeCell, undefined, true)
     // tslint:disable-next-line:no-any
     protected async reexecuteCells(info: IReExecuteCells): Promise<void> {
+        // This is here for existing functional tests that somehow pass undefined into this method.
+        if (!this.model || !info || !Array.isArray(info.cellIds)) {
+            return;
+        }
         const tokenSource = new CancellationTokenSource();
         this.executeCancelTokens.add(tokenSource);
-        let finishedPos = info && info.cellIds ? info.cellIds.length : -1;
+        const cellsExecuted: ICell[] = [];
         try {
-            if (info && info.cellIds && this.model) {
-                for (let i = 0; i < info.cellIds.length && !tokenSource.token.isCancellationRequested; i += 1) {
-                    const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
-                    if (!cell) {
-                        continue;
-                    }
-                    await this.reexecuteCell(cell, tokenSource.token);
-                    if (!tokenSource.token.isCancellationRequested) {
-                        finishedPos = i;
-                    }
+            for (let i = 0; i < info.cellIds.length && !tokenSource.token.isCancellationRequested; i += 1) {
+                const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
+                if (!cell) {
+                    continue;
                 }
+                await this.reexecuteCell(cell, tokenSource.token);
+                cellsExecuted.push(cell);
             }
         } catch (exc) {
             // Tell the other side we restarted the kernel. This will stop all executions
@@ -394,16 +394,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.executeCancelTokens.delete(tokenSource);
 
             // Make sure everything is marked as finished or error after the final finished
-            // position
-            if (info && info.cellIds && this.model) {
-                for (let i = finishedPos + 1; i < info.cellIds.length; i += 1) {
-                    const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
-                    if (!cell) {
-                        continue;
-                    }
-                    this.finishCell(cell);
-                }
-            }
+            cellsExecuted.forEach(cell => this.finishCell(cell));
         }
     }
 

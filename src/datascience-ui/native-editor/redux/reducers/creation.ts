@@ -9,6 +9,7 @@ import {
     NotebookModelChange
 } from '../../../../client/datascience/interactive-common/interactiveWindowTypes';
 import { ICell, IDataScienceExtraSettings } from '../../../../client/datascience/types';
+import { splitMultilineString } from '../../../common';
 import {
     createCellVM,
     createEmptyCell,
@@ -38,8 +39,7 @@ export namespace Creation {
         const newText = extractInputText(cellVM, settings);
 
         cellVM.inputBlockOpen = true;
-        // TODO: Shouldn't we be splitting into multi line here?
-        cell.data.source = newText;
+        cell.data.source = splitMultilineString(newText);
         cellVM.hasBeenRun = hasBeenRun;
 
         return cellVM;
@@ -216,8 +216,7 @@ export namespace Creation {
                 newVM.inputBlockText = `${before}${c.text}${after}`;
             });
             newVM.codeVersion = newVM.codeVersion ? newVM.codeVersion + 1 : 1;
-            // TODO: Should we be splitting into mult-line text?
-            newVM.cell.data.source = newVM.inputBlockText;
+            newVM.cell.data.source = splitMultilineString(newVM.inputBlockText);
             newVM.cursorPos = arg.payload.data.changes[0].position;
             const newVMs = [...arg.prevState.cellVMs];
             newVMs[index] = Helpers.asCellViewModel(newVM);

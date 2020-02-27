@@ -290,7 +290,10 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage {
             const after = contents.substr(change.rangeOffset + change.rangeLength);
             const newContents = `${before}${normalized}${after}`;
             if (contents !== newContents) {
-                const newCell = { ...this.cells[index], data: { ...this.cells[index].data, source: newContents } };
+                const newCell = {
+                    ...this.cells[index],
+                    data: { ...this.cells[index].data, source: splitMultilineString(newContents) }
+                };
                 this._state.cells[index] = this.asCell(newCell);
                 return true;
             }

@@ -20,6 +20,7 @@ import { noop } from '../../client/common/utils/misc';
 import { Identifiers } from '../../client/datascience/constants';
 import { DataScienceErrorHandler } from '../../client/datascience/errorHandler/errorHandler';
 import { InteractiveWindowMessages } from '../../client/datascience/interactive-common/interactiveWindowTypes';
+import { NativeEditor as NativeEditorWebView } from '../../client/datascience/interactive-ipynb/nativeEditor';
 import { JupyterExecutionFactory } from '../../client/datascience/jupyter/jupyterExecutionFactory';
 import {
     ICell,
@@ -1166,6 +1167,61 @@ df.head()`;
                         await undo();
                         foundCell = getOutputCell(wrapper, 'NativeCell', 2)?.instance() as NativeCell;
                         assert.equal(foundCell.props.cellVM.cell.id, 'NotebookImport#2', 'Cell did not move back');
+                    });
+
+                    test('Update as user types into editor (update redux store and model)', async () => {
+                        await addCell(wrapper, ioc, '', false);
+                        assert.ok(isCellFocused(wrapper, 'NativeCell', 3));
+                        assert.equal(wrapper.find('NativeCell').length, 4, 'Cell not added');
+
+                        const notebookProvider = ioc.get<INotebookEditorProvider>(INotebookEditorProvider);
+                        const model = (notebookProvider.editors[0] as NativeEditorWebView).model;
+
+                        // This is the string the user will type in a character at a time into the editor.
+                        const stringToType = 'Hi! Bob!';
+
+                        // We are expecting to receive multiple edits to the model in the backend/extension from react, one for each character.
+                        // Lets create deferreds that we can await on, and each will be resolved with the edit it received.
+                        // For first edit, we'll expect `H`, then `i`, then `!`
+                        const modelEditsInExtension = stringToType.split('').map(createDeferred);
+                        model?.changed(e => {
+                            if (e.kind === 'edit') {
+                                // Find the first deferred that's no completed.
+                                const deferred = modelEditsInExtension.find(d => !d.completed);
+                                deferred?.resolve(e.forward.map(m => m.text).join(''));
+                            }
+                        });
+
+                        for (let index = 0; index < stringToType.length; index += 1) {
+                            // Single character to be typed into the editor.
+                            const characterToTypeIntoEditor = stringToType.substring(index, index + 1);
+
+                            // Type into new cell
+                            const editorEnzyme = getNativeFocusedEditor(wrapper);
+                            typeCode(editorEnzyme, characterToTypeIntoEditor);
+
+                            // Verify cell content
+                            const reactEditor = editorEnzyme!.instance() as MonacoEditor;
+                            const editorValue = reactEditor.state.editor!.getModel()!.getValue();
+                            const expectedString = stringToType.substring(0, index + 1);
+
+                            // 1. Validate the value in the monaco editor.
+                            // Confirms value in the editor is as expected.
+                            assert.equal(editorValue, expectedString, 'Text does not match');
+
+                            // 2. Validate the value in the monaco editor state (redux state).
+                            // Ensures we are keeping redux upto date.
+                            assert.equal(reactEditor.props.value, expectedString, 'Text does not match');
+
+                            // 3. Validate the edit received by the extension from the react side.
+                            // This edit will be received by the model.
+                            // When user types `H`, then we'll expect to see `H` edit received in the model, then `i`, `!` & so on.
+                            const expectedModelEditInExtension = modelEditsInExtension[index];
+                            await assert.eventually.equal(
+                                expectedModelEditInExtension.promise,
+                                characterToTypeIntoEditor
+                            );
+                        }
                     });
                 });
 

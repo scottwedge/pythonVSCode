@@ -132,8 +132,9 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
     public get isDirty(): boolean {
         return this.model ? this.model.isDirty : false;
     }
+    // Public for testing purposes.
+    public model: Readonly<INotebookModel> | undefined;
     protected savedEvent: EventEmitter<INotebookEditor> = new EventEmitter<INotebookEditor>();
-    protected model: INotebookModel | undefined;
     protected closedEvent: EventEmitter<INotebookEditor> = new EventEmitter<INotebookEditor>();
     protected modifiedEvent: EventEmitter<INotebookEditor> = new EventEmitter<INotebookEditor>();
 

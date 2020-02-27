@@ -1190,6 +1190,7 @@ df.head()`;
                             if (e.kind === 'edit') {
                                 // Find the first deferred that's no completed.
                                 const deferred = modelEditsInExtension.find(d => !d.completed);
+                                // Resolve promise with the character/string it received as edit.
                                 deferred?.resolve(e.forward.map(m => m.text).join(''));
                             }
                         });
@@ -1198,11 +1199,10 @@ df.head()`;
                             // Single character to be typed into the editor.
                             const characterToTypeIntoEditor = stringToType.substring(index, index + 1);
 
-                            // Type into new cell
+                            // Type a character into the editor.
                             const editorEnzyme = getNativeFocusedEditor(wrapper);
                             typeCode(editorEnzyme, characterToTypeIntoEditor);
 
-                            // Verify cell content
                             const reactEditor = editorEnzyme!.instance() as MonacoEditor;
                             const editorValue = reactEditor.state.editor!.getModel()!.getValue();
                             const expectedString = stringToType.substring(0, index + 1);
@@ -1211,14 +1211,14 @@ df.head()`;
                             // Confirms value in the editor is as expected.
                             assert.equal(editorValue, expectedString, 'Text does not match');
 
-                            // 2. Validate the value in the monaco editor state (redux state).
-                            // Ensures we are keeping redux upto date.
+                            // 2. Validate the value in the redux state (props - update in redux, will push through to props).
+                            // Confirms value in the props is as expected.
                             assert.equal(reactEditor.props.value, expectedString, 'Text does not match');
 
                             // 3. Validate the edit received by the extension from the react side.
-                            // This edit will be received by the model.
                             // When user types `H`, then we'll expect to see `H` edit received in the model, then `i`, `!` & so on.
                             const expectedModelEditInExtension = modelEditsInExtension[index];
+                            // Verify against the character the user typed.
                             await assert.eventually.equal(
                                 expectedModelEditInExtension.promise,
                                 characterToTypeIntoEditor
@@ -1273,7 +1273,6 @@ df.head()`;
                         await modelEditsInExtension.promise;
                         assert.equal(concatMultilineStringInput(model?.cells[3].data.source!), stringToType);
 
-                        // Toggle to markdown.
                         // Now hit escape.
                         let update = waitForUpdate(wrapper, NativeEditor, 1);
                         simulateKeyPressOnCell(cellIndex, { code: 'Escape' });

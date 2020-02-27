@@ -375,15 +375,16 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         }
         const tokenSource = new CancellationTokenSource();
         this.executeCancelTokens.add(tokenSource);
-        const cellsExecuted: ICell[] = [];
+        const cellsExecuting = new Set<ICell>();
         try {
             for (let i = 0; i < info.cellIds.length && !tokenSource.token.isCancellationRequested; i += 1) {
                 const cell = this.model.cells.find(item => item.id === info.cellIds[i]);
                 if (!cell) {
                     continue;
                 }
+                cellsExecuting.add(cell);
                 await this.reexecuteCell(cell, tokenSource.token);
-                cellsExecuted.push(cell);
+                cellsExecuting.delete(cell);
             }
         } catch (exc) {
             // Tell the other side we restarted the kernel. This will stop all executions
@@ -395,7 +396,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
             this.executeCancelTokens.delete(tokenSource);
 
             // Make sure everything is marked as finished or error after the final finished
-            cellsExecuted.forEach(cell => this.finishCell(cell));
+            cellsExecuting.forEach(cell => this.finishCell(cell));
         }
     }
 

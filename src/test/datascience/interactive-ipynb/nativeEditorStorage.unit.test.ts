@@ -43,6 +43,7 @@ import { IInterpreterService } from '../../../client/interpreter/contracts';
 import { InterpreterService } from '../../../client/interpreter/interpreterService';
 import { createEmptyCell } from '../../../datascience-ui/interactive-common/mainState';
 import { MockMemento } from '../../mocks/mementos';
+import { concatMultilineStringInput } from '../../../datascience-ui/common';
 
 // tslint:disable: no-any chai-vague-errors no-unused-expression
 class MockWorkspaceConfiguration implements WorkspaceConfiguration {
@@ -468,7 +469,7 @@ suite('Data Science - Native Editor Storage', () => {
         let cells = storage.cells;
         expect(cells).to.be.lengthOf(3);
         expect(cells[1].id).to.be.match(/NotebookImport#1/);
-        expect(cells[1].data.source).to.be.equals('b=2\nab');
+        expect(concatMultilineStringInput(cells[1].data.source)).to.be.equals('b=2\nab');
         expect(storage.isDirty).to.be.equal(true, 'Editor should be dirty');
         removeCell(0, cells[0]);
         cells = storage.cells;

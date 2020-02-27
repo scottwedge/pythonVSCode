@@ -332,7 +332,7 @@ export class NativeEditorStorage implements INotebookModel, INotebookStorage {
     }
 
     private changeCellType(cell: ICell): boolean {
-        // Update these cells in our list
+        // Update the cell in our list.
         const index = this.cells.findIndex(v => v.id === cell.id);
         this._state.cells[index] = this.asCell(cell);
         return true;

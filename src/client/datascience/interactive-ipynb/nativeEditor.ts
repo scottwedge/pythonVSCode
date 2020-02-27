@@ -62,9 +62,6 @@ import {
     NotebookModelChange,
     SysInfoReason
 } from '../interactive-common/interactiveWindowTypes';
-import { InvalidNotebookFileError } from '../jupyter/invalidNotebookFileError';
-import { JupyterNotebookBase } from '../jupyter/jupyterNotebook';
-import { JupyterSession } from '../jupyter/jupyterSession';
 import { ProgressReporter } from '../progress/progressReporter';
 import {
     CellState,

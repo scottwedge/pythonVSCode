@@ -236,6 +236,14 @@ export namespace Transfer {
                 const current = arg.prevState.cellVMs[index];
                 const newCell = {
                     ...current,
+                    inputBlockText: arg.payload.data.code,
+                    cell: {
+                        ...current.cell,
+                        data: {
+                            ...current.cell.data,
+                            source: arg.payload.data.code
+                        }
+                    },
                     codeVersion: arg.payload.data.version
                 };
 

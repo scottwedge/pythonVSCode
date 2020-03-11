@@ -39,7 +39,6 @@ import { KernelSelector } from '../kernels/kernelSelector';
 import { HostJupyterNotebook } from './hostJupyterNotebook';
 import { LiveShareParticipantHost } from './liveShareParticipantMixin';
 import { IRoleBasedObject } from './roleBasedFactory';
-import { createDeferred } from '../../../common/utils/async';
 
 // tslint:disable-next-line: no-require-imports
 // tslint:disable:no-any

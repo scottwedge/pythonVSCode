@@ -55,6 +55,7 @@ data/**
 debug_coverage*/**
 images/**/*.gif
 images/**/*.png
+ipywidgets/**
 news/**
 node_modules/**
 obj/**

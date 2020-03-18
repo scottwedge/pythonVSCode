@@ -38,6 +38,7 @@ module.exports = [
                 { from: './**/*.png', to: '.' },
                 { from: './**/*.svg', to: '.' },
                 { from: './**/*.css', to: '.' },
+                { from: path.join(__dirname, 'node_modules', 'requirejs', 'require.js'), to: path.join(__dirname, 'out', 'datascience-ui', 'history-react') },
                 { from: './**/*theme*.json', to: '.' }
             ], { context: 'src' }),
             new MonacoWebpackPlugin({
@@ -136,6 +137,7 @@ module.exports = [
                 { from: './**/*.png', to: '.' },
                 { from: './**/*.svg', to: '.' },
                 { from: './**/*.css', to: '.' },
+                { from: path.join(__dirname, 'node_modules', 'requirejs', 'require.js'), to: path.join(__dirname, 'out', 'datascience-ui', 'native-editor') },
                 { from: './**/*theme*.json', to: '.' }
             ], { context: 'src' }),
             new MonacoWebpackPlugin({

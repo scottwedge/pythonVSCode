@@ -3,6 +3,7 @@
 // Licensed under the MIT License.
 'use strict';
 
+import * as fastDeepEqual from 'fast-deep-equal';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
 import { IDisposable } from '../../client/common/types';
@@ -262,7 +263,7 @@ export class MonacoEditor extends React.Component<IMonacoEditorProps, IMonacoEdi
             if (prevProps.theme !== this.props.theme && this.props.theme) {
                 monacoEditor.editor.setTheme(this.props.theme);
             }
-            if (prevProps.options !== this.props.options) {
+            if (!fastDeepEqual(prevProps.options, this.props.options)) {
                 if (prevProps.options.lineNumbers !== this.props.options.lineNumbers) {
                     this.updateMargin(this.state.editor);
                 }

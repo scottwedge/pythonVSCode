@@ -136,10 +136,12 @@ export class WebPanel implements IWebPanel {
                 <style type="text/css">
                 ${style}
                 </style>
+                <script type="text/javascript" src="https://requirejs.org/docs/release/2.3.6/comments/require.js"></script>
             </head>
             <body>
                 <noscript>You need to enable JavaScript to run this app.</noscript>
                 <div id="root"></div>
+                <div id="rootWidget"></div>
                 <script type="text/javascript">
                     function resolvePath(relativePath) {
                         if (relativePath && relativePath[0] == '.' && relativePath[1] != '.') {

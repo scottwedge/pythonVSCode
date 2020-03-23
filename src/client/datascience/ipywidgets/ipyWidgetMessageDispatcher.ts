@@ -87,8 +87,7 @@ export class IPyWidgetMessageDispatcher implements IIPyWidgetMessageDispatcher {
     }
     public async registerCommTarget(targetName: string) {
         this.pendingTargetNames.add(targetName);
-        await this.getNotebook();
-        this.registerCommTargets();
+        await this.initialize();
     }
 
     public async initialize() {
@@ -97,6 +96,10 @@ export class IPyWidgetMessageDispatcher implements IIPyWidgetMessageDispatcher {
 
         this.registerCommTargets();
 
+        // If we haven't registered for a comm target, then do not handle messages.
+        if (!this.commTargetsRegistered.size) {
+            return;
+        }
         if (!this.ioPubCallbackRegistered && this.notebook) {
             this.ioPubCallbackRegistered = true;
             // Sign up for io pub messages (could probably do a better job here. Do we want all display data messages?)

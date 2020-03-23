@@ -17,7 +17,8 @@ import {
     TextDocument,
     TextEditor,
     Uri,
-    WebviewPanel
+    WebviewPanel,
+    ViewColumn
 } from 'vscode';
 import { ServerStatus } from '../../datascience-ui/interactive-common/mainState';
 import { ICommandManager } from '../common/application/types';
@@ -423,7 +424,7 @@ export interface INotebookEditor extends IInteractiveBase {
     readonly visible: boolean;
     readonly active: boolean;
     readonly model: INotebookModel | undefined;
-    load(storage: INotebookModel, webViewPanel?: WebviewPanel): Promise<void>;
+    load(storage: INotebookModel, webViewPanel?: WebviewPanel, viewColumn?: ViewColumn): Promise<void>;
     runAllCells(): void;
     runSelectedCell(): void;
     addCellBelow(): void;

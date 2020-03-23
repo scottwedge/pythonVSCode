@@ -5,7 +5,7 @@ import '../../common/extensions';
 
 import { inject, injectable, multiInject, named } from 'inversify';
 import * as path from 'path';
-import { Memento, Uri, WebviewPanel } from 'vscode';
+import { Memento, Uri, ViewColumn, WebviewPanel } from 'vscode';
 
 import {
     IApplicationShell,
@@ -128,10 +128,10 @@ export class NativeEditorOldWebView extends NativeEditor {
         );
         asyncRegistry.push(this);
         // No ui syncing in old notebooks.
-        synchronizer.disable();
+        // synchronizer.disable();
     }
-    public async load(model: INotebookModel, webViewPanel: WebviewPanel): Promise<void> {
-        await super.load(model, webViewPanel);
+    public async load(model: INotebookModel, webViewPanel: WebviewPanel, viewColumn?: ViewColumn): Promise<void> {
+        await super.load(model, webViewPanel, viewColumn);
 
         // Update our title to match
         this.setTitle(path.basename(model.file.fsPath));

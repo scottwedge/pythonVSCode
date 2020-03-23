@@ -221,7 +221,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
         return this.close();
     }
 
-    public async load(model: INotebookModel, webViewPanel: WebviewPanel): Promise<void> {
+    public async load(model: INotebookModel, webViewPanel: WebviewPanel, viewColumn?: ViewColumn): Promise<void> {
         // Save the model we're using
         this.model = model;
 
@@ -230,7 +230,7 @@ export class NativeEditor extends InteractiveBase implements INotebookEditor {
 
         // Load the web panel using our file path so it can find
         // relative files next to the notebook.
-        await super.loadWebPanel(path.dirname(this.file.fsPath), webViewPanel);
+        await super.loadWebPanel(path.dirname(this.file.fsPath), webViewPanel, viewColumn);
 
         // Sign up for dirty events
         model.changed(this.modelChanged.bind(this));

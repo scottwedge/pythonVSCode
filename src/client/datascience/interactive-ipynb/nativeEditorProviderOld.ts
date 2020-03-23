@@ -3,7 +3,7 @@
 'use strict';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
-import { CancellationTokenSource, EventEmitter, TextDocument, TextEditor, Uri } from 'vscode';
+import { CancellationTokenSource, EventEmitter, TextDocument, TextEditor, Uri, ViewColumn } from 'vscode';
 
 import {
     ICommandManager,
@@ -53,7 +53,7 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
         );
         this.disposables.push(
             this.cmdManager.registerCommand(Commands.SaveNotebookNonCustomEditor, async (resource: Uri) => {
-                const customDocument = this.customDocuments.get(resource.fsPath);
+                const customDocument = this.customDocuments.get(this.getCustomDocumentKey(resource));
                 if (customDocument) {
                     await this.save(customDocument, new CancellationTokenSource().token);
                 }
@@ -63,7 +63,7 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
             this.cmdManager.registerCommand(
                 Commands.SaveAsNotebookNonCustomEditor,
                 async (resource: Uri, targetResource: Uri) => {
-                    const customDocument = this.customDocuments.get(resource.fsPath);
+                    const customDocument = this.customDocuments.get(this.getCustomDocumentKey(resource));
                     if (customDocument) {
                         await this.saveAs(customDocument, targetResource);
                     }
@@ -87,11 +87,11 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
         }, 0);
     }
 
-    public async open(file: Uri): Promise<INotebookEditor> {
+    public async open(file: Uri, openSecondCopy: boolean = false, viewColumn?: ViewColumn): Promise<INotebookEditor> {
         // Save a custom document as we use it to search for the object later.
-        if (!this.customDocuments.has(file.fsPath)) {
+        if (!this.customDocuments.has(this.getCustomDocumentKey(file))) {
             // Required for old editor
-            this.customDocuments.set(file.fsPath, {
+            this.customDocuments.set(this.getCustomDocumentKey(file), {
                 uri: file,
                 viewType: NativeEditorProvider.customEditorViewType,
                 onDidDispose: new EventEmitter<void>().event
@@ -100,9 +100,9 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
 
         // See if this file is open or not already
         let editor = this.activeEditors.get(file.fsPath);
-        if (!editor) {
+        if (!editor || openSecondCopy) {
             // Note: create will fire the open event.
-            editor = await this.create(file);
+            editor = await this.create(file, viewColumn);
         } else {
             await this.showEditor(editor);
         }
@@ -136,7 +136,7 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
         if (!editor || this.isEditorPartOfDiffView(editor)) {
             return;
         }
-        this.openNotebookAndCloseEditor(editor.document, true).ignoreErrors();
+        this.openNotebookAndCloseEditor(editor.document, true, true, editor.viewColumn).ignoreErrors();
     }
 
     private async showEditor(editor: INotebookEditor) {
@@ -144,8 +144,8 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
         this._onDidChangeActiveNotebookEditor.fire(this.activeEditor);
     }
 
-    private async create(file: Uri): Promise<INotebookEditor> {
-        const editor = await this.createNotebookEditor(file);
+    private async create(file: Uri, viewColumn?: ViewColumn): Promise<INotebookEditor> {
+        const editor = await this.createNotebookEditor(file, undefined, viewColumn);
         this.disposables.push(editor.closed(this.onClosedEditor.bind(this)));
         await this.showEditor(editor);
         return editor;
@@ -165,7 +165,9 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
 
     private openNotebookAndCloseEditor = async (
         document: TextDocument,
-        closeDocumentBeforeOpeningNotebook: boolean
+        closeDocumentBeforeOpeningNotebook: boolean,
+        openSecondCopy: boolean = false,
+        viewColumn?: ViewColumn
     ) => {
         // See if this is an ipynb file
         if (this.isNotebook(document) && this.configuration.getSettings(document.uri).datascience.useNotebookEditor) {
@@ -184,7 +186,7 @@ export class NativeEditorProviderOld extends NativeEditorProvider {
                 }
 
                 // Open our own editor.
-                await this.open(uri);
+                await this.open(uri, openSecondCopy, viewColumn);
 
                 if (!closeDocumentBeforeOpeningNotebook) {
                     // Then switch back to the ipynb and close it.

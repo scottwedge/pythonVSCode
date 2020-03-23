@@ -3,7 +3,7 @@
 'use strict';
 import { inject, injectable } from 'inversify';
 import * as uuid from 'uuid/v4';
-import { CancellationToken, Disposable, Event, EventEmitter, Uri, WebviewPanel } from 'vscode';
+import { CancellationToken, Disposable, Event, EventEmitter, Uri, ViewColumn, WebviewPanel } from 'vscode';
 import { arePathsSame } from '../../../datascience-ui/react-common/arePathsSame';
 import {
     CustomDocument,
@@ -29,6 +29,10 @@ import { captureTelemetry, sendTelemetryEvent } from '../../telemetry';
 import { Telemetry } from '../constants';
 import { NotebookModelChange } from '../interactive-common/interactiveWindowTypes';
 import { INotebookEditor, INotebookEditorProvider, INotebookModel, INotebookStorage } from '../types';
+
+type CustomDocumentKey = {
+    file: string;
+};
 
 // Class that is registered as the custom editor provider for notebooks. VS code will call into this class when
 // opening an ipynb file. This class then creates a backing storage, model, and opens a view for the file.
@@ -66,7 +70,8 @@ export class NativeEditorProvider
     protected readonly _onDidChangeActiveNotebookEditor = new EventEmitter<INotebookEditor | undefined>();
     protected readonly _onDidOpenNotebookEditor = new EventEmitter<INotebookEditor>();
     protected readonly _onDidEdit = new EventEmitter<CustomDocumentEditEvent<NotebookModelChange>>();
-    protected customDocuments = new Map<string, CustomDocument>();
+    protected customDocumentKeys = new Map<string, CustomDocumentKey>();
+    protected customDocuments = new WeakMap<CustomDocumentKey, CustomDocument>();
     private readonly _onDidCloseNotebookEditor = new EventEmitter<INotebookEditor>();
     private openedEditors: Set<INotebookEditor> = new Set<INotebookEditor>();
     private storageAndModels = new Map<string, Promise<{ model: INotebookModel; storage: INotebookStorage }>>();
@@ -140,17 +145,17 @@ export class NativeEditorProvider
     }
 
     public async resolveCustomEditor(document: CustomDocument, panel: WebviewPanel) {
-        this.customDocuments.set(document.uri.fsPath, document);
+        this.addCustomDocument(document);
         await this.createNotebookEditor(document.uri, panel);
     }
 
     public async resolveCustomDocument(document: CustomDocument): Promise<void> {
-        this.customDocuments.set(document.uri.fsPath, document);
+        this.addCustomDocument(document);
         await this.loadStorage(document.uri);
     }
 
     public async resolveNativeEditorStorage(document: CustomDocument): Promise<INotebookStorage> {
-        this.customDocuments.set(document.uri.fsPath, document);
+        this.addCustomDocument(document);
         return this.loadStorage(document.uri);
     }
 
@@ -208,8 +213,13 @@ export class NativeEditorProvider
 
         return this.open(uri);
     }
-
-    protected async createNotebookEditor(resource: Uri, panel?: WebviewPanel) {
+    protected addCustomDocument(document: CustomDocument) {
+        this.customDocuments.set(this.getCustomDocumentKey(document.uri), document);
+        document.onDidDispose(() => {
+            this.customDocuments.delete(this.getCustomDocumentKey(document.uri));
+        });
+    }
+    protected async createNotebookEditor(resource: Uri, panel?: WebviewPanel, viewColumn?: ViewColumn) {
         try {
             // Get the model
             const model = await this.loadModel(resource);
@@ -219,7 +229,7 @@ export class NativeEditorProvider
 
             // Load it (should already be visible)
             return editor
-                .load(model, panel)
+                .load(model, panel, viewColumn)
                 .then(() => this.openedEditor(editor))
                 .then(() => editor);
         } catch (exc) {
@@ -240,6 +250,13 @@ export class NativeEditorProvider
         this._onDidOpenNotebookEditor.fire(editor);
     }
 
+    protected getCustomDocumentKey(uri: Uri): CustomDocumentKey {
+        const key = this.customDocumentKeys.get(uri.fsPath);
+        if (!key) {
+            this.customDocumentKeys.set(uri.fsPath, { file: uri.fsPath });
+        }
+        return this.customDocumentKeys.get(uri.fsPath)!;
+    }
     private closedEditor(editor: INotebookEditor): void {
         this.openedEditors.delete(editor);
         // If last editor, dispose of the storage
@@ -271,7 +288,7 @@ export class NativeEditorProvider
 
     private async modelEdited(model: INotebookModel, change: NotebookModelChange) {
         // Find the document associated with this edit.
-        const document = this.customDocuments.get(model.file.fsPath);
+        const document = this.customDocuments.get(this.getCustomDocumentKey(model.file));
         if (document) {
             this._onDidEdit.fire({ document, edit: change });
         }

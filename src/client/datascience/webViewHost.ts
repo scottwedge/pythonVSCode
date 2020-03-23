@@ -213,7 +213,7 @@ export abstract class WebViewHost<IMapping> implements IDisposable {
         return this.themeIsDarkPromise ? this.themeIsDarkPromise.promise : Promise.resolve(false);
     }
 
-    protected async loadWebPanel(cwd: string, webViewPanel?: WebviewPanel) {
+    protected async loadWebPanel(cwd: string, webViewPanel?: WebviewPanel, viewColumn?: ViewColumn) {
         // Make not disposed anymore
         this.disposed = false;
 
@@ -255,7 +255,7 @@ export abstract class WebViewHost<IMapping> implements IDisposable {
             // Use this script to create our web view panel. It should contain all of the necessary
             // script to communicate with this class.
             this.webPanel = await this.provider.create({
-                viewColumn: this.viewColumn,
+                viewColumn: viewColumn || this.viewColumn,
                 listener: this.messageListener,
                 title: this.title,
                 rootPath: this.rootPath,

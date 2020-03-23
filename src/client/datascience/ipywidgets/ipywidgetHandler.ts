@@ -7,7 +7,6 @@ import { inject, injectable } from 'inversify';
 import { Event, EventEmitter, Uri } from 'vscode';
 import { traceError } from '../../common/logger';
 import { IDisposableRegistry } from '../../common/types';
-import { serializeDataViews } from '../../common/utils/serializers';
 import {
     IInteractiveWindowMapping,
     INotebookIdentity,
@@ -99,8 +98,6 @@ export class IPyWidgetHandler implements IInteractiveWindowListener {
 
         this.disposables.push(
             ipywidgetMulticaster!.onMessage(msg => {
-                // tslint:disable-neinitializext-line: no-any
-                serializeDataViews(msg.payload as any);
                 this.postMessageToWebView(msg.message, msg.payload);
             })
         );

@@ -8,7 +8,7 @@ import { Event, EventEmitter, Uri } from 'vscode';
 import { IDisposable } from '../../common/types';
 import { IPyWidgetMessages } from '../interactive-common/interactiveWindowTypes';
 import { INotebook, INotebookProvider } from '../types';
-import { restoreBuffers } from './serialization';
+import { restoreBuffers, serializeDataViews } from './serialization';
 import { IIPyWidgetMessageDispatcher, IPyWidgetMessage } from './types';
 
 export class IPyWidgetMessageDispatcher implements IIPyWidgetMessageDispatcher {
@@ -107,6 +107,8 @@ export class IPyWidgetMessageDispatcher implements IIPyWidgetMessageDispatcher {
         }
     }
     protected raiseOnMessage(message: IPyWidgetMessage) {
+        // tslint:disable-neinitializext-line: no-any
+        serializeDataViews(message.payload as any);
         this._onMessage.fire(message);
     }
     private registerCommTargets() {

@@ -72,7 +72,7 @@ use(chaiAsPromised);
                 mode = 'replay';
             }
             // Hardcode value to `record` to re-generate or generate new test logs.
-            mode = 'replay';
+            // mode = 'record';
             if (mode === 'replay' && !(await fs.pathExists(testFileName))) {
                 return this.skip();
             }

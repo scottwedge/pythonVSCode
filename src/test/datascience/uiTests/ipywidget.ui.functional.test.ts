@@ -152,7 +152,6 @@ use(chaiAsPromised);
                 const count = await notebookUI.getCellCount();
                 assert.equal(count, 3);
             });
-            await sleep(1_000);
         });
         test('Output displayed after executing a cell', async () => {
             const { notebookUI } = await openABCIpynb();

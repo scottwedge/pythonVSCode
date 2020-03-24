@@ -21,7 +21,6 @@ import { ICodeCssGenerator, IDataScienceExtraSettings, IThemeFinder, WebViewView
 
 @injectable() // For some reason this is necessary to get the class hierarchy to work.
 export abstract class WebViewHost<IMapping> implements IDisposable {
-
     protected get isDisposed(): boolean {
         return this.disposed;
     }

@@ -245,9 +245,9 @@ use(chaiAsPromised);
         });
         suite('With real Jupyter', () => {
             setup(function() {
-                // if (ioc.mockJupyter) {
-                return this.skip();
-                // }
+                if (ioc.mockJupyter) {
+                    return this.skip();
+                }
             });
             test('Button Interaction across Cells', async () => {
                 const { notebookUI } = await openStandardWidgetsIpynb();

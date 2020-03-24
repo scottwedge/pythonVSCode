@@ -35,7 +35,7 @@ const maxWaitTimeForMessage = 15_000;
  * UI could take a while to update, could be slower on CI server.
  * (500ms is generally enough, but increasing to 3s to avoid flaky CI tests).
  */
-export const waitTimeForUIToUpdate = 30_000;
+export const waitTimeForUIToUpdate = 5_000;
 
 export class BaseWebUI implements IAsyncDisposable {
     public page?: playwright.Page;

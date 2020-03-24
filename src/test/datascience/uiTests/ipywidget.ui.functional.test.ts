@@ -16,7 +16,6 @@ import { Disposable } from 'vscode';
 import { EXTENSION_ROOT_DIR } from '../../../client/constants';
 import { UseCustomEditor } from '../../../datascience-ui/react-common/constants';
 import { getOSType, OSType, retryIfFail as retryIfFailOriginal } from '../../common';
-import { sleep } from '../../core';
 import { mockedVSCodeNamespaces } from '../../vscode-mock';
 import { DataScienceIocContainer } from '../dataScienceIocContainer';
 import { addMockData } from '../testHelpersCore';

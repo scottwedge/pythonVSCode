@@ -136,7 +136,8 @@ export class InteractiveWindow extends InteractiveBase implements IInteractiveWi
                 path.join(historyReactDir, 'ipywidgets.js'),
                 path.join(historyReactDir, 'monaco.bundle.js'),
                 path.join(historyReactDir, 'commons.initial.bundle.js'),
-                path.join(historyReactDir, 'interactiveWindow.js')
+                path.join(historyReactDir, 'interactiveWindow.js'),
+                path.join(historyReactDir, 'azuremlindex.js') // Load last, large file.
             ],
             localize.DataScience.historyTitle(),
             ViewColumn.Two,
